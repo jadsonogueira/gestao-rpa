@@ -1,0 +1,37 @@
+<!-- dashboard.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <!-- Link para o arquivo CSS -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Cabeçalho -->
+  <header>
+    <h1>Bem-vindo ao Painel</h1>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main>
+    <!-- Botões dos Fluxos -->
+    <button onclick="abrirFormulario('Consultar empenho')">Consultar empenho</button>
+    <button onclick="abrirFormulario('Liberar assinatura externa')">Liberar assinatura externa</button>
+  </main>
+
+  <!-- Modal do Formulário -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="fluxoTitulo">
+    <div class="modal-content">
+      <span class="close-button" id="closeModal" onclick="fecharFormulario()" tabindex="0" role="button" aria-label="Fechar">&times;</span>
+      <h2 id="fluxoTitulo"></h2>
+      <form id="fluxoForm">
+        <!-- Campos do formulário serão adicionados dinamicamente -->
+      </form>
+    </div>
+  </div>
+
+  <!-- Script JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>

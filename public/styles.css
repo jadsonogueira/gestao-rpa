@@ -1,0 +1,95 @@
+/* styles.css */
+
+/* Estilos Gerais */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+}
+
+header {
+  background-color: #4285f4;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+main {
+  padding: 20px;
+}
+
+button {
+  background-color: #4285f4;
+  color: white;
+  padding: 15px 25px;
+  margin: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button:hover {
+  background-color: #357ae8;
+}
+
+/* Estilos do Modal */
+.modal {
+  display: none; /* Oculto por padrão */
+  position: fixed; /* Fica no topo da página */
+  z-index: 1; /* Fica acima de outros elementos */
+  left: 0;
+  top: 0;
+  width: 100%; /* Largura total */
+  height: 100%; /* Altura total */
+  overflow: auto; /* Habilita rolagem se necessário */
+  background-color: rgba(0, 0, 0, 0.5); /* Fundo preto com opacidade */
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 10% auto; /* Centraliza verticalmente */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%; /* Largura do conteúdo */
+  max-width: 500px; /* Largura máxima */
+  position: relative;
+}
+
+.close-button {
+  color: #aaaaaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Estilos do Formulário */
+#fluxoForm {
+  display: flex;
+  flex-direction: column;
+}
+
+#fluxoForm input {
+  padding: 10px;
+  margin: 5px 0;
+  font-size: 16px;
+}
+
+#fluxoForm button {
+  background-color: #4285f4;
+  color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+#fluxoForm button:hover {
+  background-color: #357ae8;
+}
