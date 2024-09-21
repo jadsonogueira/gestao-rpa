@@ -1,6 +1,24 @@
 // public/script.js
 
-const apiUrl = 'http://localhost:3000';
+// Define a URL da API com base no ambiente
+const apiUrl = window.location.origin;
+
+// Função para exibir mensagens de alerta usando Bootstrap
+function showAlert(message, type = 'success') {
+  const alertPlaceholder = document.getElementById('alertPlaceholder');
+  if (alertPlaceholder) {
+    alertPlaceholder.innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Fechar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    `;
+  } else {
+    alert(message);
+  }
+}
 
 // Cadastro (Signup)
 const signupForm = document.getElementById('signupForm');
@@ -12,7 +30,7 @@ if (signupForm) {
 
     // Validação simples
     if (!username || !password) {
-      alert('Por favor, preencha todos os campos.');
+      showAlert('Por favor, preencha todos os campos.', 'warning');
       return;
     }
 
@@ -23,12 +41,16 @@ if (signupForm) {
         body: JSON.stringify({ username, password }),
       });
       const data = await res.text();
-      alert(data);
       if (res.ok) {
-        window.location.href = 'login.html';
+        showAlert('Usuário registrado com sucesso. Redirecionando para a página de login...', 'success');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 2000);
+      } else {
+        showAlert(data || 'Erro ao registrar. Tente novamente mais tarde.', 'danger');
       }
     } catch (error) {
-      alert('Erro ao registrar. Tente novamente mais tarde.');
+      showAlert('Erro ao registrar. Tente novamente mais tarde.', 'danger');
     }
   });
 }
@@ -43,7 +65,7 @@ if (loginForm) {
 
     // Validação simples
     if (!username || !password) {
-      alert('Por favor, preencha todos os campos.');
+      showAlert('Por favor, preencha todos os campos.', 'warning');
       return;
     }
 
@@ -56,21 +78,23 @@ if (loginForm) {
       const data = await res.json();
       if (res.ok) {
         localStorage.setItem('token', data.token);
-        window.location.href = 'dashboard.html';
+        showAlert('Login bem-sucedido. Redirecionando para o dashboard...', 'success');
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 2000);
       } else {
-        alert('Usuário ou senha incorretos');
+        showAlert(data || 'Usuário ou senha incorretos.', 'danger');
       }
     } catch (error) {
-      alert('Erro ao fazer login. Tente novamente mais tarde.');
+      showAlert('Erro ao fazer login. Tente novamente mais tarde.', 'danger');
     }
   });
 }
 
 // Funções do Dashboard
 function abrirFormulario(fluxo) {
-  const modal = document.getElementById('modal');
-  modal.style.display = 'block';
-  document.getElementById('fluxoTitulo').innerText = fluxo;
+  const modalTitle = document.getElementById('modalTitle');
+  modalTitle.innerText = fluxo;
 
   const fluxoForm = document.getElementById('fluxoForm');
   fluxoForm.innerHTML = ''; // Limpa o formulário
@@ -95,45 +119,43 @@ function abrirFormulario(fluxo) {
 
   // Gera os campos do formulário
   campos.forEach((campo) => {
+    const formGroup = document.createElement('div');
+    formGroup.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.htmlFor = campo.id;
+    label.textContent = campo.placeholder;
+
     const input = document.createElement('input');
     input.type = campo.type;
     input.id = campo.id;
     input.name = campo.id;
+    input.className = 'form-control';
     input.placeholder = campo.placeholder;
     input.required = true;
-    fluxoForm.appendChild(input);
+
+    formGroup.appendChild(label);
+    formGroup.appendChild(input);
+    fluxoForm.appendChild(formGroup);
   });
 
   // Adiciona o botão de envio
   const submitButton = document.createElement('button');
   submitButton.type = 'submit';
   submitButton.textContent = 'Enviar';
+  submitButton.className = 'btn btn-primary btn-block';
   fluxoForm.appendChild(submitButton);
 
   // Adiciona o evento de submit
   fluxoForm.onsubmit = enviarFormulario;
 
-  // Permite fechar o modal com a tecla Esc
-  document.addEventListener('keydown', teclaEscParaFecharModal);
-}
-
-function fecharFormulario() {
-  const modal = document.getElementById('modal');
-  modal.style.display = 'none';
-
-  // Remove o listener da tecla Esc
-  document.removeEventListener('keydown', teclaEscParaFecharModal);
-}
-
-function teclaEscParaFecharModal(event) {
-  if (event.key === 'Escape') {
-    fecharFormulario();
-  }
+  // Exibe o modal
+  $('#fluxoModal').modal('show');
 }
 
 async function enviarFormulario(e) {
   e.preventDefault();
-  const fluxo = document.getElementById('fluxoTitulo').innerText;
+  const fluxo = document.getElementById('modalTitle').innerText;
 
   const dados = {};
 
@@ -146,7 +168,9 @@ async function enviarFormulario(e) {
   const token = localStorage.getItem('token');
 
   // Exibe um indicador de carregamento (opcional)
-  // Por exemplo, você pode mostrar um spinner aqui
+  const submitButton = e.target.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  submitButton.textContent = 'Enviando...';
 
   try {
     const res = await fetch(`${apiUrl}/send-email`, {
@@ -160,15 +184,18 @@ async function enviarFormulario(e) {
 
     const data = await res.text();
     if (res.ok) {
-      alert('Solicitação enviada com sucesso.');
+      showAlert('Solicitação enviada com sucesso.', 'success');
     } else {
-      alert('Erro ao enviar a solicitação: ' + data);
+      showAlert('Erro ao enviar a solicitação: ' + data, 'danger');
     }
   } catch (error) {
-    alert('Erro ao enviar o formulário. Tente novamente mais tarde.');
+    showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
   } finally {
-    // Oculta o indicador de carregamento (se houver)
-    fecharFormulario();
+    // Oculta o indicador de carregamento
+    submitButton.disabled = false;
+    submitButton.textContent = 'Enviar';
+    // Fecha o modal
+    $('#fluxoModal').modal('hide');
   }
 }
 
@@ -178,5 +205,17 @@ if (window.location.pathname.endsWith('dashboard.html')) {
   if (!token) {
     // Redireciona para a página de login se não estiver autenticado
     window.location.href = 'login.html';
+  } else {
+    // Exibe o nome de usuário (se disponível)
+    // Você pode armazenar o nome de usuário no localStorage após o login
   }
+}
+
+// Evento para logout
+const logoutButton = document.getElementById('logoutButton');
+if (logoutButton) {
+  logoutButton.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    window.location.href = 'login.html';
+  });
 }
