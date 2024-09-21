@@ -2,23 +2,35 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
-const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 
+// Verificação das variáveis de ambiente necessárias
+const requiredEnvVars = ['MONGODB_URL', 'JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS'];
+requiredEnvVars.forEach((envVar) => {
+  if (!process.env[envVar]) {
+    console.error(`Erro: A variável de ambiente ${envVar} não está definida.`);
+    process.exit(1);
+  }
+});
+
 // Configurações
-app.use(bodyParser.json());
+app.use(express.json());
 app.use(cors());
 app.use(express.static('public'));
 
 // Conexão ao banco de dados MongoDB
-mongoose.connect('mongodb://localhost/gestao-rpa', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose
+  .connect(process.env.MONGODB_URL)
+  .then(() => {
+    console.log('Conectado ao MongoDB');
+  })
+  .catch((error) => {
+    console.error('Erro ao conectar ao MongoDB:', error);
+  });
 
 // Esquemas do Mongoose
 const UserSchema = new mongoose.Schema({
@@ -33,7 +45,7 @@ const verifyToken = (req, res, next) => {
   const token = req.headers['authorization'];
   if (!token) return res.status(401).send('Acesso Negado');
   try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET || 'secreto');
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
     req.user = verified;
     next();
   } catch (err) {
@@ -75,7 +87,7 @@ app.post('/login', async (req, res) => {
   if (!validPass) return res.status(400).send('Usuário ou senha incorretos');
 
   // Cria e atribui um token
-  const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET || 'secreto');
+  const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
   res.header('authorization', token).send({ token });
 });
 
@@ -117,6 +129,11 @@ app.post('/send-email', verifyToken, async (req, res) => {
       res.send('Email enviado com sucesso');
     }
   });
+});
+
+// Rota GET para '/'
+app.get('/', (req, res) => {
+  res.send('Aplicativo funcionando!');
 });
 
 // Iniciar o servidor
