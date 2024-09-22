@@ -137,7 +137,7 @@ app.post('/send-email', verifyToken, async (req, res) => {
     // Configuração do email
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: 'seu_email_de_destino@example.com', // Altere para o email que aciona o fluxo RPA
+      to: 'jadson.pena@dnit.gov.br', // Altere para o email que aciona o fluxo RPA
       subject: `Acionar Fluxo: ${fluxo}`,
       text: conteudoEmail,
     };
