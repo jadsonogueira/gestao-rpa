@@ -119,10 +119,19 @@ app.post('/send-email', verifyToken, async (req, res) => {
     const { fluxo, dados } = req.body;
 
     // Formata os dados do formulário para o corpo do email
-    let conteudoEmail = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
+    let conteudoEmail = '';
 
-    for (const [key, value] of Object.entries(dados)) {
-      conteudoEmail += `${key}: ${value}\n`;
+    if (fluxo === 'Consultar empenho') {
+      conteudoEmail = `${dados.requerente}*${dados.email}*${dados.contratoSei}`;
+    } else if (fluxo === 'Liberar assinatura externa') {
+      conteudoEmail = `${dados.requerente}*${dados.email}*${dados.assinante}*${dados.numeroDocSei}`;
+    } else {
+      // Para outros fluxos, adapte conforme necessário
+      conteudoEmail = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
+
+      for (const [key, value] of Object.entries(dados)) {
+        conteudoEmail += `${key}: ${value}\n`;
+      }
     }
 
     // Configuração do transporte de email
@@ -138,7 +147,7 @@ app.post('/send-email', verifyToken, async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: 'jadson.pena@dnit.gov.br', // Altere para o email que aciona o fluxo RPA
-      subject: `Acionar Fluxo: ${fluxo}`,
+      subject: fluxo, // Ajuste o assunto conforme necessário
       text: conteudoEmail,
     };
 
