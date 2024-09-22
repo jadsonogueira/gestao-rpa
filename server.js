@@ -123,7 +123,7 @@ app.post('/send-email', verifyToken, async (req, res) => {
 
     if (fluxo === 'Acionar Fluxo: Consultar empenho') {
       conteudoEmail = `${dados.requerente}*${dados.email}*${dados.contratoSei}`;
-    } else if (fluxo === 'Liberar assinatura externa') {
+    } else if (fluxo === 'Acionar Fluxo: Liberar assinatura externa') {
       conteudoEmail = `${dados.requerente}*${dados.email}*${dados.assinante}*${dados.numeroDocSei}`;
     } else {
       // Para outros fluxos, adapte conforme necessário
