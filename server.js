@@ -69,6 +69,18 @@ const verifyToken = (req, res, next) => {
   }
 };
 
+// Configuração do transporte de email - movido para fora das rotas
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  pool: true, // Habilita o uso de pool de conexões
+  maxConnections: 5, // Número máximo de conexões simultâneas
+  maxMessages: 100, // Número máximo de mensagens por conexão
+});
+
 // Rotas
 app.post('/signup', async (req, res) => {
   try {
@@ -134,31 +146,23 @@ app.post('/send-email', verifyToken, async (req, res) => {
       }
     }
 
-    // Configuração do transporte de email
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
     // Configuração do email
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: 'jadson.pena@dnit.gov', // Altere para o email que aciona o fluxo RPA
+      to: 'jadson.pena@dnit.gov.br', // Altere para o email que aciona o fluxo RPA
       subject: fluxo, // Ajuste o assunto conforme necessário
       text: conteudoEmail,
     };
 
-    // Envia o email
-    transporter.sendMail(mailOptions, function (error, info) {
+    // Envia a resposta ao cliente imediatamente
+    res.send('Sua solicitação foi recebida e está sendo processada');
+
+    // Envia o email de forma assíncrona
+    transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error('Erro ao enviar o email:', error);
-        res.status(500).send('Erro ao enviar o email');
       } else {
         console.log('Email enviado: ' + info.response);
-        res.send('Email enviado com sucesso');
       }
     });
   } catch (err) {
