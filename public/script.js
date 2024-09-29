@@ -30,6 +30,17 @@ const listaAssinantes = [
   { valor: 'wagner_cunha', nome: 'Wagner Ferreira da Cunha' },
 ];
 
+// Definir a lista de contratos SEI
+const listaContratosSei = [
+  { valor: '00 00121', nome: '00 00121' },
+  { valor: '12 00088', nome: '12 00088' },
+  { valor: '12 00101', nome: '12 00101' },
+  { valor: '12 00212', nome: '12 00212' },
+  { valor: '12 00426', nome: '12 00426' },
+  { valor: '12 00449', nome: '12 00449' },
+  { valor: '12 00458', nome: '12 00458' },
+];
+
 // Cadastro (Signup)
 const signupForm = document.getElementById('signupForm');
 if (signupForm) {
@@ -116,7 +127,12 @@ function abrirFormulario(fluxo) {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'text' },
+      {
+        id: 'contratoSei',
+        placeholder: 'Contrato SEI',
+        type: 'select',
+        options: listaContratosSei,
+      },
     ];
   } else if (fluxo === 'Liberar assinatura externa') {
     campos = [
@@ -209,6 +225,14 @@ async function enviarFormulario(e) {
       (assinante) => assinante.valor === dados.assinante
     );
     dados.assinanteNome = assinanteSelecionado ? assinanteSelecionado.nome : '';
+  }
+
+  // Se o fluxo for 'Consultar empenho', adicionar o contrato SEI selecionado
+  if (fluxo === 'Consultar empenho') {
+    const contratoSelecionado = listaContratosSei.find(
+      (contrato) => contrato.valor === dados.contratoSei
+    );
+    dados.contratoSeiValor = contratoSelecionado ? contratoSelecionado.valor : '';
   }
 
   const token = localStorage.getItem('token');
