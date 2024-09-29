@@ -131,19 +131,10 @@ app.post('/send-email', verifyToken, async (req, res) => {
     const { fluxo, dados } = req.body;
 
     // Formata os dados do formulário para o corpo do email
-    let conteudoEmail = '';
+    let conteudoEmail = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
 
-    if (fluxo === 'Liberar assinatura externa') {
-      conteudoEmail = `${dados.requerente}*${dados.email}*${dados.assinanteNome}*${dados.numeroDocSei}`;
-    } else if (fluxo === 'Consultar empenho') {
-      conteudoEmail = `${dados.requerente}*${dados.email}*${dados.contratoSeiValor}`;
-    } else {
-      // Para outros fluxos, adapte conforme necessário
-      conteudoEmail = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
-
-      for (const [key, value] of Object.entries(dados)) {
-        conteudoEmail += `${key}: ${value}\n`;
-      }
+    for (const [key, value] of Object.entries(dados)) {
+      conteudoEmail += `${key}: ${value}\n`;
     }
 
     // Configuração do email
