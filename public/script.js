@@ -20,6 +20,16 @@ function showAlert(message, type = 'success') {
   }
 }
 
+// Definir a lista de assinantes
+const listaAssinantes = [
+  { valor: 'bruno_medeiros', nome: 'Bruno Moreira de Medeiros' },
+  { valor: 'francisco_jailson', nome: 'Francisco Jailson Nascimento dos Santos' },
+  { valor: 'jose_joaquim', nome: 'José Joaquim da Silva Júnior' },
+  { valor: 'lucas_lasmar', nome: 'Lucas Veloso Facury Lasmar' },
+  { valor: 'natalia_battaglini', nome: 'Natália Maria do Carmo Lopes Guimarães Battaglini' },
+  { valor: 'wagner_cunha', nome: 'Wagner Ferreira da Cunha' },
+];
+
 // Cadastro (Signup)
 const signupForm = document.getElementById('signupForm');
 if (signupForm) {
@@ -112,7 +122,12 @@ function abrirFormulario(fluxo) {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'assinante', placeholder: 'Assinante', type: 'text' },
+      {
+        id: 'assinante',
+        placeholder: 'Assinante',
+        type: 'select',
+        options: listaAssinantes,
+      },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
     ];
   }
@@ -126,13 +141,36 @@ function abrirFormulario(fluxo) {
     label.htmlFor = campo.id;
     label.textContent = campo.placeholder;
 
-    const input = document.createElement('input');
-    input.type = campo.type;
-    input.id = campo.id;
-    input.name = campo.id;
-    input.className = 'form-control';
-    input.placeholder = campo.placeholder;
-    input.required = true;
+    let input;
+    if (campo.type === 'select') {
+      input = document.createElement('select');
+      input.id = campo.id;
+      input.name = campo.id;
+      input.className = 'form-control';
+      input.required = true;
+
+      const optionInicial = document.createElement('option');
+      optionInicial.value = '';
+      optionInicial.disabled = true;
+      optionInicial.selected = true;
+      optionInicial.textContent = 'Selecione uma opção';
+      input.appendChild(optionInicial);
+
+      campo.options.forEach((opcao) => {
+        const option = document.createElement('option');
+        option.value = opcao.valor;
+        option.textContent = opcao.nome;
+        input.appendChild(option);
+      });
+    } else {
+      input = document.createElement('input');
+      input.type = campo.type;
+      input.id = campo.id;
+      input.name = campo.id;
+      input.className = 'form-control';
+      input.placeholder = campo.placeholder;
+      input.required = true;
+    }
 
     formGroup.appendChild(label);
     formGroup.appendChild(input);
@@ -160,10 +198,18 @@ async function enviarFormulario(e) {
   const dados = {};
 
   // Coleta os dados do formulário
-  const inputs = e.target.querySelectorAll('input');
+  const inputs = e.target.querySelectorAll('input, select');
   inputs.forEach((input) => {
     dados[input.id] = input.value.trim();
   });
+
+  // Se o fluxo for 'Liberar assinatura externa', adicionar o nome completo do assinante
+  if (fluxo === 'Liberar assinatura externa') {
+    const assinanteSelecionado = listaAssinantes.find(
+      (assinante) => assinante.valor === dados.assinante
+    );
+    dados.assinanteNome = assinanteSelecionado ? assinanteSelecionado.nome : '';
+  }
 
   const token = localStorage.getItem('token');
 

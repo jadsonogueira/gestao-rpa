@@ -133,10 +133,10 @@ app.post('/send-email', verifyToken, async (req, res) => {
     // Formata os dados do formulário para o corpo do email
     let conteudoEmail = '';
 
-    if (fluxo === 'Acionar Fluxo: Consultar empenho') {
+    if (fluxo === 'Liberar assinatura externa') {
+      conteudoEmail = `${dados.requerente}*${dados.email}*${dados.assinanteNome}*${dados.numeroDocSei}`;
+    } else if (fluxo === 'Consultar empenho') {
       conteudoEmail = `${dados.requerente}*${dados.email}*${dados.contratoSei}`;
-    } else if (fluxo === 'Acionar Fluxo: Liberar assinatura externa') {
-      conteudoEmail = `${dados.requerente}*${dados.email}*${dados.assinante}*${dados.numeroDocSei}`;
     } else {
       // Para outros fluxos, adapte conforme necessário
       conteudoEmail = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
