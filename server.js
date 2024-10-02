@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
+const crypto = require('crypto');
 
 // Captura de erros globais
 process.on('uncaughtException', (err) => {
@@ -52,6 +53,9 @@ mongoose
 const UserSchema = new mongoose.Schema({
   username: String,
   password: String,
+  email: String,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -124,6 +128,52 @@ app.post('/login', async (req, res) => {
     res.status(500).send('Erro no servidor');
   }
 });
+
+app.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Verifica se o e-mail está cadastrado
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).send('E-mail não encontrado.');
+    }
+
+    // Gera um token de redefinição de senha
+    const token = crypto.randomBytes(20).toString('hex');
+
+    // Define o token e a data de expiração
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hora
+
+    await user.save();
+
+    // Envia o e-mail com o link de redefinição de senha
+    const resetUrl = `${req.protocol}://${req.get('host')}/reset-password.html?token=${token}`;
+
+    const mailOptions = {
+      to: user.email,
+      from: process.env.EMAIL_USER,
+      subject: 'Redefinição de Senha',
+      text: `Você está recebendo este e-mail porque uma solicitação de redefinição de senha foi feita para a sua conta.\n\n` +
+        `Por favor, clique no link a seguir ou cole-o no seu navegador para concluir o processo:\n\n` +
+        `${resetUrl}\n\n` +
+        `Se você não solicitou esta alteração, por favor, ignore este e-mail.\n`,
+    };
+
+    transporter.sendMail(mailOptions, (err) => {
+      if (err) {
+        console.error('Erro ao enviar o e-mail de redefinição de senha:', err);
+        return res.status(500).send('Erro ao enviar o e-mail.');
+      }
+      res.send('E-mail de redefinição de senha enviado com sucesso.');
+    });
+  } catch (err) {
+    console.error('Erro na rota /forgot-password:', err);
+    res.status(500).send('Erro no servidor');
+  }
+});
+
 
 // Rota /send-email
 app.post('/send-email', verifyToken, async (req, res) => {
