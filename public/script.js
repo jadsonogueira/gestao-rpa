@@ -224,3 +224,33 @@ if (logoutButton) {
     window.location.href = 'login.html';
   });
 }
+// Recuperação de Senha
+const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+if (forgotPasswordForm) {
+  forgotPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+
+    if (!email) {
+      showAlert('Por favor, insira seu e-mail.', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.text();
+      if (res.ok) {
+        showAlert('Um e-mail com instruções de redefinição de senha foi enviado.', 'success');
+      } else {
+        showAlert(data || 'Erro ao solicitar redefinição de senha.', 'danger');
+      }
+    } catch (error) {
+      showAlert('Erro ao solicitar redefinição de senha. Tente novamente mais tarde.', 'danger');
+    }
+  });
+}
+
