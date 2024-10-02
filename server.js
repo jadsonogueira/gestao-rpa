@@ -103,6 +103,28 @@ app.post('/signup', async (req, res) => {
     const emailExists = await User.findOne({ email });
     if (emailExists) return res.status(400).send('E-mail já cadastrado');
 
+    // Validação de Complexidade da Senha
+    const passwordErrors = [];
+    if (password.length < 8) {
+      passwordErrors.push('A senha deve ter pelo menos 8 caracteres.');
+    }
+    if (!/[A-Z]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos uma letra maiúscula.');
+    }
+    if (!/[a-z]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos uma letra minúscula.');
+    }
+    if (!/[0-9]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos um número.');
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos um caractere especial (e.g., !@#$%^&*).');
+    }
+
+    if (passwordErrors.length > 0) {
+      return res.status(400).send(passwordErrors.join(' '));
+    }
+
     // Hash da senha
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -239,6 +261,28 @@ app.post('/reset-password/:token', async (req, res) => {
 
     if (!user) {
       return res.status(400).send('Token inválido ou expirado.');
+    }
+
+    // Validação de Complexidade da Senha
+    const passwordErrors = [];
+    if (password.length < 8) {
+      passwordErrors.push('A senha deve ter pelo menos 8 caracteres.');
+    }
+    if (!/[A-Z]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos uma letra maiúscula.');
+    }
+    if (!/[a-z]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos uma letra minúscula.');
+    }
+    if (!/[0-9]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos um número.');
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos um caractere especial (e.g., !@#$%^&*).');
+    }
+
+    if (passwordErrors.length > 0) {
+      return res.status(400).send(passwordErrors.join(' '));
     }
 
     // Atualiza a senha do usuário
