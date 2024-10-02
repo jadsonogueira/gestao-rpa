@@ -254,3 +254,46 @@ if (forgotPasswordForm) {
   });
 }
 
+// Redefinição de Senha
+const resetPasswordForm = document.getElementById('resetPasswordForm');
+if (resetPasswordForm) {
+  resetPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    // Obtém o token da URL
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    if (!password || !confirmPassword) {
+      showAlert('Por favor, preencha todos os campos.', 'warning');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showAlert('As senhas não coincidem.', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/reset-password/${token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.text();
+      if (res.ok) {
+        showAlert('Senha redefinida com sucesso. Redirecionando para o login...', 'success');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 3000);
+      } else {
+        showAlert(data || 'Erro ao redefinir a senha.', 'danger');
+      }
+    } catch (error) {
+      showAlert('Erro ao redefinir a senha. Tente novamente mais tarde.', 'danger');
+    }
+  });
+}
+
