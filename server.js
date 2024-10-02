@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
-const crypto = require('crypto');
+const crypto = require('crypto'); // Importação do módulo crypto
 
 // Captura de erros globais
 process.on('uncaughtException', (err) => {
@@ -41,7 +41,10 @@ app.use(express.static('public'));
 
 // Conexão ao banco de dados MongoDB
 mongoose
-  .connect(process.env.MONGODB_URL)
+  .connect(process.env.MONGODB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => {
     console.log('Conectado ao MongoDB');
   })
@@ -51,9 +54,9 @@ mongoose
 
 // Esquemas do Mongoose
 const UserSchema = new mongoose.Schema({
-  username: String,
+  username: { type: String, unique: true }, // Garantir que o username seja único
+  email: { type: String, unique: true }, // Garantir que o e-mail seja único
   password: String,
-  email: String,
   resetPasswordToken: String,
   resetPasswordExpires: Date,
 });
@@ -86,19 +89,28 @@ const transporter = nodemailer.createTransport({
 });
 
 // Rotas
+
+// Cadastro (Signup)
 app.post('/signup', async (req, res) => {
   try {
+    const { username, email, password } = req.body;
+
     // Verifica se o usuário já existe
-    const userExists = await User.findOne({ username: req.body.username });
+    const userExists = await User.findOne({ username });
     if (userExists) return res.status(400).send('Usuário já existe');
+
+    // Verifica se o e-mail já está cadastrado
+    const emailExists = await User.findOne({ email });
+    if (emailExists) return res.status(400).send('E-mail já cadastrado');
 
     // Hash da senha
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(req.body.password, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     // Cria novo usuário
     const user = new User({
-      username: req.body.username,
+      username,
+      email,
       password: hashedPassword,
     });
 
@@ -110,6 +122,7 @@ app.post('/signup', async (req, res) => {
   }
 });
 
+// Login
 app.post('/login', async (req, res) => {
   try {
     // Verifica se o usuário existe
@@ -128,52 +141,6 @@ app.post('/login', async (req, res) => {
     res.status(500).send('Erro no servidor');
   }
 });
-
-app.post('/forgot-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    // Verifica se o e-mail está cadastrado
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).send('E-mail não encontrado.');
-    }
-
-    // Gera um token de redefinição de senha
-    const token = crypto.randomBytes(20).toString('hex');
-
-    // Define o token e a data de expiração
-    user.resetPasswordToken = token;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hora
-
-    await user.save();
-
-    // Envia o e-mail com o link de redefinição de senha
-    const resetUrl = `${req.protocol}://${req.get('host')}/reset-password.html?token=${token}`;
-
-    const mailOptions = {
-      to: user.email,
-      from: process.env.EMAIL_USER,
-      subject: 'Redefinição de Senha',
-      text: `Você está recebendo este e-mail porque uma solicitação de redefinição de senha foi feita para a sua conta.\n\n` +
-        `Por favor, clique no link a seguir ou cole-o no seu navegador para concluir o processo:\n\n` +
-        `${resetUrl}\n\n` +
-        `Se você não solicitou esta alteração, por favor, ignore este e-mail.\n`,
-    };
-
-    transporter.sendMail(mailOptions, (err) => {
-      if (err) {
-        console.error('Erro ao enviar o e-mail de redefinição de senha:', err);
-        return res.status(500).send('Erro ao enviar o e-mail.');
-      }
-      res.send('E-mail de redefinição de senha enviado com sucesso.');
-    });
-  } catch (err) {
-    console.error('Erro na rota /forgot-password:', err);
-    res.status(500).send('Erro no servidor');
-  }
-});
-
 
 // Rota /send-email
 app.post('/send-email', verifyToken, async (req, res) => {
@@ -208,6 +175,100 @@ app.post('/send-email', verifyToken, async (req, res) => {
     });
   } catch (err) {
     console.error('Erro na rota /send-email:', err);
+    res.status(500).send('Erro no servidor');
+  }
+});
+
+// Rota /forgot-password
+app.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Verifica se o e-mail está cadastrado
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).send('E-mail não encontrado.');
+    }
+
+    // Gera um token de redefinição de senha
+    const token = crypto.randomBytes(20).toString('hex');
+
+    // Define o token e a data de expiração (1 hora)
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hora
+
+    await user.save();
+
+    // Envia o e-mail com o link de redefinição de senha
+    const resetUrl = `${req.protocol}://${req.get('host')}/reset-password.html?token=${token}`;
+
+    const mailOptions = {
+      to: user.email,
+      from: process.env.EMAIL_USER,
+      subject: 'Redefinição de Senha',
+      text: `Você está recebendo este e-mail porque uma solicitação de redefinição de senha foi feita para a sua conta.\n\n` +
+            `Por favor, clique no link a seguir ou cole-o no seu navegador para concluir o processo:\n\n` +
+            `${resetUrl}\n\n` +
+            `Se você não solicitou esta alteração, por favor, ignore este e-mail.\n`,
+    };
+
+    transporter.sendMail(mailOptions, (err) => {
+      if (err) {
+        console.error('Erro ao enviar o e-mail de redefinição de senha:', err);
+        return res.status(500).send('Erro ao enviar o e-mail.');
+      }
+      res.send('E-mail de redefinição de senha enviado com sucesso.');
+    });
+  } catch (err) {
+    console.error('Erro na rota /forgot-password:', err);
+    res.status(500).send('Erro no servidor');
+  }
+});
+
+// Rota /reset-password/:token
+app.post('/reset-password/:token', async (req, res) => {
+  try {
+    const { password } = req.body;
+    const { token } = req.params;
+
+    // Encontra o usuário com o token válido e não expirado
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).send('Token inválido ou expirado.');
+    }
+
+    // Atualiza a senha do usuário
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    // Envia um e-mail de confirmação
+    const mailOptions = {
+      to: user.email,
+      from: process.env.EMAIL_USER,
+      subject: 'Sua senha foi redefinida',
+      text: `Olá,\n\n` +
+            `Esta é uma confirmação de que a senha da sua conta ${user.email} foi redefinida com sucesso.\n`,
+    };
+
+    transporter.sendMail(mailOptions, (err) => {
+      if (err) {
+        console.error('Erro ao enviar o e-mail de confirmação:', err);
+        return res.status(500).send('Erro ao enviar o e-mail de confirmação.');
+      }
+      res.send('Senha redefinida com sucesso.');
+    });
+  } catch (err) {
+    console.error('Erro na rota /reset-password:', err);
     res.status(500).send('Erro no servidor');
   }
 });
