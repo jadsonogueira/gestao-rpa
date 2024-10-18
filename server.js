@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> ee581fbf74c8bea569a1fd4491f0f19690cc443c
 require('dotenv').config();
 const express = require('express');
 const app = express();
@@ -33,10 +29,7 @@ requiredEnvVars.forEach((envVar) => {
 
 if (missingVars.length > 0) {
   console.error(`Erro: As seguintes variáveis de ambiente não estão definidas: ${missingVars.join(', ')}`);
-<<<<<<< HEAD
   process.exit(1);
-=======
->>>>>>> ee581fbf74c8bea569a1fd4491f0f19690cc443c
 }
 
 // Configurações
@@ -59,12 +52,8 @@ mongoose
 
 // Esquemas do Mongoose
 const UserSchema = new mongoose.Schema({
-<<<<<<< HEAD
-  username: { type: String, unique: true },
-=======
   username: { type: String, unique: true }, // Garantir que o username seja único
   email: { type: String, unique: true }, // Garantir que o e-mail seja único
->>>>>>> ee581fbf74c8bea569a1fd4491f0f19690cc443c
   password: String,
   resetPasswordToken: String,
   resetPasswordExpires: Date,
@@ -102,11 +91,7 @@ const transporter = nodemailer.createTransport({
 // Cadastro (Signup)
 app.post('/signup', async (req, res) => {
   try {
-<<<<<<< HEAD
-    const { username, password } = req.body;
-=======
     const { username, email, password } = req.body;
->>>>>>> ee581fbf74c8bea569a1fd4491f0f19690cc443c
 
     // Verifica se o usuário já existe
     const userExists = await User.findOne({ username });
@@ -145,10 +130,7 @@ app.post('/signup', async (req, res) => {
     // Cria novo usuário
     const user = new User({
       username,
-<<<<<<< HEAD
-=======
       email,
->>>>>>> ee581fbf74c8bea569a1fd4491f0f19690cc443c
       password: hashedPassword,
     });
 
