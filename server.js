@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> ee581fbf74c8bea569a1fd4491f0f19690cc443c
 require('dotenv').config();
 const express = require('express');
 const app = express();
@@ -6,6 +10,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
+const crypto = require('crypto'); // Importação do módulo crypto
 
 // Captura de erros globais
 process.on('uncaughtException', (err) => {
@@ -28,7 +33,10 @@ requiredEnvVars.forEach((envVar) => {
 
 if (missingVars.length > 0) {
   console.error(`Erro: As seguintes variáveis de ambiente não estão definidas: ${missingVars.join(', ')}`);
+<<<<<<< HEAD
   process.exit(1);
+=======
+>>>>>>> ee581fbf74c8bea569a1fd4491f0f19690cc443c
 }
 
 // Configurações
@@ -51,8 +59,15 @@ mongoose
 
 // Esquemas do Mongoose
 const UserSchema = new mongoose.Schema({
+<<<<<<< HEAD
   username: { type: String, unique: true },
+=======
+  username: { type: String, unique: true }, // Garantir que o username seja único
+  email: { type: String, unique: true }, // Garantir que o e-mail seja único
+>>>>>>> ee581fbf74c8bea569a1fd4491f0f19690cc443c
   password: String,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -83,13 +98,45 @@ const transporter = nodemailer.createTransport({
 });
 
 // Rotas
+
+// Cadastro (Signup)
 app.post('/signup', async (req, res) => {
   try {
+<<<<<<< HEAD
     const { username, password } = req.body;
+=======
+    const { username, email, password } = req.body;
+>>>>>>> ee581fbf74c8bea569a1fd4491f0f19690cc443c
 
     // Verifica se o usuário já existe
     const userExists = await User.findOne({ username });
     if (userExists) return res.status(400).send('Usuário já existe');
+
+    // Verifica se o e-mail já está cadastrado
+    const emailExists = await User.findOne({ email });
+    if (emailExists) return res.status(400).send('E-mail já cadastrado');
+
+    // Validação de Complexidade da Senha
+    const passwordErrors = [];
+    if (password.length < 8) {
+      passwordErrors.push('A senha deve ter pelo menos 8 caracteres.');
+    }
+    if (!/[A-Z]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos uma letra maiúscula.');
+    }
+    if (!/[a-z]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos uma letra minúscula.');
+    }
+    if (!/[0-9]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos um número.');
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos um caractere especial (e.g., !@#$%^&*).');
+    }
+
+    if (passwordErrors.length > 0) {
+      return res.status(400).send(passwordErrors.join(' '));
+    }
 
     // Hash da senha
     const salt = await bcrypt.genSalt(10);
@@ -98,6 +145,10 @@ app.post('/signup', async (req, res) => {
     // Cria novo usuário
     const user = new User({
       username,
+<<<<<<< HEAD
+=======
+      email,
+>>>>>>> ee581fbf74c8bea569a1fd4491f0f19690cc443c
       password: hashedPassword,
     });
 
@@ -109,6 +160,7 @@ app.post('/signup', async (req, res) => {
   }
 });
 
+// Login
 app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -128,52 +180,4 @@ app.post('/login', async (req, res) => {
     console.error('Erro no login:', err);
     res.status(500).send('Erro no servidor');
   }
-});
-
-// Rota /send-email
-app.post('/send-email', verifyToken, async (req, res) => {
-  try {
-    const { fluxo, dados } = req.body;
-
-    // Formata os dados do formulário para o corpo do email
-    let conteudoEmail = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
-
-    for (const [key, value] of Object.entries(dados)) {
-      conteudoEmail += `${key}: ${value}\n`;
-    }
-
-    // Configuração do email
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: 'jadson.pena@dnit.gov.br', // Altere para o email que aciona o fluxo RPA
-      subject: fluxo, // Ajuste o assunto conforme necessário
-      text: conteudoEmail,
-    };
-
-    // Envia a resposta ao cliente imediatamente
-    res.send('Sua solicitação foi recebida e está sendo processada');
-
-    // Envia o email de forma assíncrona
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error('Erro ao enviar o email:', error);
-      } else {
-        console.log('Email enviado: ' + info.response);
-      }
-    });
-  } catch (err) {
-    console.error('Erro na rota /send-email:', err);
-    res.status(500).send('Erro no servidor');
-  }
-});
-
-// Rota GET para '/'
-app.get('/', (req, res) => {
-  res.send('Aplicativo funcionando!');
-});
-
-// Iniciar o servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
 });

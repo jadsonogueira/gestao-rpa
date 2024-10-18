@@ -42,10 +42,76 @@ const listaContratosSei = [
 ];
 
 // Cadastro (Signup)
-// ... (permanece igual)
+const signupForm = document.getElementById('signupForm');
+if (signupForm) {
+  signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    // Validação simples
+    if (!username || !email || !password) {
+      showAlert('Por favor, preencha todos os campos.', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password }),
+      });
+      const data = await res.text();
+      if (res.ok) {
+        showAlert('Usuário registrado com sucesso. Redirecionando para a página de login...', 'success');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 2000);
+      } else {
+        showAlert(data || 'Erro ao registrar. Tente novamente mais tarde.', 'danger');
+      }
+    } catch (error) {
+      showAlert('Erro ao registrar. Tente novamente mais tarde.', 'danger');
+    }
+  });
+}
 
 // Login
-// ... (permanece igual)
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+
+    // Validação simples
+    if (!username || !password) {
+      showAlert('Por favor, preencha todos os campos.', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
+        showAlert('Login bem-sucedido. Redirecionando para o dashboard...', 'success');
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 2000);
+      } else {
+        showAlert(data || 'Usuário ou senha incorretos.', 'danger');
+      }
+    } catch (error) {
+      showAlert('Erro ao fazer login. Tente novamente mais tarde.', 'danger');
+    }
+  });
+}
 
 // Funções do Dashboard
 function abrirFormulario(fluxo) {
@@ -203,6 +269,106 @@ async function enviarFormulario(e) {
     $('#fluxoModal').modal('hide');
   }
 }
+
+// Recuperação de Senha
+const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+if (forgotPasswordForm) {
+  forgotPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+
+    if (!email) {
+      showAlert('Por favor, insira seu e-mail.', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.text();
+      if (res.ok) {
+        showAlert('Um e-mail com instruções de redefinição de senha foi enviado.', 'success');
+      } else {
+        showAlert(data || 'Erro ao solicitar redefinição de senha.', 'danger');
+      }
+    } catch (error) {
+      showAlert('Erro ao solicitar redefinição de senha. Tente novamente mais tarde.', 'danger');
+    }
+  });
+}
+
+// Redefinição de Senha
+const resetPasswordForm = document.getElementById('resetPasswordForm');
+if (resetPasswordForm) {
+  resetPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    // Obtém o token da URL
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    // Validações
+    if (!password || !confirmPassword) {
+      showAlert('Por favor, preencha todos os campos.', 'warning');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showAlert('As senhas não coincidem.', 'warning');
+      return;
+    }
+
+    // Validação de Complexidade da Senha
+    const passwordErrors = [];
+    if (password.length < 8) {
+      passwordErrors.push('A senha deve ter pelo menos 8 caracteres.');
+    }
+    if (!/[A-Z]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos uma letra maiúscula.');
+    }
+    if (!/[a-z]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos uma letra minúscula.');
+    }
+    if (!/[0-9]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos um número.');
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      passwordErrors.push('A senha deve conter pelo menos um caractere especial (e.g., !@#$%^&*).');
+    }
+
+    if (passwordErrors.length > 0) {
+      showAlert(passwordErrors.join('<br>'), 'danger');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${apiUrl}/reset-password/${token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.text();
+      if (res.ok) {
+        showAlert('Senha redefinida com sucesso. Redirecionando para o login...', 'success');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 3000);
+      } else {
+        showAlert(data || 'Erro ao redefinir a senha.', 'danger');
+      }
+    } catch (error) {
+      showAlert('Erro ao redefinir a senha. Tente novamente mais tarde.', 'danger');
+    }
+  });
+}
+
+// Funções do Dashboard permanecem as mesmas...
+// ... (mantém as funções anteriores, sem alteração)
 
 // Verificar se o usuário está autenticado ao carregar o dashboard
 // ... (permanece igual)
