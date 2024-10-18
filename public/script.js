@@ -205,22 +205,7 @@ async function enviarFormulario(e) {
 }
 
 // Verificar se o usuário está autenticado ao carregar o dashboard
-if (window.location.pathname.endsWith('dashboard.html')) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    // Redireciona para a página de login se não estiver autenticado
-    window.location.href = 'login.html';
-  } else {
-    // Exibe o nome de usuário (se disponível)
-    // Você pode armazenar o nome de usuário no localStorage após o login
-  }
-}
+// ... (permanece igual)
 
 // Evento para logout
-const logoutButton = document.getElementById('logoutButton');
-if (logoutButton) {
-  logoutButton.addEventListener('click', () => {
-    localStorage.removeItem('token');
-    window.location.href = 'login.html';
-  });
-}
+// ... (permanece igual)

@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
 const app = express();
@@ -29,8 +28,7 @@ requiredEnvVars.forEach((envVar) => {
 
 if (missingVars.length > 0) {
   console.error(`Erro: As seguintes variáveis de ambiente não estão definidas: ${missingVars.join(', ')}`);
-  // Opcional: Em vez de encerrar o processo, você pode continuar a execução e lidar com a ausência das variáveis conforme necessário.
-  // process.exit(1);
+  process.exit(1);
 }
 
 // Configurações
@@ -40,7 +38,10 @@ app.use(express.static('public'));
 
 // Conexão ao banco de dados MongoDB
 mongoose
-  .connect(process.env.MONGODB_URL)
+  .connect(process.env.MONGODB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => {
     console.log('Conectado ao MongoDB');
   })
@@ -50,7 +51,7 @@ mongoose
 
 // Esquemas do Mongoose
 const UserSchema = new mongoose.Schema({
-  username: String,
+  username: { type: String, unique: true },
   password: String,
 });
 
@@ -84,17 +85,19 @@ const transporter = nodemailer.createTransport({
 // Rotas
 app.post('/signup', async (req, res) => {
   try {
+    const { username, password } = req.body;
+
     // Verifica se o usuário já existe
-    const userExists = await User.findOne({ username: req.body.username });
+    const userExists = await User.findOne({ username });
     if (userExists) return res.status(400).send('Usuário já existe');
 
     // Hash da senha
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(req.body.password, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
     // Cria novo usuário
     const user = new User({
-      username: req.body.username,
+      username,
       password: hashedPassword,
     });
 
@@ -108,12 +111,14 @@ app.post('/signup', async (req, res) => {
 
 app.post('/login', async (req, res) => {
   try {
+    const { username, password } = req.body;
+
     // Verifica se o usuário existe
-    const user = await User.findOne({ username: req.body.username });
+    const user = await User.findOne({ username });
     if (!user) return res.status(400).send('Usuário ou senha incorretos');
 
     // Verifica a senha
-    const validPass = await bcrypt.compare(req.body.password, user.password);
+    const validPass = await bcrypt.compare(password, user.password);
     if (!validPass) return res.status(400).send('Usuário ou senha incorretos');
 
     // Cria e atribui um token
