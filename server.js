@@ -165,13 +165,16 @@ app.post('/send-email', (req, res) => {
     },
   });
 
+  // Fixando o destinatário do e-mail
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: `jadson.pena@dnit.gov.br`,
+    to: 'jadson.pena@dnit.gov.br', // E-mail fixo
     subject: `${fluxo}`,
     text: mailContent,
   };
 
+  console.log('Enviando e-mail para: jadson.pena@dnit.gov.br');
+  
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.error('Erro ao enviar o e-mail:', error);
