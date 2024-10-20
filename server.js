@@ -18,9 +18,12 @@ if (!process.env.MONGODB_URL || !process.env.JWT_SECRET || !process.env.EMAIL_US
 }
 
 // Conexão ao MongoDB
-mongoose.connect(process.env.MONGODB_URL)
+mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB conectado'))
-  .catch((error) => console.error('Erro ao conectar ao MongoDB:', error));
+  .catch((error) => {
+    console.error('Erro ao conectar ao MongoDB:', error);
+    process.exit(1); // Fecha o servidor se a conexão falhar
+  });
 
 // Servir arquivos estáticos da pasta 'public'
 app.use(express.static(path.join(__dirname, 'public')));
@@ -49,6 +52,10 @@ app.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
+    if (!username || !email || !password) {
+      return res.status(400).send('Todos os campos são obrigatórios');
+    }
+
     const userExists = await User.findOne({ username });
     if (userExists) return res.status(400).send('Usuário já existe');
 
@@ -60,7 +67,7 @@ app.post('/signup', async (req, res) => {
     const user = new User({ username, email, password: hashedPassword });
     await user.save();
 
-    res.send('Usuário registrado com sucesso');
+    res.status(201).send('Usuário registrado com sucesso');
   } catch (err) {
     console.error('Erro ao registrar usuário:', err);
     res.status(500).send('Erro no servidor');
@@ -71,6 +78,10 @@ app.post('/signup', async (req, res) => {
 app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).send('Todos os campos são obrigatórios');
+    }
 
     const user = await User.findOne({ username });
     if (!user) return res.status(400).send('Usuário não encontrado');
