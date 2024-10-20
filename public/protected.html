@@ -1,0 +1,111 @@
+<!-- public/protected.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Página Protegida</title>
+  <!-- Bootstrap CSS -->
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  />
+  <!-- Seu CSS personalizado -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">AppDNIT</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="index.html">Página Inicial</a>
+        </li>
+        <li class="nav-item">
+          <button id="logoutButton" class="btn btn-danger">Logout</button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Placeholder para alertas -->
+  <div id="alertPlaceholder"></div>
+
+  <!-- Conteúdo Principal -->
+  <div class="container mt-5">
+    <h1 class="text-center">Bem-vindo à Página Protegida</h1>
+    <p class="text-center">Somente usuários autenticados podem ver esta página.</p>
+  </div>
+
+  <!-- Scripts JavaScript do Bootstrap (necessários para componentes interativos) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Script para verificar autenticação -->
+  <script>
+    const apiUrl = window.location.origin;
+
+    // Função para exibir alertas
+    function showAlert(message, type = 'success') {
+      const alertPlaceholder = document.getElementById('alertPlaceholder');
+      if (alertPlaceholder) {
+        alertPlaceholder.innerHTML = `
+          <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Fechar">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        `;
+      } else {
+        alert(message);
+      }
+    }
+
+    // Verifica se o token JWT está presente e válido
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      showAlert('Você não está autenticado. Redirecionando para o login...', 'warning');
+      setTimeout(() => {
+        window.location.href = 'login.html'; // Redireciona para a página de login se não estiver autenticado
+      }, 2000);
+    } else {
+      // Faz uma requisição à API para verificar o token
+      fetch(`${apiUrl}/protected`, {
+        method: 'GET',
+        headers: {
+          'Authorization': token,
+        },
+      })
+      .then(res => {
+        if (!res.ok) {
+          showAlert('Token inválido ou expirado. Redirecionando para o login...', 'danger');
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 2000);
+        }
+      })
+      .catch(() => {
+        showAlert('Erro ao verificar a autenticação. Redirecionando para o login...', 'danger');
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 2000);
+      });
+    }
+
+    // Logout
+    const logoutButton = document.getElementById('logoutButton');
+    if (logoutButton) {
+      logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('token'); // Remove o token JWT
+        window.location.href = 'login.html'; // Redireciona para a página de login após o logout
+      });
+    }
+  </script>
+</body>
+</html>
