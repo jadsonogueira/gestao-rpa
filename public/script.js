@@ -1,5 +1,3 @@
-// public/script.js
-
 // Define a URL da API com base no ambiente
 const apiUrl = window.location.origin;
 
@@ -41,78 +39,6 @@ const listaContratosSei = [
   { valor: '12 00458', nome: '12 00458' },
 ];
 
-// Cadastro (Signup)
-const signupForm = document.getElementById('signupForm');
-if (signupForm) {
-  signupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('username').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-
-    // Validação simples
-    if (!username || !email || !password) {
-      showAlert('Por favor, preencha todos os campos.', 'warning');
-      return;
-    }
-
-    try {
-      const res = await fetch(`${apiUrl}/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
-      });
-      const data = await res.text();
-      if (res.ok) {
-        showAlert('Usuário registrado com sucesso. Redirecionando para a página de login...', 'success');
-        setTimeout(() => {
-          window.location.href = 'login.html';
-        }, 2000);
-      } else {
-        showAlert(data || 'Erro ao registrar. Tente novamente mais tarde.', 'danger');
-      }
-    } catch (error) {
-      showAlert('Erro ao registrar. Tente novamente mais tarde.', 'danger');
-    }
-  });
-}
-
-// Login
-const loginForm = document.getElementById('loginForm');
-if (loginForm) {
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value;
-
-    // Validação simples
-    if (!username || !password) {
-      showAlert('Por favor, preencha todos os campos.', 'warning');
-      return;
-    }
-
-    try {
-      const res = await fetch(`${apiUrl}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('token', data.token);
-        showAlert('Login bem-sucedido. Redirecionando para o dashboard...', 'success');
-        setTimeout(() => {
-          window.location.href = 'dashboard.html';
-        }, 2000);
-      } else {
-        showAlert(data || 'Usuário ou senha incorretos.', 'danger');
-      }
-    } catch (error) {
-      showAlert('Erro ao fazer login. Tente novamente mais tarde.', 'danger');
-    }
-  });
-}
-
 // Funções do Dashboard
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
@@ -146,6 +72,18 @@ function abrirFormulario(fluxo) {
         options: listaAssinantes,
       },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+    ];
+  } else if (fluxo === 'Liberar acesso externo') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      {
+        id: 'user',
+        placeholder: 'Usuário',
+        type: 'select',
+        options: listaAssinantes,
+      },
+      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
   }
 
@@ -228,12 +166,12 @@ async function enviarFormulario(e) {
     dados.assinante = assinanteSelecionado ? assinanteSelecionado.nome : '';
   }
 
-  // Se o fluxo for 'Consultar empenho', ajustar o contrato SEI
-  if (fluxo === 'Consultar empenho') {
-    const contratoSelecionado = listaContratosSei.find(
-      (contrato) => contrato.valor === dados.contratoSei
+  // Se o fluxo for 'Liberar acesso externo', ajustar o usuário
+  if (fluxo === 'Liberar acesso externo') {
+    const userSelecionado = listaAssinantes.find(
+      (user) => user.valor === dados.user
     );
-    dados.contratoSei = contratoSelecionado ? contratoSelecionado.valor : '';
+    dados.user = userSelecionado ? userSelecionado.nome : '';
   }
 
   const token = localStorage.getItem('token');
@@ -262,7 +200,6 @@ async function enviarFormulario(e) {
   } catch (error) {
     showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
   } finally {
-    // Oculta o indicador de carregamento
     submitButton.disabled = false;
     submitButton.textContent = 'Enviar';
     // Fecha o modal
@@ -367,11 +304,11 @@ if (resetPasswordForm) {
   });
 }
 
-// Funções do Dashboard permanecem as mesmas...
-// ... (mantém as funções anteriores, sem alteração)
-
-// Verificar se o usuário está autenticado ao carregar o dashboard
-// ... (permanece igual)
-
 // Evento para logout
-// ... (permanece igual)
+const logoutButton = document.getElementById('logoutButton');
+if (logoutButton) {
+  logoutButton.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    window.location.href = 'login.html';
+  });
+}
