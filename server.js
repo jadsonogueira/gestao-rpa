@@ -171,7 +171,9 @@ app.post('/send-email', (req, res) => {
     subject: `${fluxo}`,
     text: mailContent,
   };
-
+// Adicionando o log para ver o envio do e-mail
+  console.log('Enviando e-mail para: jadson.pena@dnit.gov.br');
+  
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.error('Erro ao enviar o e-mail:', error);
