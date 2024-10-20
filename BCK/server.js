@@ -27,20 +27,6 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', UserSchema);
 
-
-// Rota para testar a conexão com o MongoDB
-app.get('/test-db', async (req, res) => {
-  try {
-    // Tenta fazer uma operação simples para testar a conexão
-    await mongoose.connection.db.admin().ping();
-    res.send('Conexão com o MongoDB funcionando.');
-  } catch (error) {
-    console.error('Erro ao conectar ao MongoDB:', error);
-    res.status(500).send('Erro ao conectar ao MongoDB.');
-  }
-});
-
-
 // Rota para Signup
 app.post('/signup', async (req, res) => {
   try {
