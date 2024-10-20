@@ -167,7 +167,7 @@ app.post('/send-email', (req, res) => {
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: dados.email,
+    to: `jadson.pena@dnit.gov.br`,
     subject: `${fluxo}`,
     text: mailContent,
   };
