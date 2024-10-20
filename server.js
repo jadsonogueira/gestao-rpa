@@ -11,6 +11,12 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Verificação de variáveis de ambiente essenciais
+if (!process.env.MONGODB_URL || !process.env.JWT_SECRET || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+  console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
+  process.exit(1);
+}
+
 // Conexão ao MongoDB
 mongoose.connect(process.env.MONGODB_URL)
   .then(() => console.log('MongoDB conectado'))
@@ -27,11 +33,9 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', UserSchema);
 
-
 // Rota para testar a conexão com o MongoDB
 app.get('/test-db', async (req, res) => {
   try {
-    // Tenta fazer uma operação simples para testar a conexão
     await mongoose.connection.db.admin().ping();
     res.send('Conexão com o MongoDB funcionando.');
   } catch (error) {
@@ -40,24 +44,19 @@ app.get('/test-db', async (req, res) => {
   }
 });
 
-
 // Rota para Signup
 app.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Verifica se o usuário já existe
     const userExists = await User.findOne({ username });
     if (userExists) return res.status(400).send('Usuário já existe');
 
-    // Verifica se o e-mail já está cadastrado
     const emailExists = await User.findOne({ email });
     if (emailExists) return res.status(400).send('E-mail já cadastrado');
 
-    // Cria um hash da senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Cria e salva o novo usuário
     const user = new User({ username, email, password: hashedPassword });
     await user.save();
 
@@ -73,15 +72,12 @@ app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Verifica se o usuário existe
     const user = await User.findOne({ username });
     if (!user) return res.status(400).send('Usuário não encontrado');
 
-    // Verifica se a senha está correta
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).send('Senha incorreta');
 
-    // Gera um token JWT
     const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.send({ token });
   } catch (err) {
@@ -108,17 +104,14 @@ app.get('/protected', (req, res) => {
 app.post('/send-email', (req, res) => {
   const { fluxo, dados } = req.body;
 
-  // Valida se o e-mail foi fornecido
   if (!dados.email) {
     return res.status(400).send('O campo de e-mail é obrigatório.');
   }
 
-  // Formatação do corpo do e-mail
   let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
   mailContent += `requerente: ${dados.requerente || ''}\n`;
   mailContent += `email: ${dados.email || ''}\n`;
 
-  // Verifica se o fluxo é "Liberar assinatura externa" ou outros fluxos e ajusta o corpo do e-mail
   if (fluxo === 'Liberar assinatura externa') {
     mailContent += `assinante: ${dados.assinante || ''}\n`;
     mailContent += `numeroDocSei: ${dados.numeroDocSei || ''}\n`;
@@ -129,7 +122,6 @@ app.post('/send-email', (req, res) => {
     mailContent += `processo_sei: ${dados.processo_sei || ''}\n`;
   }
 
-  // Configuração do Nodemailer
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -138,7 +130,6 @@ app.post('/send-email', (req, res) => {
     },
   });
 
-  // Opções de e-mail
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: dados.email,
@@ -146,7 +137,6 @@ app.post('/send-email', (req, res) => {
     text: mailContent,
   };
 
-  // Enviar e-mail
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.error('Erro ao enviar o e-mail:', error);
