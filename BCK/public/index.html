@@ -1,0 +1,66 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastro</title>
+  <!-- Meta tag para responsividade -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Link para o CSS do Bootstrap -->
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  />
+  <!-- Seu CSS personalizado (opcional) -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="alertPlaceholder"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">AppDNIT</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link" href="index.html">Cadastro</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="login.html">Login</a>
+        </li>
+        <!-- Adicione outros itens de menu conforme necessário -->
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Conteúdo principal -->
+  <div class="container mt-5">
+    <h1 class="text-center">Cadastro</h1>
+    <form id="signupForm">
+      <div class="form-group">
+        <label for="username">Usuário</label>
+        <input type="text" class="form-control" id="username" placeholder="Digite seu usuário" required />
+      </div>
+      <div class="form-group">
+        <label for="email">E-mail</label>
+        <input type="email" class="form-control" id="email" placeholder="Digite seu e-mail" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <input type="password" class="form-control" id="password" placeholder="Digite sua senha" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Cadastrar</button>
+    </form>
+    <p class="text-center mt-3">Já possui uma conta? <a href="login.html">Login</a></p>
+  </div>
+
+  <!-- Scripts JavaScript do Bootstrap (necessários para componentes interativos) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Seu script personalizado -->
+  <script src="script.js"></script>
+</body>
+</html>
