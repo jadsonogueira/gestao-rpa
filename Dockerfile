@@ -1,20 +1,23 @@
-# Use uma imagem base Node.js
+# Use uma imagem Node.js como base
 FROM node:16
 
 # Defina o diretório de trabalho dentro do container
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copie o package.json e package-lock.json para o diretório de trabalho
+# Copie os arquivos de dependência do Node.js para o container
 COPY package*.json ./
 
-# Instale as dependências do projeto
+# Instale as dependências
 RUN npm install --production
 
-# Copie todo o código da aplicação para o diretório de trabalho
+# Copie o restante do código da aplicação
 COPY . .
 
-# Exponha a porta que a aplicação utiliza
+# Defina a variável de ambiente PORT para 8080
+ENV PORT 8080
+
+# Exponha a porta 8080 para o Google Cloud Run
 EXPOSE 8080
 
 # Comando para iniciar a aplicação
-CMD [ "npm", "start" ]
+CMD ["npm", "start"]
