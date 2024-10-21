@@ -18,7 +18,7 @@
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.9.0",
-    "mongoose": "^8.6.2",
+    "mongoose": "^8.7.2",
     "mysql2": "^3.11.3",
     "nodemailer": "^6.9.15",
     "pg": "^8.13.0"
