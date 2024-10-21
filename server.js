@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql2');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -12,40 +12,37 @@ app.use(express.json());
 app.use(cors());
 
 // Verificação de variáveis de ambiente essenciais
-if (!process.env.MYSQL_HOST || !process.env.MYSQL_USER || !process.env.MYSQL_PASSWORD || !process.env.MYSQL_DATABASE || !process.env.JWT_SECRET || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+if (!process.env.MONGODB_URL || !process.env.JWT_SECRET || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
   console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
   process.exit(1);
 }
 
-// Conexão ao MySQL
-const connection = mysql.createConnection({
-  host: process.env.MYSQL_HOST,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE
+// Conexão ao MongoDB
+mongoose.connect(process.env.MONGODB_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB conectado'))
+.catch(err => {
+  console.error('Erro ao conectar ao MongoDB:', err);
+  process.exit(1);
 });
 
-// Conectar ao MySQL
-connection.connect((err) => {
-  if (err) {
-    console.error('Erro ao conectar ao MySQL:', err);
-    process.exit(1); // Fecha o servidor se a conexão falhar
-  }
-  console.log('MySQL conectado');
+// Definir o esquema do usuário
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true }
 });
+
+const User = mongoose.model('User', userSchema);
 
 // Servir arquivos estáticos da pasta 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rota para testar a conexão com o MySQL
+// Rota para testar a conexão com o MongoDB
 app.get('/test-db', (req, res) => {
-  connection.query('SELECT 1 + 1 AS solution', (err, results) => {
-    if (err) {
-      console.error('Erro ao consultar o MySQL:', err);
-      return res.status(500).send('Erro ao consultar o MySQL.');
-    }
-    res.send('Conexão com o MySQL funcionando.');
-  });
+  res.send('Conexão com o MongoDB funcionando.');
 });
 
 // Rota para Signup
@@ -58,30 +55,18 @@ app.post('/signup', async (req, res) => {
     }
 
     // Verifica se o usuário ou email já existe
-    const query = 'SELECT * FROM users WHERE username = ? OR email = ?';
-    connection.query(query, [username, email], async (err, results) => {
-      if (err) {
-        console.error('Erro ao consultar o banco de dados:', err);
-        return res.status(500).send('Erro no servidor');
-      }
+    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    if (existingUser) {
+      return res.status(400).send('Usuário ou e-mail já cadastrado');
+    }
 
-      if (results.length > 0) {
-        return res.status(400).send('Usuário ou e-mail já cadastrado');
-      }
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+    // Criar o novo usuário no banco de dados
+    const user = new User({ username, email, password: hashedPassword });
+    await user.save();
 
-      // Inserir o novo usuário no banco de dados
-      const insertQuery = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-      connection.query(insertQuery, [username, email, hashedPassword], (err, result) => {
-        if (err) {
-          console.error('Erro ao inserir o usuário no MySQL:', err);
-          return res.status(500).send('Erro no servidor');
-        }
-
-        res.status(201).send('Usuário registrado com sucesso');
-      });
-    });
+    res.status(201).send('Usuário registrado com sucesso');
   } catch (err) {
     console.error('Erro ao registrar usuário:', err);
     res.status(500).send('Erro no servidor');
@@ -97,24 +82,16 @@ app.post('/login', async (req, res) => {
       return res.status(400).send('Todos os campos são obrigatórios');
     }
 
-    const query = 'SELECT * FROM users WHERE username = ?';
-    connection.query(query, [username], async (err, results) => {
-      if (err) {
-        console.error('Erro ao consultar o banco de dados:', err);
-        return res.status(500).send('Erro no servidor');
-      }
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).send('Usuário não encontrado');
+    }
 
-      if (results.length === 0) {
-        return res.status(400).send('Usuário não encontrado');
-      }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).send('Senha incorreta');
 
-      const user = results[0];
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) return res.status(400).send('Senha incorreta');
-
-      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-      res.send({ token });
-    });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.send({ token });
   } catch (err) {
     console.error('Erro no login:', err);
     res.status(500).send('Erro no servidor');
