@@ -37,6 +37,7 @@ const listaContratosSei = [
   { valor: '12 00426', nome: '12 00426' },
   { valor: '12 00449', nome: '12 00449' },
   { valor: '12 00458', nome: '12 00458' },
+  { valor: '12 00458', nome: '12 00799' },
 ];
 
 // Funções do Dashboard
