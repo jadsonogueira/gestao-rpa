@@ -25,7 +25,7 @@ const listaAssinantes = [
   { valor: 'jose_joaquim', nome: 'José Joaquim da Silva Júnior' },
   { valor: 'lucas_lasmar', nome: 'Lucas Veloso Facury Lasmar' },
   { valor: 'natalia_battaglini', nome: 'Natália Maria do Carmo Lopes Guimarães Battaglini' },
-  { valor: 'wagner_cunha', nome: 'Wagner Ferreira da Cunha (wagaofcunha@gmail.com)' },
+  { valor: 'wagner_cunha', nome: 'Wagner Ferreira da Cunha @' },
 ];
 
 // Definir a lista de contratos SEI
@@ -37,6 +37,7 @@ const listaContratosSei = [
   { valor: '12 00426', nome: '12 00426' },
   { valor: '12 00449', nome: '12 00449' },
   { valor: '12 00458', nome: '12 00458' },
+  { valor: '12 00458', nome: '12 00799' },
 ];
 
 // Funções do Dashboard
