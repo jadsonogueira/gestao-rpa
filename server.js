@@ -98,19 +98,24 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Rota de exemplo para proteger rotas autenticadas
+// Rota de exemplo para desativar a proteção temporariamente
 app.get('/protected', (req, res) => {
-  const token = req.headers['authorization'];
-  if (!token) return res.status(401).send('Acesso negado, token não fornecido');
+  // Remova temporariamente a verificação do token
+  // const token = req.headers['authorization'];
+  // if (!token) return res.status(401).send('Acesso negado, token não fornecido');
 
-  try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified;
-    res.send('Você tem acesso autorizado!');
-  } catch (err) {
-    res.status(400).send('Token inválido');
-  }
+  // try {
+  //   const verified = jwt.verify(token, process.env.JWT_SECRET);
+  //   req.user = verified;
+  //   res.send('Você tem acesso autorizado!');
+  // } catch (err) {
+  //   res.status(400).send('Token inválido');
+  // }
+
+  // Provisoriamente permitir o acesso
+  res.send('Acesso temporariamente permitido sem autenticação');
 });
+
 
 // Rota para envio de e-mails
 app.post('/send-email', (req, res) => {
