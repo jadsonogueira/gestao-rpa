@@ -21,16 +21,11 @@ function showAlert(message, type = 'success') {
 // Definir a lista de assinantes
 const listaAssinantes = [
   { valor: 'bruno_medeiros', nome: 'Bruno Moreira de Medeiros' },
-  { valor: 'francisco_jailson', nome: 'Francisco Jailson Nascimento dos Santos @' },
-  { valor: 'wagner_cunha', nome: 'Jadson Nogueira Pena' },
+  { valor: 'francisco_jailson', nome: 'Francisco Jailson Nascimento dos Santos' },
   { valor: 'jose_joaquim', nome: 'José Joaquim da Silva Júnior' },
   { valor: 'lucas_lasmar', nome: 'Lucas Veloso Facury Lasmar' },
   { valor: 'natalia_battaglini', nome: 'Natália Maria do Carmo Lopes Guimarães Battaglini' },
   { valor: 'wagner_cunha', nome: 'Wagner Ferreira da Cunha @' },
-<<<<<<< HEAD
-=======
-  
->>>>>>> a78e36f978771eb6eb7830f44659a308eaed4f22
 ];
 
 // Definir a lista de contratos SEI
@@ -42,11 +37,7 @@ const listaContratosSei = [
   { valor: '12 00426', nome: '12 00426' },
   { valor: '12 00449', nome: '12 00449' },
   { valor: '12 00458', nome: '12 00458' },
-<<<<<<< HEAD
   { valor: '12 00458', nome: '12 00799' },
-=======
-  { valor: '12 00799', nome: '12 00799' },
->>>>>>> a78e36f978771eb6eb7830f44659a308eaed4f22
 ];
 
 // Funções do Dashboard
