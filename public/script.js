@@ -26,6 +26,7 @@ const listaAssinantes = [
   { valor: 'lucas_lasmar', nome: 'Lucas Veloso Facury Lasmar' },
   { valor: 'natalia_battaglini', nome: 'Natália Maria do Carmo Lopes Guimarães Battaglini' },
   { valor: 'wagner_cunha', nome: 'Wagner Ferreira da Cunha @' },
+  { valor: 'wagner_cunha', nome: 'Jadson Nogueira Pena' },
 ];
 
 // Definir a lista de contratos SEI
