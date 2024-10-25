@@ -106,6 +106,7 @@ function abrirFormulario(fluxo) {
       input.className = 'form-control';
       input.required = true;
 
+      // Adiciona a opção inicial
       const optionInicial = document.createElement('option');
       optionInicial.value = '';
       optionInicial.disabled = true;
@@ -113,6 +114,7 @@ function abrirFormulario(fluxo) {
       optionInicial.textContent = 'Selecione uma opção';
       input.appendChild(optionInicial);
 
+      // Adiciona as opções do select
       campo.options.forEach((opcao) => {
         const option = document.createElement('option');
         option.value = opcao.valor;
@@ -151,6 +153,9 @@ function abrirFormulario(fluxo) {
 async function enviarFormulario(e) {
   e.preventDefault();
   const fluxo = document.getElementById('modalTitle').innerText;
+  
+  // Debug: Mostrar qual fluxo está sendo processado
+  console.log('Fluxo atual:', fluxo);
 
   const dados = {};
 
@@ -158,27 +163,37 @@ async function enviarFormulario(e) {
   const inputs = e.target.querySelectorAll('input, select');
   inputs.forEach((input) => {
     dados[input.id] = input.value.trim();
+    // Debug: Mostrar os valores coletados
+    console.log(`Campo ${input.id}:`, input.value.trim());
   });
 
-  // Se o fluxo for 'Liberar assinatura externa', substituir 'assinante' pelo nome completo
+  // Tratamento específico para cada fluxo
   if (fluxo === 'Liberar assinatura externa') {
     const assinanteSelecionado = listaAssinantes.find(
       (assinante) => assinante.valor === dados.assinante
     );
-    dados.assinante = assinanteSelecionado ? assinanteSelecionado.nome : '';
-  }
-
-  // Se o fluxo for 'Liberar acesso externo', ajustar o usuário
-  if (fluxo === 'Liberar acesso externo') {
+    // Debug: Mostrar o assinante selecionado
+    console.log('Assinante selecionado:', assinanteSelecionado);
+    if (assinanteSelecionado) {
+      dados.assinante = assinanteSelecionado.nome;
+    }
+  } else if (fluxo === 'Liberar acesso externo') {
     const userSelecionado = listaAssinantes.find(
       (user) => user.valor === dados.user
     );
-    dados.user = userSelecionado ? userSelecionado.nome : '';
+    // Debug: Mostrar o usuário selecionado
+    console.log('Usuário selecionado:', userSelecionado);
+    if (userSelecionado) {
+      dados.user = userSelecionado.nome;
+    }
   }
+
+  // Debug: Mostrar dados finais antes do envio
+  console.log('Dados a serem enviados:', dados);
 
   const token = localStorage.getItem('token');
 
-  // Exibe um indicador de carregamento (opcional)
+  // Exibe um indicador de carregamento
   const submitButton = e.target.querySelector('button[type="submit"]');
   submitButton.disabled = true;
   submitButton.textContent = 'Enviando...';
@@ -200,6 +215,7 @@ async function enviarFormulario(e) {
       showAlert('Erro ao enviar a solicitação: ' + data, 'danger');
     }
   } catch (error) {
+    console.error('Erro ao enviar formulário:', error);
     showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
   } finally {
     submitButton.disabled = false;
