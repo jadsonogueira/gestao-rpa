@@ -22,7 +22,7 @@ function showAlert(message, type = 'success') {
 const listaAssinantes = [
   { valor: 'bruno_medeiros', nome: 'Bruno Moreira de Medeiros' },
   { valor: 'francisco_jailson', nome: 'Francisco Jailson Nascimento dos Santos @' },
-  { valor: 'jadson_pena', nome: 'Jadson Nogueira Pena' },
+  { valor: 'jadson_pena', nome: 'Jadson Nogueira Pena @' },
   { valor: 'jose_joaquim', nome: 'José Joaquim da Silva Júnior' },
   { valor: 'lucas_lasmar', nome: 'Lucas Veloso Facury Lasmar' },
   { valor: 'natalia_battaglini', nome: 'Natália Maria do Carmo Lopes Guimarães Battaglini' },
