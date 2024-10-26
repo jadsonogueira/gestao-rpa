@@ -1,4 +1,3 @@
-<!-- dashboard.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -29,9 +28,7 @@
         </li>
       </ul>
     </div>
-    
   </nav>
-  
 
   <div id="alertPlaceholder"></div>
 
@@ -43,6 +40,7 @@
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Consultar empenho')">Consultar empenho</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Liberar assinatura externa')">Liberar assinatura externa</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Liberar acesso externo')">Liberar acesso externo</button>
+      <button class="btn btn-primary m-2" data-toggle="modal" data-target="#novoFormularioModal">Novo Formulário</button>
     </div>
   </div>
 
@@ -60,7 +58,41 @@
           <p class="text-muted" style="font-size: 12px;">Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: <strong>50600.001234/2024-00</strong>. Verifique se todos os detalhes estão corretos antes de enviar.</p>
           <form id="fluxoForm">
             <!-- Campos do formulário serão adicionados dinamicamente -->
-          <form id="fluxoForm">
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Novo Formulário -->
+  <div class="modal fade" id="novoFormularioModal" tabindex="-1" role="dialog" aria-labelledby="novoFormularioTitle" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="novoFormularioTitle">Novo Formulário</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="novoFormulario">
+            <div class="form-group">
+              <label for="requerente">Requerente</label>
+              <input type="text" class="form-control" id="requerente" name="requerente" placeholder="Requerente" required>
+            </div>
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
+            </div>
+            <div class="form-group">
+              <label for="processoSei">Número do Processo SEI</label>
+              <input type="text" class="form-control" id="processoSei" name="processoSei" placeholder="Número do Processo SEI" required>
+            </div>
+            <div class="form-group">
+              <label for="instrucoes">Instruções</label>
+              <textarea class="form-control" id="instrucoes" name="instrucoes" rows="3" placeholder="Instruções"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Enviar</button>
           </form>
         </div>
       </div>
