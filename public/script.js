@@ -29,8 +29,7 @@ const listaUsuarios = [
   'Wagner Ferreira da Cunha'
 ];
 
-// Lista de contratos SEI para o formulário "Consultar empenho"
-const listaContratosSei = [
+const listacontratos = [
   '00 00121',
   '12 00088',
   '12 00101',
@@ -44,31 +43,14 @@ const listaContratosSei = [
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
   const fluxoForm = document.getElementById('fluxoForm');
-  const modalMessage = document.getElementById('modalMessage');
 
-  if (!modalTitle || !fluxoForm || !modalMessage) {
-    console.error("Erro: Elementos 'modalTitle', 'fluxoForm' ou 'modalMessage' não encontrados.");
+  if (!modalTitle || !fluxoForm) {
+    console.error("Erro: Elementos 'modalTitle' ou 'fluxoForm' não encontrados.");
     return;
   }
 
   modalTitle.innerText = fluxo;
   fluxoForm.innerHTML = ''; // Limpa o formulário
-
-  // Define mensagem específica para "Liberar acesso externo"
-  if (fluxo === 'Liberar acesso externo') {
-    modalMessage.innerHTML = `
-      <p class="text-muted" style="font-size: 12px;">
-        Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: 
-        <strong>50600.001234/2024-00</strong>. Verifique se todos os detalhes estão corretos antes de enviar.
-      </p>
-    `;
-  } else {
-    modalMessage.innerHTML = `
-      <p class="text-muted" style="font-size: 12px;">
-        Por favor, preencha todos os campos com atenção.
-      </p>
-    `;
-  }
 
   let campos = [];
 
@@ -76,34 +58,35 @@ function abrirFormulario(fluxo) {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listaContratosSei }
+      { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listacontratos },
     ];
   } else if (fluxo === 'Liberar assinatura externa') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
-      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' }
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
     ];
   } else if (fluxo === 'Liberar acesso externo') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'usuario', placeholder: 'Usuário', type: 'select', options: listaUsuarios },
-      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' }
+      { id: 'user', placeholder: 'Usuário', type: 'select', options: listaUsuarios },
+      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
   } else if (fluxo === 'Alterar ordem de documentos') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
-      { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' }
+      { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
     ];
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
     return;
   }
 
+  // Gera os campos do formulário
   campos.forEach((campo) => {
     const formGroup = document.createElement('div');
     formGroup.className = 'form-group';
@@ -137,21 +120,17 @@ function abrirFormulario(fluxo) {
       });
     } else if (campo.type === 'textarea') {
       input = document.createElement('textarea');
-      input.id = campo.id;
-      input.name = campo.id;
-      input.className = 'form-control';
-      input.placeholder = campo.placeholder;
-      input.required = true;
       input.rows = 3;
     } else {
       input = document.createElement('input');
       input.type = campo.type;
-      input.id = campo.id;
-      input.name = campo.id;
-      input.className = 'form-control';
-      input.placeholder = campo.placeholder;
-      input.required = true;
     }
+
+    input.id = campo.id;
+    input.name = campo.id;
+    input.className = 'form-control';
+    input.placeholder = campo.placeholder;
+    input.required = true;
 
     formGroup.appendChild(label);
     formGroup.appendChild(input);
@@ -172,12 +151,7 @@ function abrirFormulario(fluxo) {
 // Função para enviar o formulário
 async function enviarFormulario(e) {
   e.preventDefault();
-  const fluxo = document.getElementById('modalTitle')?.innerText;
-
-  if (!fluxo) {
-    console.error("Erro: Título do fluxo não encontrado.");
-    return;
-  }
+  const fluxo = document.getElementById('modalTitle').innerText;
 
   const dados = {};
   const inputs = e.target.querySelectorAll('input, textarea, select');
@@ -185,13 +159,14 @@ async function enviarFormulario(e) {
     dados[input.id] = input.value.trim();
   });
 
+  // Envio dos dados para a API
   try {
     const res = await fetch(`${apiUrl}/send-email`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ fluxo, dados }),
+      body: JSON.stringify({ fluxo, dados })
     });
 
     const data = await res.text();
@@ -199,11 +174,9 @@ async function enviarFormulario(e) {
       showAlert('Solicitação enviada com sucesso.', 'success');
     } else {
       showAlert(`Erro ao enviar a solicitação: ${data}`, 'danger');
-      console.error("Erro ao enviar a solicitação:", data);
     }
   } catch (error) {
     showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
-    console.error("Erro ao enviar o formulário:", error);
   } finally {
     $('#fluxoModal').modal('hide');
   }
