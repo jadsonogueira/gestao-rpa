@@ -51,9 +51,10 @@ const fluxoInstrucoes = {
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
   const modalBody = document.querySelector('.modal-body');
-  const fluxoForm = document.getElementById('fluxoForm');
+  const fluxoForm = document.createElement('form');
+  fluxoForm.id = 'fluxoForm';
 
-  if (!modalTitle || !fluxoForm || !modalBody) {
+  if (!modalTitle || !modalBody) {
     console.error("Erro: Elementos não encontrados.");
     return;
   }
@@ -61,9 +62,11 @@ function abrirFormulario(fluxo) {
   modalTitle.innerText = fluxo;
   
   // Atualiza as instruções específicas do formulário
-  modalBody.innerHTML = fluxoInstrucoes[fluxo] || 'Por favor, preencha todos os campos.';
-  
-  fluxoForm.innerHTML = ''; // Limpa o formulário
+  const instrucaoText = document.createElement('p');
+  instrucaoText.textContent = fluxoInstrucoes[fluxo] || 'Por favor, preencha todos os campos.';
+  modalBody.innerHTML = '';
+  modalBody.appendChild(instrucaoText);
+  modalBody.appendChild(fluxoForm);
 
   let campos = [];
 
@@ -153,7 +156,7 @@ function abrirFormulario(fluxo) {
   const submitButton = document.createElement('button');
   submitButton.type = 'submit';
   submitButton.textContent = 'Enviar';
-  submitButton.className = 'btn btn-primary btn-block';
+  submitButton.className = 'btn btn-primary btn-block mt-3';
   fluxoForm.appendChild(submitButton);
 
   fluxoForm.onsubmit = enviarFormulario;
