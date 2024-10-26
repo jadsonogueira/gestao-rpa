@@ -52,21 +52,6 @@ function abrirFormulario(fluxo) {
   modalTitle.innerText = fluxo;
   fluxoForm.innerHTML = ''; // Limpa o formulário
 
- // Define mensagem específica para "Liberar acesso externo"
- if (fluxo === 'Liberar acesso externo') {
-  modalMessage.innerHTML = `
-    <p class="text-muted" style="font-size: 12px;">
-      Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: 
-      <strong>50600.001234/2024-00</strong>. Verifique se todos os detalhes estão corretos antes de enviar.
-    </p>
-  `;
-}else {
-  modalMessage.innerHTML = `
-    <p class="text-muted" style="font-size: 12px;">
-      Por favor, preencha todos os campos com atenção.
-    </p>
-  `;
-}
 
   let campos = [];
 
