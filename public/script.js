@@ -29,6 +29,17 @@ const listaUsuarios = [
   'Wagner Ferreira da Cunha'
 ];
 
+const listacontratos = [
+  '00 00121',
+  '12 00088',
+  '12 00101',
+  '12 00212',
+  '12 00426',
+  '12 00449',
+  '12 00458'
+];
+
+
 // Função para abrir o formulário de acordo com o fluxo selecionado
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
@@ -48,7 +59,7 @@ function abrirFormulario(fluxo) {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'text' },
+      { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listacontratos },
     ];
   } else if (fluxo === 'Liberar assinatura externa') {
     campos = [
