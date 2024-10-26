@@ -54,6 +54,7 @@ app.post('/signup', async (req, res) => {
       return res.status(400).send('Todos os campos são obrigatórios');
     }
 
+    // Verifica se o usuário ou email já existe
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
       return res.status(400).send('Usuário ou e-mail já cadastrado');
@@ -61,6 +62,7 @@ app.post('/signup', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Criar o novo usuário no banco de dados
     const user = new User({ username, email, password: hashedPassword });
     await user.save();
 
@@ -96,6 +98,25 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// Rota de exemplo para desativar a proteção temporariamente
+app.get('/protected', (req, res) => {
+  // Remova temporariamente a verificação do token
+  // const token = req.headers['authorization'];
+  // if (!token) return res.status(401).send('Acesso negado, token não fornecido');
+
+  // try {
+  //   const verified = jwt.verify(token, process.env.JWT_SECRET);
+  //   req.user = verified;
+  //   res.send('Você tem acesso autorizado!');
+  // } catch (err) {
+  //   res.status(400).send('Token inválido');
+  // }
+
+  // Provisoriamente permitir o acesso
+  res.send('Acesso temporariamente permitido sem autenticação');
+});
+
+
 // Rota para envio de e-mails
 app.post('/send-email', (req, res) => {
   const { fluxo, dados } = req.body;
@@ -116,6 +137,9 @@ app.post('/send-email', (req, res) => {
   } else if (fluxo === 'Liberar acesso externo') {
     mailContent += `Usuário: ${dados.user || ''}\n`;
     mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+  } else if (fluxo === 'Alterar ordem de documentos') {
+    mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
+    mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
   }
 
   const transporter = nodemailer.createTransport({
@@ -132,8 +156,7 @@ app.post('/send-email', (req, res) => {
     subject: `${fluxo}`,
     text: mailContent,
   };
-  console.log('Enviando e-mail para: jadson.pena@dnit.gov.br');
-  
+
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.error('Erro ao enviar o e-mail:', error);
@@ -144,10 +167,12 @@ app.post('/send-email', (req, res) => {
   });
 });
 
-// Servir a página inicial
+
+// Servir a página inicial (index.html) ao acessar a rota raiz
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Inicia o servidor
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
