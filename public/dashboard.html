@@ -3,18 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard</title>
-  <!-- Meta tag para responsividade -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Link para o CSS do Bootstrap -->
-  <link
-    rel="stylesheet"
-    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-  />
-  <!-- Seu CSS personalizado -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <a class="navbar-brand" href="#">AppDNIT</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
@@ -22,7 +15,6 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ml-auto">
-        <!-- Outros itens de menu -->
         <li class="nav-item">
           <button id="logoutButton" class="btn btn-secondary">Logout</button>
         </li>
@@ -32,15 +24,13 @@
 
   <div id="alertPlaceholder"></div>
 
-  <!-- Conteúdo Principal -->
   <div class="container mt-5">
     <h3 class="text-center">Serviços disponíveis</h3>
-    <!-- Botões dos Fluxos -->
     <div class="text-center">
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Consultar empenho')">Consultar empenho</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Liberar assinatura externa')">Liberar assinatura externa</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Liberar acesso externo')">Liberar acesso externo</button>
-      <button class="btn btn-primary m-2" data-toggle="modal" data-target="#novoFormularioModal">Novo Formulário</button>
+      <button class="btn btn-primary m-2" onclick="abrirFormulario('Alterar ordem de documentos')">Alterar ordem de documentos</button>
     </div>
   </div>
 
@@ -64,45 +54,8 @@
     </div>
   </div>
 
-  <!-- Modal para Novo Formulário -->
-  <div class="modal fade" id="novoFormularioModal" tabindex="-1" role="dialog" aria-labelledby="novoFormularioTitle" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="novoFormularioTitle">Novo Formulário</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <form id="novoFormulario">
-            <div class="form-group">
-              <label for="requerente">Requerente</label>
-              <input type="text" class="form-control" id="requerente" name="requerente" placeholder="Requerente" required>
-            </div>
-            <div class="form-group">
-              <label for="email">Email</label>
-              <input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
-            </div>
-            <div class="form-group">
-              <label for="processoSei">Número do Processo SEI</label>
-              <input type="text" class="form-control" id="processoSei" name="processoSei" placeholder="Número do Processo SEI" required>
-            </div>
-            <div class="form-group">
-              <label for="instrucoes">Instruções</label>
-              <textarea class="form-control" id="instrucoes" name="instrucoes" rows="3" placeholder="Instruções"></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">Enviar</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scripts JavaScript do Bootstrap (necessários para componentes interativos) -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Script JavaScript personalizado -->
   <script src="script.js"></script>
 </body>
 </html>
