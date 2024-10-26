@@ -1,53 +1,30 @@
 // Define a URL da API com base no ambiente
 const apiUrl = window.location.origin;
 
-// Função para exibir mensagens de alerta usando Bootstrap
-function showAlert(message, type = 'success') {
-  const alertPlaceholder = document.getElementById('alertPlaceholder');
-  if (alertPlaceholder) {
-    alertPlaceholder.innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-        ${message}
-        <button type="button" class="close" data-dismiss="alert" aria-label="Fechar">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-    `;
-  } else {
-    alert(message);
-  }
-}
-
-// Verificação de opções válidas
-const listaAssinantes = [ /* lista de assinantes */ ];
-const listaContratosSei = [ /* lista de contratos SEI */ ];
-
+// Função para exibir o formulário dinamicamente
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
-  if (!modalTitle) {
-    showAlert('Erro ao abrir o modal: Título não encontrado.', 'danger');
-    return;
-  }
-
   modalTitle.innerText = fluxo;
+
   const fluxoForm = document.getElementById('fluxoForm');
-  if (!fluxoForm) {
-    showAlert('Erro ao abrir o modal: Formulário não encontrado.', 'danger');
-    return;
-  }
-  fluxoForm.innerHTML = '';
+  fluxoForm.innerHTML = ''; // Limpa o formulário
 
   let campos = [];
-  if (fluxo === 'Mudar ordem de documento em um processo SEI') {
+  if (fluxo === 'Consultar empenho') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
-      { id: 'instrucoes', placeholder: 'Instruções', type: 'text' },
+      { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'text' },
+    ];
+  } else if (fluxo === 'Alterar ordem de documentos') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
+      { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
     ];
   }
-  
-  // Geração dinâmica dos campos
+
   campos.forEach((campo) => {
     const formGroup = document.createElement('div');
     formGroup.className = 'form-group';
@@ -57,33 +34,19 @@ function abrirFormulario(fluxo) {
     label.textContent = campo.placeholder;
 
     let input;
-    if (campo.type === 'select') {
-      input = document.createElement('select');
-      input.id = campo.id;
-      input.name = campo.id;
-      input.className = 'form-control';
-      input.required = true;
-      const optionInicial = document.createElement('option');
-      optionInicial.value = '';
-      optionInicial.disabled = true;
-      optionInicial.selected = true;
-      optionInicial.textContent = 'Selecione uma opção';
-      input.appendChild(optionInicial);
-      campo.options.forEach((opcao) => {
-        const option = document.createElement('option');
-        option.value = opcao.valor;
-        option.textContent = opcao.nome;
-        input.appendChild(option);
-      });
+    if (campo.type === 'textarea') {
+      input = document.createElement('textarea');
+      input.rows = 3;
     } else {
       input = document.createElement('input');
       input.type = campo.type;
-      input.id = campo.id;
-      input.name = campo.id;
-      input.className = 'form-control';
-      input.placeholder = campo.placeholder;
-      input.required = true;
     }
+
+    input.id = campo.id;
+    input.name = campo.id;
+    input.className = 'form-control';
+    input.placeholder = campo.placeholder;
+    input.required = true;
 
     formGroup.appendChild(label);
     formGroup.appendChild(input);
@@ -97,47 +60,38 @@ function abrirFormulario(fluxo) {
   fluxoForm.appendChild(submitButton);
 
   fluxoForm.onsubmit = enviarFormulario;
+
   $('#fluxoModal').modal('show');
 }
 
-// Função para enviar formulário
+// Função para enviar o formulário
 async function enviarFormulario(e) {
   e.preventDefault();
   const fluxo = document.getElementById('modalTitle').innerText;
-  const dados = {};
 
-  const inputs = e.target.querySelectorAll('input, select');
+  const dados = {};
+  const inputs = e.target.querySelectorAll('input, textarea');
   inputs.forEach((input) => {
     dados[input.id] = input.value.trim();
   });
-
-  const token = localStorage.getItem('token');
-  const submitButton = e.target.querySelector('button[type="submit"]');
-  submitButton.disabled = true;
-  submitButton.textContent = 'Enviando...';
 
   try {
     const res = await fetch(`${apiUrl}/send-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: token,
       },
       body: JSON.stringify({ fluxo, dados }),
     });
 
-    const data = await res.text();
     if (res.ok) {
       showAlert('Solicitação enviada com sucesso.', 'success');
     } else {
-      showAlert('Erro ao enviar a solicitação: ' + data, 'danger');
+      showAlert('Erro ao enviar a solicitação.', 'danger');
     }
   } catch (error) {
-    console.error('Erro ao enviar formulário:', error);
     showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
   } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = 'Enviar';
     $('#fluxoModal').modal('hide');
   }
 }
