@@ -44,7 +44,7 @@ const fluxoInstrucoes = {
   'Consultar empenho': 'Por favor, preencha todos os campos. Certifique-se de selecionar o contrato SEI correto da lista disponível.',
   'Liberar assinatura externa': 'Por favor, preencha todos os campos. O número do DOC_SEI deve ser informado no formato numérico (exemplo: 12345678).',
   'Liberar acesso externo': 'Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: 50600.001234/2024-00.',
-  'Alterar ordem de documentos': 'Por favor, preencha todos os campos. No campo de instruções, descreva detalhadamente a ordem desejada dos documentos.'
+  'Alterar ordem de documentos': 'Por favor, preencha todos os campos. No campo de instruções, descreva detalhadamente a ordem desejada dos documentos na árvore do processo SEI digitado.'
 };
 
 // Função para abrir o formulário de acordo com o fluxo selecionado
