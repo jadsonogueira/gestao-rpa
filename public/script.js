@@ -18,6 +18,18 @@ function showAlert(message, type = 'success') {
   }
 }
 
+// Lista de usuários para os campos de seleção
+const listaUsuarios = [
+  'Bruno Moreira de Medeiros',
+  'Francisco Jailson Nascimento dos Santos',
+  'Jadson Nogueira Pena',
+  'José Joaquim da Silva Júnior',
+  'Lucas Veloso Facury Lasmar',
+  'Natália Maria do Carmo Lopes Guimarães Battaglini',
+  'Wagner Ferreira da Cunha'
+];
+
+
 // Função para abrir o formulário de acordo com o fluxo selecionado
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
@@ -43,14 +55,14 @@ function abrirFormulario(fluxo) {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'assinante', placeholder: 'Assinante', type: 'text' },
+      { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
     ];
   } else if (fluxo === 'Liberar acesso externo') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'user', placeholder: 'Usuário', type: 'text' },
+      { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
   } else if (fluxo === 'Alterar ordem de documentos') {
