@@ -60,7 +60,19 @@ function abrirFormulario(fluxo) {
       <strong>50600.001234/2024-00</strong>. Verifique se todos os detalhes estão corretos antes de enviar.
     </p>
   `;
-} else {
+  
+} 
+
+if (fluxo === 'Liberar assinatura externa') {
+  modalMessage.innerHTML = `
+    <p class="text-muted" style="font-size: 12px;">
+      Liberar assinatura externa - INFORMACOES
+    </p>
+  `;
+
+} 
+
+else {
   modalMessage.innerHTML = `
     <p class="text-muted" style="font-size: 12px;">
       Por favor, preencha todos os campos com atenção.
