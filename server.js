@@ -100,22 +100,9 @@ app.post('/login', async (req, res) => {
 
 // Rota de exemplo para desativar a proteção temporariamente
 app.get('/protected', (req, res) => {
-  // Remova temporariamente a verificação do token
-  // const token = req.headers['authorization'];
-  // if (!token) return res.status(401).send('Acesso negado, token não fornecido');
-
-  // try {
-  //   const verified = jwt.verify(token, process.env.JWT_SECRET);
-  //   req.user = verified;
-  //   res.send('Você tem acesso autorizado!');
-  // } catch (err) {
-  //   res.status(400).send('Token inválido');
-  // }
-
   // Provisoriamente permitir o acesso
   res.send('Acesso temporariamente permitido sem autenticação');
 });
-
 
 // Rota para envio de e-mails
 app.post('/send-email', (req, res) => {
@@ -137,13 +124,12 @@ app.post('/send-email', (req, res) => {
   } else if (fluxo === 'Liberar acesso externo') {
     mailContent += `user: ${dados.user || ''}\n`;
     mailContent += `processo_sei: ${dados.processo_sei || ''}\n`;
+  } else if (fluxo === 'Mudar ordem de documento em um processo SEI') {
+    mailContent += `requerente: ${dados.requerente || ''}\n`;
+    mailContent += `email: ${dados.email || ''}\n`;
+    mailContent += `processo_sei: ${dados.processo_sei || ''}\n`;
+    mailContent += `instrucoes: ${dados.instrucoes || ''}\n`;
   }
-} else if (fluxo === 'Mudar ordem de documento em um processo SEI') {
-  mailContent += `requerente: ${dados.requerente || ''}\n`;
-  mailContent += `email: ${dados.email || ''}\n`;
-  mailContent += `processo_sei: ${dados.processo_sei || ''}\n`;
-  mailContent += `instrucoes: ${dados.instrucoes || ''}\n`;
-}
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
