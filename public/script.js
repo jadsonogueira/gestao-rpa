@@ -60,7 +60,6 @@ function abrirFormulario(fluxo) {
       <strong>50600.001234/2024-00</strong>. Verifique se todos os detalhes estão corretos antes de enviar.
     </p>
   `;
-  
 } 
 
 if (fluxo === 'Liberar assinatura externa') {
