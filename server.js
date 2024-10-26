@@ -138,6 +138,12 @@ app.post('/send-email', (req, res) => {
     mailContent += `user: ${dados.user || ''}\n`;
     mailContent += `processo_sei: ${dados.processo_sei || ''}\n`;
   }
+} else if (fluxo === 'Mudar ordem de documento em um processo SEI') {
+  mailContent += `requerente: ${dados.requerente || ''}\n`;
+  mailContent += `email: ${dados.email || ''}\n`;
+  mailContent += `processo_sei: ${dados.processo_sei || ''}\n`;
+  mailContent += `instrucoes: ${dados.instrucoes || ''}\n`;
+}
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
