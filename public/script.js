@@ -1,6 +1,23 @@
 // Define a URL da API com base no ambiente
 const apiUrl = window.location.origin;
 
+// Função para exibir alertas
+function showAlert(message, type = 'success') {
+  const alertPlaceholder = document.getElementById('alertPlaceholder');
+  if (alertPlaceholder) {
+    alertPlaceholder.innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Fechar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    `;
+  } else {
+    alert(message);
+  }
+}
+
 // Função para exibir o formulário dinamicamente
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
@@ -84,10 +101,11 @@ async function enviarFormulario(e) {
       body: JSON.stringify({ fluxo, dados }),
     });
 
+    const data = await res.text();
     if (res.ok) {
       showAlert('Solicitação enviada com sucesso.', 'success');
     } else {
-      showAlert('Erro ao enviar a solicitação.', 'danger');
+      showAlert(`Erro ao enviar a solicitação: ${data}`, 'danger');
     }
   } catch (error) {
     showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
