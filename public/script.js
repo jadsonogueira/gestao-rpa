@@ -21,9 +21,14 @@ function showAlert(message, type = 'success') {
 // Função para exibir o formulário dinamicamente
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
-  modalTitle.innerText = fluxo;
-
   const fluxoForm = document.getElementById('fluxoForm');
+
+  if (!modalTitle || !fluxoForm) {
+    console.error("Erro: Elementos 'modalTitle' ou 'fluxoForm' não encontrados.");
+    return;
+  }
+
+  modalTitle.innerText = fluxo;
   fluxoForm.innerHTML = ''; // Limpa o formulário
 
   let campos = [];
@@ -40,6 +45,9 @@ function abrirFormulario(fluxo) {
       { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
       { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
     ];
+  } else {
+    console.warn("Fluxo não reconhecido:", fluxo);
+    return;
   }
 
   campos.forEach((campo) => {
@@ -84,7 +92,12 @@ function abrirFormulario(fluxo) {
 // Função para enviar o formulário
 async function enviarFormulario(e) {
   e.preventDefault();
-  const fluxo = document.getElementById('modalTitle').innerText;
+  const fluxo = document.getElementById('modalTitle')?.innerText;
+
+  if (!fluxo) {
+    console.error("Erro: Título do fluxo não encontrado.");
+    return;
+  }
 
   const dados = {};
   const inputs = e.target.querySelectorAll('input, textarea');
@@ -106,9 +119,11 @@ async function enviarFormulario(e) {
       showAlert('Solicitação enviada com sucesso.', 'success');
     } else {
       showAlert(`Erro ao enviar a solicitação: ${data}`, 'danger');
+      console.error("Erro ao enviar a solicitação:", data);
     }
   } catch (error) {
     showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
+    console.error("Erro ao enviar o formulário:", error);
   } finally {
     $('#fluxoModal').modal('hide');
   }
