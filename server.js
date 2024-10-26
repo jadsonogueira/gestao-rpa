@@ -100,7 +100,6 @@ app.post('/login', async (req, res) => {
 
 // Rota de exemplo para desativar a proteção temporariamente
 app.get('/protected', (req, res) => {
-  // Provisoriamente permitir o acesso
   res.send('Acesso temporariamente permitido sem autenticação');
 });
 
@@ -113,22 +112,20 @@ app.post('/send-email', (req, res) => {
   }
 
   let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
-  mailContent += `requerente: ${dados.requerente || ''}\n`;
-  mailContent += `email: ${dados.email || ''}\n`;
+  mailContent += `Requerente: ${dados.requerente || ''}\n`;
+  mailContent += `Email: ${dados.email || ''}\n`;
 
   if (fluxo === 'Liberar assinatura externa') {
-    mailContent += `assinante: ${dados.assinante || ''}\n`;
-    mailContent += `numeroDocSei: ${dados.numeroDocSei || ''}\n`;
+    mailContent += `Assinante: ${dados.assinante || ''}\n`;
+    mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
   } else if (fluxo === 'Consultar empenho') {
-    mailContent += `contratoSEI: ${dados.contratoSei || ''}\n`;
+    mailContent += `Contrato SEI: ${dados.contratoSei || ''}\n`;
   } else if (fluxo === 'Liberar acesso externo') {
-    mailContent += `user: ${dados.user || ''}\n`;
-    mailContent += `processo_sei: ${dados.processo_sei || ''}\n`;
-  } else if (fluxo === 'Mudar ordem de documento em um processo SEI') {
-    mailContent += `requerente: ${dados.requerente || ''}\n`;
-    mailContent += `email: ${dados.email || ''}\n`;
-    mailContent += `processo_sei: ${dados.processo_sei || ''}\n`;
-    mailContent += `instrucoes: ${dados.instrucoes || ''}\n`;
+    mailContent += `Usuário: ${dados.user || ''}\n`;
+    mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+  } else if (fluxo === 'Alterar ordem de documentos') {
+    mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+    mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
   }
 
   const transporter = nodemailer.createTransport({
