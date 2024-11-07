@@ -36,7 +36,8 @@ const listacontratos = [
   '12 00212',
   '12 00426',
   '12 00449',
-  '12 00458'
+  '12 00458',
+  '12 00594'
 ];
 
 // Objeto com instruções específicas para cada fluxo
