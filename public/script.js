@@ -99,6 +99,12 @@ function abrirFormulario(fluxo) {
       { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
       { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
     ];
+  } else if (fluxo === 'Inserir anexo em doc SEI') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+    ];
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
     return;
