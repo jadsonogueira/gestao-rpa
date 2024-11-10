@@ -7,10 +7,7 @@
   <!-- Meta tag para responsividade -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Link para o CSS do Bootstrap -->
-  <link
-    rel="stylesheet"
-    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-  />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <!-- Seu CSS personalizado -->
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -29,9 +26,7 @@
         </li>
       </ul>
     </div>
-    
   </nav>
-  
 
   <div id="alertPlaceholder"></div>
 
@@ -44,6 +39,7 @@
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Liberar assinatura externa')">Liberar assinatura externa</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Liberar acesso externo')">Liberar acesso externo</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Alterar ordem de documentos')">Alterar ordem de documentos</button>
+      <button class="btn btn-primary m-2" onclick="abrirFormulario('Inserir anexo em doc SEI')">Inserir anexo em doc SEI</button>
     </div>
   </div>
 
@@ -58,10 +54,9 @@
           </button>
         </div>
         <div class="modal-body">
-          <p class="text-muted" style="font-size: 12px;">Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: <strong>50600.001234/2024-00</strong>. Verifique se todos os detalhes estão corretos antes de enviar.</p>
-          <form id="fluxoForm">
+          <p class="text-muted" id="modalInfo" style="font-size: 12px;">Por favor, preencha todos os campos. Verifique se todos os detalhes estão corretos antes de enviar.</p>
+          <form id="fluxoForm" enctype="multipart/form-data">
             <!-- Campos do formulário serão adicionados dinamicamente -->
-          <form id="fluxoForm">
           </form>
         </div>
       </div>

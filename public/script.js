@@ -42,10 +42,11 @@ const listacontratos = [
 
 // Objeto com instruções específicas para cada fluxo
 const fluxoInstrucoes = {
-  'Consultar empenho': 'Por favor, preencha todos os campos. Certifique-se de selecionar o contrato SEI correto da lista disponível. Após o processamento, você receberá um email com o resultado da pesquisa',
+  'Consultar empenho': 'Por favor, preencha todos os campos. Certifique-se de selecionar o contrato SEI correto da lista disponível.',
   'Liberar assinatura externa': 'Por favor, preencha todos os campos. O número do DOC_SEI deve ser informado no formato numérico (exemplo: 12345678).',
   'Liberar acesso externo': 'Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: 50600.001234/2024-00.',
-  'Alterar ordem de documentos': 'Por favor, preencha todos os campos. No campo de instruções, descreva detalhadamente a ordem desejada dos documentos na árvore do processo SEI digitado.'
+  'Alterar ordem de documentos': 'Por favor, preencha todos os campos. No campo de instruções, descreva detalhadamente a ordem desejada dos documentos na árvore do processo SEI digitado.',
+  'Inserir anexo em doc SEI': 'Por favor, preencha todos os campos e selecione o arquivo que deseja anexar ao documento SEI.'
 };
 
 // Função para abrir o formulário de acordo com o fluxo selecionado
@@ -54,6 +55,7 @@ function abrirFormulario(fluxo) {
   const modalBody = document.querySelector('.modal-body');
   const fluxoForm = document.createElement('form');
   fluxoForm.id = 'fluxoForm';
+  fluxoForm.enctype = 'multipart/form-data';
 
   if (!modalTitle || !modalBody) {
     console.error("Erro: Elementos não encontrados.");
@@ -97,6 +99,14 @@ function abrirFormulario(fluxo) {
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
       { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
+    ];
+  } else if (fluxo === 'Inserir anexo em doc SEI') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+      { id: 'anexo', placeholder: 'Anexo', type: 'file' }  // Campo para upload de arquivo
     ];
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
@@ -170,20 +180,14 @@ async function enviarFormulario(e) {
   e.preventDefault();
   const fluxo = document.getElementById('modalTitle').innerText;
 
-  const dados = {};
-  const inputs = e.target.querySelectorAll('input, textarea, select');
-  inputs.forEach((input) => {
-    dados[input.id] = input.value.trim();
-  });
+  const formData = new FormData(e.target);
+  formData.append('fluxo', fluxo);
 
   // Envio dos dados para a API
   try {
     const res = await fetch(`${apiUrl}/send-email`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ fluxo, dados })
+      body: formData
     });
 
     const data = await res.text();

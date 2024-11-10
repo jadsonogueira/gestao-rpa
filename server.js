@@ -6,10 +6,15 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// Configuração do multer para upload de arquivos
+const upload = multer({ dest: 'uploads/' });
 
 // Verificação de variáveis de ambiente essenciais
 if (!process.env.MONGODB_URL || !process.env.JWT_SECRET || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
@@ -98,27 +103,8 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Rota de exemplo para desativar a proteção temporariamente
-app.get('/protected', (req, res) => {
-  // Remova temporariamente a verificação do token
-  // const token = req.headers['authorization'];
-  // if (!token) return res.status(401).send('Acesso negado, token não fornecido');
-
-  // try {
-  //   const verified = jwt.verify(token, process.env.JWT_SECRET);
-  //   req.user = verified;
-  //   res.send('Você tem acesso autorizado!');
-  // } catch (err) {
-  //   res.status(400).send('Token inválido');
-  // }
-
-  // Provisoriamente permitir o acesso
-  res.send('Acesso temporariamente permitido sem autenticação');
-});
-
-
-// Rota para envio de e-mails
-app.post('/send-email', (req, res) => {
+// Rota para envio de e-mails com upload de anexo
+app.post('/send-email', upload.single('anexo'), (req, res) => {
   const { fluxo, dados } = req.body;
 
   if (!dados.email) {
@@ -140,6 +126,9 @@ app.post('/send-email', (req, res) => {
   } else if (fluxo === 'Alterar ordem de documentos') {
     mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
     mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
+  } else if (fluxo === 'Inserir anexo em doc SEI') {
+    mailContent += `Assinante: ${dados.assinante || ''}\n`;
+    mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
   }
 
   const transporter = nodemailer.createTransport({
@@ -155,9 +144,22 @@ app.post('/send-email', (req, res) => {
     to: 'jadson.pena@dnit.gov.br',
     subject: `${fluxo}`,
     text: mailContent,
+    attachments: req.file
+      ? [{
+          filename: req.file.originalname,
+          path: req.file.path
+        }]
+      : []
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
+    // Remover o arquivo do servidor após o envio do e-mail
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Erro ao deletar o arquivo:', err);
+      });
+    }
+
     if (error) {
       console.error('Erro ao enviar o e-mail:', error);
       return res.status(500).send('Erro ao enviar o e-mail');
@@ -166,7 +168,6 @@ app.post('/send-email', (req, res) => {
     res.send('E-mail enviado com sucesso');
   });
 });
-
 
 // Servir a página inicial (index.html) ao acessar a rota raiz
 app.get('/', (req, res) => {
