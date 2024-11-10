@@ -141,6 +141,8 @@ app.post('/send-email', (req, res) => {
   } else if (fluxo === 'Alterar ordem de documentos') {
     mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
     mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
+  } else if (fluxo === 'Inserir anexo em doc SEI') {
+    mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
   }
 
   const transporter = nodemailer.createTransport({
