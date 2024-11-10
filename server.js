@@ -28,6 +28,7 @@ mongoose.connect(process.env.MONGODB_URL, {
   process.exit(1);
 });
 
+
 // Definir o esquema do usuário
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
