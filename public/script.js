@@ -105,7 +105,6 @@ function abrirFormulario(fluxo) {
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
-      { id: 'anexo', placeholder: 'Anexo', type: 'file' } // Campo de arquivo
     ];
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
