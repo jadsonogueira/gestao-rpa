@@ -29,36 +29,81 @@ const listaUsuarios = [
   'Wagner Ferreira da Cunha'
 ];
 
+const listacontratos = [
+  '00 00121',
+  '12 00088',
+  '12 00101',
+  '12 00212',
+  '12 00426',
+  '12 00449',
+  '12 00458',
+  '12 00594'
+];
+
+// Objeto com instruções específicas para cada fluxo
 const fluxoInstrucoes = {
-  'Consultar empenho': 'Por favor, preencha todos os campos corretamente.',
-  'Liberar assinatura externa': 'Informe o DOC_SEI e escolha um assinante.',
-  'Liberar acesso externo': 'Preencha o campo de usuário e processo SEI.',
-  'Alterar ordem de documentos': 'Especifique a ordem desejada no processo SEI.',
-  'Inserir anexo em Doc SEI': 'Anexe o documento e informe o DOC_SEI.'
+  'Consultar empenho': 'Por favor, preencha todos os campos. Certifique-se de selecionar o contrato SEI correto da lista disponível. Após o processamento, você receberá um email com o resultado da pesquisa',
+  'Liberar assinatura externa': 'Por favor, preencha todos os campos. O número do DOC_SEI deve ser informado no formato numérico (exemplo: 12345678).',
+  'Liberar acesso externo': 'Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: 50600.001234/2024-00.',
+  'Alterar ordem de documentos': 'Por favor, preencha todos os campos. No campo de instruções, descreva detalhadamente a ordem desejada dos documentos na árvore do processo SEI digitado.'
 };
 
 // Função para abrir o formulário de acordo com o fluxo selecionado
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
-  const formInstructions = document.getElementById('formInstructions');
-  const fluxoForm = document.getElementById('fluxoForm');
+  const modalBody = document.querySelector('.modal-body');
+  const fluxoForm = document.createElement('form');
+  fluxoForm.id = 'fluxoForm';
+
+  if (!modalTitle || !modalBody) {
+    console.error("Erro: Elementos não encontrados.");
+    return;
+  }
 
   modalTitle.innerText = fluxo;
-  formInstructions.textContent = fluxoInstrucoes[fluxo] || 'Por favor, preencha todos os campos.';
-  fluxoForm.innerHTML = ''; // Limpa o formulário
+  
+  // Atualiza as instruções específicas do formulário
+  const instrucaoText = document.createElement('p');
+  instrucaoText.textContent = fluxoInstrucoes[fluxo] || 'Por favor, preencha todos os campos.';
+  modalBody.innerHTML = '';
+  modalBody.appendChild(instrucaoText);
+  modalBody.appendChild(fluxoForm);
 
   let campos = [];
 
-  if (fluxo === 'Inserir anexo em Doc SEI') {
+  if (fluxo === 'Consultar empenho') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listacontratos },
+    ];
+  } else if (fluxo === 'Liberar assinatura externa') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
-      { id: 'anexo', placeholder: 'Anexo', type: 'file' }
     ];
+  } else if (fluxo === 'Liberar acesso externo') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'user', placeholder: 'Usuário', type: 'select', options: listaUsuarios },
+      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
+    ];
+  } else if (fluxo === 'Alterar ordem de documentos') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
+      { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
+    ];
+  } else {
+    console.warn("Fluxo não reconhecido:", fluxo);
+    return;
   }
 
+  // Gera os campos do formulário
   campos.forEach((campo) => {
     const formGroup = document.createElement('div');
     formGroup.className = 'form-group';
@@ -75,6 +120,7 @@ function abrirFormulario(fluxo) {
       input.className = 'form-control';
       input.required = true;
 
+      // Adiciona a opção inicial
       const optionInicial = document.createElement('option');
       optionInicial.value = '';
       optionInicial.disabled = true;
@@ -82,21 +128,26 @@ function abrirFormulario(fluxo) {
       optionInicial.textContent = 'Selecione uma opção';
       input.appendChild(optionInicial);
 
+      // Adiciona as opções do select
       campo.options.forEach((opcao) => {
         const option = document.createElement('option');
         option.value = opcao;
         option.textContent = opcao;
         input.appendChild(option);
       });
+    } else if (campo.type === 'textarea') {
+      input = document.createElement('textarea');
+      input.rows = 3;
     } else {
       input = document.createElement('input');
       input.type = campo.type;
-      input.id = campo.id;
-      input.name = campo.id;
-      input.className = 'form-control';
-      input.placeholder = campo.placeholder;
-      input.required = true;
     }
+
+    input.id = campo.id;
+    input.name = campo.id;
+    input.className = 'form-control';
+    input.placeholder = campo.placeholder;
+    input.required = true;
 
     formGroup.appendChild(label);
     formGroup.appendChild(input);
@@ -118,28 +169,28 @@ function abrirFormulario(fluxo) {
 async function enviarFormulario(e) {
   e.preventDefault();
   const fluxo = document.getElementById('modalTitle').innerText;
-  const formData = new FormData();
 
-  const inputs = e.target.querySelectorAll('input, select');
+  const dados = {};
+  const inputs = e.target.querySelectorAll('input, textarea, select');
   inputs.forEach((input) => {
-    if (input.type === 'file') {
-      formData.append(input.id, input.files[0]);
-    } else {
-      formData.append(input.id, input.value.trim());
-    }
+    dados[input.id] = input.value.trim();
   });
-  formData.append('fluxo', fluxo);
 
+  // Envio dos dados para a API
   try {
     const res = await fetch(`${apiUrl}/send-email`, {
       method: 'POST',
-      body: formData
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ fluxo, dados })
     });
 
+    const data = await res.text();
     if (res.ok) {
       showAlert('Solicitação enviada com sucesso.', 'success');
     } else {
-      showAlert('Erro ao enviar a solicitação.', 'danger');
+      showAlert(`Erro ao enviar a solicitação: ${data}`, 'danger');
     }
   } catch (error) {
     showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
