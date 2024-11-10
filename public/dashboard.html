@@ -1,21 +1,13 @@
-<!-- dashboard.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard</title>
-  <!-- Meta tag para responsividade -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Link para o CSS do Bootstrap -->
-  <link
-    rel="stylesheet"
-    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-  />
-  <!-- Seu CSS personalizado -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <a class="navbar-brand" href="#">AppDNIT</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
@@ -23,31 +15,26 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ml-auto">
-        <!-- Outros itens de menu -->
         <li class="nav-item">
           <button id="logoutButton" class="btn btn-secondary">Logout</button>
         </li>
       </ul>
     </div>
-    
   </nav>
-  
 
   <div id="alertPlaceholder"></div>
 
-  <!-- Conteúdo Principal -->
   <div class="container mt-5">
     <h3 class="text-center">Serviços disponíveis</h3>
-    <!-- Botões dos Fluxos -->
     <div class="text-center">
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Consultar empenho')">Consultar empenho</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Liberar assinatura externa')">Liberar assinatura externa</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Liberar acesso externo')">Liberar acesso externo</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Alterar ordem de documentos')">Alterar ordem de documentos</button>
+      <button class="btn btn-primary m-2" onclick="abrirFormulario('Inserir anexo em Doc SEI')">Inserir anexo em Doc SEI</button>
     </div>
   </div>
 
-  <!-- Modal do Formulário -->
   <div class="modal fade" id="fluxoModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -58,20 +45,17 @@
           </button>
         </div>
         <div class="modal-body">
-          <p class="text-muted" style="font-size: 12px;">Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: <strong>50600.001234/2024-00</strong>. Verifique se todos os detalhes estão corretos antes de enviar.</p>
-          <form id="fluxoForm">
+          <p id="formInstructions" class="text-muted" style="font-size: 12px;">Por favor, preencha todos os campos necessários.</p>
+          <form id="fluxoForm" enctype="multipart/form-data">
             <!-- Campos do formulário serão adicionados dinamicamente -->
-          <form id="fluxoForm">
           </form>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Scripts JavaScript do Bootstrap (necessários para componentes interativos) -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Script JavaScript personalizado -->
   <script src="script.js"></script>
 </body>
 </html>
