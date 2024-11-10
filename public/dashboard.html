@@ -43,8 +43,10 @@
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Consultar empenho')">Consultar empenho</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Liberar assinatura externa')">Liberar assinatura externa</button>
       <button class="btn btn-primary m-2" onclick="abrirFormulario('Liberar acesso externo')">Liberar acesso externo</button>
+      <button class="btn btn-primary m-2" onclick="abrirFormulario('Alterar ordem de documentos')">Alterar ordem de documentos</button>
     </div>
   </div>
+
 
   <!-- Modal do Formulário -->
   <div class="modal fade" id="fluxoModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
@@ -57,8 +59,10 @@
           </button>
         </div>
         <div class="modal-body">
+          <p class="text-muted" style="font-size: 12px;">Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: <strong>50600.001234/2024-00</strong>. Verifique se todos os detalhes estão corretos antes de enviar.</p>
           <form id="fluxoForm">
             <!-- Campos do formulário serão adicionados dinamicamente -->
+          <form id="fluxoForm">
           </form>
         </div>
       </div>
