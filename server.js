@@ -6,67 +6,49 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Verificação de variáveis de ambiente essenciais
-if (!process.env.MONGODB_URL || !process.env.JWT_SECRET || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
-  process.exit(1);
-}
+// Configuração do multer para upload de arquivos
+const upload = multer({ dest: 'uploads/' });
 
 // Conexão ao MongoDB
-mongoose.connect(process.env.MONGODB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('MongoDB conectado'))
-.catch(err => {
-  console.error('Erro ao conectar ao MongoDB:', err);
-  process.exit(1);
-});
-
-// Definir o esquema do usuário
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
-});
-
-const User = mongoose.model('User', userSchema);
+mongoose.connect(process.env.MONGODB_URL)
+  .then(() => console.log('MongoDB conectado'))
+  .catch((error) => console.error('Erro ao conectar ao MongoDB:', error));
 
 // Servir arquivos estáticos da pasta 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rota para testar a conexão com o MongoDB
-app.get('/test-db', (req, res) => {
-  res.send('Conexão com o MongoDB funcionando.');
+// Modelo de Usuário
+const UserSchema = new mongoose.Schema({
+  username: { type: String, unique: true, required: true },
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
 });
+const User = mongoose.model('User', UserSchema);
 
 // Rota para Signup
 app.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    if (!username || !email || !password) {
-      return res.status(400).send('Todos os campos são obrigatórios');
-    }
+    const userExists = await User.findOne({ username });
+    if (userExists) return res.status(400).send('Usuário já existe');
 
-    // Verifica se o usuário ou email já existe
-    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
-    if (existingUser) {
-      return res.status(400).send('Usuário ou e-mail já cadastrado');
-    }
+    const emailExists = await User.findOne({ email });
+    if (emailExists) return res.status(400).send('E-mail já cadastrado');
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Criar o novo usuário no banco de dados
     const user = new User({ username, email, password: hashedPassword });
     await user.save();
 
-    res.status(201).send('Usuário registrado com sucesso');
+    res.send('Usuário registrado com sucesso');
   } catch (err) {
     console.error('Erro ao registrar usuário:', err);
     res.status(500).send('Erro no servidor');
@@ -78,19 +60,13 @@ app.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).send('Todos os campos são obrigatórios');
-    }
-
     const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(400).send('Usuário não encontrado');
-    }
+    if (!user) return res.status(400).send('Usuário não encontrado');
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).send('Senha incorreta');
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.send({ token });
   } catch (err) {
     console.error('Erro no login:', err);
@@ -98,28 +74,10 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Rota de exemplo para desativar a proteção temporariamente
-app.get('/protected', (req, res) => {
-  // Remova temporariamente a verificação do token
-  // const token = req.headers['authorization'];
-  // if (!token) return res.status(401).send('Acesso negado, token não fornecido');
-
-  // try {
-  //   const verified = jwt.verify(token, process.env.JWT_SECRET);
-  //   req.user = verified;
-  //   res.send('Você tem acesso autorizado!');
-  // } catch (err) {
-  //   res.status(400).send('Token inválido');
-  // }
-
-  // Provisoriamente permitir o acesso
-  res.send('Acesso temporariamente permitido sem autenticação');
-});
-
-
-// Rota para envio de e-mails
-app.post('/send-email', (req, res) => {
-  const { fluxo, dados } = req.body;
+// Rota para envio de e-mails com upload de anexo
+app.post('/send-email', upload.single('anexo'), (req, res) => {
+  const { fluxo } = req.body;
+  const dados = JSON.parse(req.body.dados); // Parse the JSON string into an object
 
   if (!dados.email) {
     return res.status(400).send('O campo de e-mail é obrigatório.');
@@ -157,9 +115,21 @@ app.post('/send-email', (req, res) => {
     to: 'jadson.pena@dnit.gov.br',
     subject: `${fluxo}`,
     text: mailContent,
+    attachments: req.file
+      ? [{
+          filename: req.file.originalname,
+          path: req.file.path
+        }]
+      : []
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error('Erro ao deletar o arquivo:', err);
+      });
+    }
+
     if (error) {
       console.error('Erro ao enviar o e-mail:', error);
       return res.status(500).send('Erro ao enviar o e-mail');
@@ -168,7 +138,6 @@ app.post('/send-email', (req, res) => {
     res.send('E-mail enviado com sucesso');
   });
 });
-
 
 // Servir a página inicial (index.html) ao acessar a rota raiz
 app.get('/', (req, res) => {
