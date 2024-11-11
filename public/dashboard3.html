@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>AppDNIT - Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Incluindo os estilos e scripts necessários -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+  <style>
+    /* Estilos atualizados */
+    .service-card {
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      height: 100%;
+    }
+    
+    .service-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .service-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #007bff;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      margin-right: 0.5rem;
+    }
+
+    .navbar-brand img {
+      height: 30px;
+      margin-right: 10px;
+    }
+
+    .navbar {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      margin-right: 1rem;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      background-color: #e9ecef;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .alert-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1050;
+      max-width: 350px;
+    }
+
+    .modal-header {
+      background-color: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .modal-footer {
+      background-color: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .form-group label {
+      font-weight: 500;
+      color: #495057;
+    }
+
+    .form-control:focus {
+      border-color: #80bdff;
+      box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+
+    .service-description {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-road mr-2"></i>
+        AppDNIT
+      </a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <div class="user-profile">
+              <div class="user-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <span class="d-none d-md-inline">Usuário</span>
+            </div>
+          </li>
+          <li class="nav-item">
+            <button id="logoutButton" class="btn btn-outline-secondary">
+              <i class="fas fa-sign-out-alt mr-1"></i>Sair
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Container de Alertas -->
+  <div class="alert-container" id="alertPlaceholder"></div>
+
+  <!-- Conteúdo Principal -->
+  <div class="container py-5">
+    <div class="row mb-4">
+      <div class="col">
+        <h3 class="text-center mb-4">Serviços Disponíveis</h3>
+        <p class="text-center text-muted">Selecione um dos serviços abaixo para iniciar uma solicitação</p>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Consultar Empenho -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Consultar empenho')">
+          <div class="card-body text-center">
+            <i class="fas fa-search service-icon"></i>
+            <h5 class="card-title">Consultar Empenho</h5>
+            <p class="service-description">Verifique informações sobre empenhos e contratos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Liberar Assinatura Externa -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Liberar assinatura externa')">
+          <div class="card-body text-center">
+            <i class="fas fa-signature service-icon"></i>
+            <h5 class="card-title">Liberar Assinatura Externa</h5>
+            <p class="service-description">Solicite liberação para assinatura externa de documentos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Liberar Acesso Externo -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Liberar acesso externo')">
+          <div class="card-body text-center">
+            <i class="fas fa-key service-icon"></i>
+            <h5 class="card-title">Liberar Acesso Externo</h5>
+            <p class="service-description">Solicite acesso externo para processos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alterar Ordem de Documentos -->
+      <div class="col-md-6 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Alterar ordem de documentos')">
+          <div class="card-body text-center">
+            <i class="fas fa-sort service-icon"></i>
+            <h5 class="card-title">Alterar Ordem de Documentos</h5>
+            <p class="service-description">Modifique a ordem dos documentos em um processo</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inserir Anexo em Doc SEI -->
+      <div class="col-md-6 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Inserir anexo em doc SEI')">
+          <div class="card-body text-center">
+            <i class="fas fa-paperclip service-icon"></i>
+            <h5 class="card-title">Inserir Anexo em Doc SEI</h5>
+            <p class="service-description">Adicione anexos a documentos existentes</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal do Formulário -->
+  <div class="modal fade" id="fluxoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle"></h5>
+          <button type="button" class="close" data-dismiss="modal">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle mr-2"></i>
+            <span id="modalInfo">Por favor, preencha todos os campos obrigatórios.</span>
+          </div>
+          <form id="fluxoForm" enctype="multipart/form-data">
+            <!-- Campos do formulário serão adicionados dinamicamente -->
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
