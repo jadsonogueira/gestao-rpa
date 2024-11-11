@@ -6,6 +6,9 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const path = require('path');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() }); // Armazena o arquivo na memória
+
 
 const app = express();
 app.use(express.json());
@@ -118,8 +121,9 @@ app.get('/protected', (req, res) => {
 
 
 // Rota para envio de e-mails
-app.post('/send-email', (req, res) => {
-  const { fluxo, dados } = req.body;
+app.post('/send-email', upload.single('arquivo'), (req, res) => {
+  const fluxo = req.body.fluxo;
+  const dados = req.body;
 
   if (!dados.email) {
     return res.status(400).send('O campo de e-mail é obrigatório.');
@@ -159,6 +163,16 @@ app.post('/send-email', (req, res) => {
     text: mailContent,
   };
 
+ // Se um arquivo foi enviado, adicioná-lo como anexo
+ if (req.file) {
+  mailOptions.attachments = [
+    {
+      filename: req.file.originalname,
+      content: req.file.buffer,
+    },
+  ];
+}
+
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.error('Erro ao enviar o e-mail:', error);
@@ -172,7 +186,7 @@ app.post('/send-email', (req, res) => {
 
 // Servir a página inicial (index.html) ao acessar a rota raiz
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 // Inicia o servidor
