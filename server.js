@@ -7,35 +7,45 @@ const nodemailer = require('nodemailer');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
+const fs = require('fs');
+
+// Configuração do multer para armazenar arquivos na memória
 const upload = multer({ storage: multer.memoryStorage() }); // Armazena o arquivo na memória
 
-
 const app = express();
-app.use(express.json());
 app.use(cors());
 
+// Remover o uso global do express.json() para evitar conflitos com multer
+// app.use(express.json()); // Removido
+
 // Verificação de variáveis de ambiente essenciais
-if (!process.env.MONGODB_URL || !process.env.JWT_SECRET || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+if (
+  !process.env.MONGODB_URL ||
+  !process.env.JWT_SECRET ||
+  !process.env.EMAIL_USER ||
+  !process.env.EMAIL_PASS
+) {
   console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
   process.exit(1);
 }
 
 // Conexão ao MongoDB
-mongoose.connect(process.env.MONGODB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('MongoDB conectado'))
-.catch(err => {
-  console.error('Erro ao conectar ao MongoDB:', err);
-  process.exit(1);
-});
+mongoose
+  .connect(process.env.MONGODB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('MongoDB conectado'))
+  .catch((err) => {
+    console.error('Erro ao conectar ao MongoDB:', err);
+    process.exit(1);
+  });
 
 // Definir o esquema do usuário
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
+  password: { type: String, required: true },
 });
 
 const User = mongoose.model('User', userSchema);
@@ -49,7 +59,7 @@ app.get('/test-db', (req, res) => {
 });
 
 // Rota para Signup
-app.post('/signup', async (req, res) => {
+app.post('/signup', express.json(), async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
@@ -58,7 +68,9 @@ app.post('/signup', async (req, res) => {
     }
 
     // Verifica se o usuário ou email já existe
-    const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }],
+    });
     if (existingUser) {
       return res.status(400).send('Usuário ou e-mail já cadastrado');
     }
@@ -77,7 +89,7 @@ app.post('/signup', async (req, res) => {
 });
 
 // Rota para Login
-app.post('/login', async (req, res) => {
+app.post('/login', express.json(), async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -93,7 +105,9 @@ app.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).send('Senha incorreta');
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
     res.send({ token });
   } catch (err) {
     console.error('Erro no login:', err);
@@ -118,7 +132,6 @@ app.get('/protected', (req, res) => {
   // Provisoriamente permitir o acesso
   res.send('Acesso temporariamente permitido sem autenticação');
 });
-
 
 // Rota para envio de e-mails
 app.post('/send-email', upload.single('arquivo'), (req, res) => {
@@ -163,15 +176,15 @@ app.post('/send-email', upload.single('arquivo'), (req, res) => {
     text: mailContent,
   };
 
- // Se um arquivo foi enviado, adicioná-lo como anexo
- if (req.file) {
-  mailOptions.attachments = [
-    {
-      filename: req.file.originalname,
-      content: req.file.buffer,
-    },
-  ];
-}
+  // Se um arquivo foi enviado, adicioná-lo como anexo
+  if (req.file) {
+    mailOptions.attachments = [
+      {
+        filename: req.file.originalname,
+        content: req.file.buffer,
+      },
+    ];
+  }
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
@@ -183,8 +196,7 @@ app.post('/send-email', upload.single('arquivo'), (req, res) => {
   });
 });
 
-
-// Servir a página inicial (index.html) ao acessar a rota raiz
+// Servir a página inicial (dashboard.html) ao acessar a rota raiz
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
