@@ -103,6 +103,7 @@ function abrirFormulario(fluxo) {
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+      { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' }, // Novo campo de upload
     ];
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
@@ -176,20 +177,22 @@ async function enviarFormulario(e) {
   e.preventDefault();
   const fluxo = document.getElementById('modalTitle').innerText;
 
-  const dados = {};
+  const formData = new FormData();
+  formData.append('fluxo', fluxo);
+
   const inputs = e.target.querySelectorAll('input, textarea, select');
   inputs.forEach((input) => {
-    dados[input.id] = input.value.trim();
+    if (input.type === 'file' && input.files.length > 0) {
+      formData.append(input.id, input.files[0]);
+    } else {
+      formData.append(input.id, input.value.trim());
+    }
   });
 
-  // Envio dos dados para a API
   try {
     const res = await fetch(`${apiUrl}/send-email`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ fluxo, dados })
+      body: formData,
     });
 
     const data = await res.text();
