@@ -45,8 +45,7 @@ const fluxoInstrucoes = {
   'Consultar empenho': 'Por favor, preencha todos os campos. Certifique-se de selecionar o contrato SEI correto da lista disponível. Após o processamento, você receberá um email com o resultado da pesquisa',
   'Liberar assinatura externa': 'Por favor, preencha todos os campos. O número do DOC_SEI deve ser informado no formato numérico (exemplo: 12345678).',
   'Liberar acesso externo': 'Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: 50600.001234/2024-00.',
-  'Alterar ordem de documentos': 'Por favor, preencha todos os campos. No campo de instruções, descreva detalhadamente a ordem desejada dos documentos na árvore do processo SEI digitado.',
-  'Inserir anexo em doc SEI': 'Por favor, preencha todos os campos e anexe o documento desejado.'
+  'Alterar ordem de documentos': 'Por favor, preencha todos os campos. No campo de instruções, descreva detalhadamente a ordem desejada dos documentos na árvore do processo SEI digitado.'
 };
 
 // Função para abrir o formulário de acordo com o fluxo selecionado
@@ -55,7 +54,6 @@ function abrirFormulario(fluxo) {
   const modalBody = document.querySelector('.modal-body');
   const fluxoForm = document.createElement('form');
   fluxoForm.id = 'fluxoForm';
-  fluxoForm.enctype = 'multipart/form-data'; // Define o tipo de encriptação para envio de arquivos
 
   if (!modalTitle || !modalBody) {
     console.error("Erro: Elementos não encontrados.");
@@ -105,7 +103,6 @@ function abrirFormulario(fluxo) {
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
-      { id: 'anexo', placeholder: 'Anexo', type: 'file' } // Campo de anexo
     ];
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
@@ -129,6 +126,7 @@ function abrirFormulario(fluxo) {
       input.className = 'form-control';
       input.required = true;
 
+      // Adiciona a opção inicial
       const optionInicial = document.createElement('option');
       optionInicial.value = '';
       optionInicial.disabled = true;
@@ -136,6 +134,7 @@ function abrirFormulario(fluxo) {
       optionInicial.textContent = 'Selecione uma opção';
       input.appendChild(optionInicial);
 
+      // Adiciona as opções do select
       campo.options.forEach((opcao) => {
         const option = document.createElement('option');
         option.value = opcao;
@@ -172,18 +171,25 @@ function abrirFormulario(fluxo) {
   $('#fluxoModal').modal('show');
 }
 
-// Função para enviar o formulário com suporte a anexo
+// Função para enviar o formulário
 async function enviarFormulario(e) {
   e.preventDefault();
   const fluxo = document.getElementById('modalTitle').innerText;
 
-  const formData = new FormData(e.target); // Usa FormData para capturar todos os dados, incluindo arquivos
-  formData.append('fluxo', fluxo);
+  const dados = {};
+  const inputs = e.target.querySelectorAll('input, textarea, select');
+  inputs.forEach((input) => {
+    dados[input.id] = input.value.trim();
+  });
 
+  // Envio dos dados para a API
   try {
     const res = await fetch(`${apiUrl}/send-email`, {
       method: 'POST',
-      body: formData
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ fluxo, dados })
     });
 
     const data = await res.text();
