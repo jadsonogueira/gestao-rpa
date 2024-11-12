@@ -105,6 +105,13 @@ function abrirFormulario(fluxo) {
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
       { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' }, // Novo campo de upload
     ];
+  } else if (fluxo === 'Inserir imagem em doc SEI') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+      { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' }, // Novo campo de upload
+    ];
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
     return;

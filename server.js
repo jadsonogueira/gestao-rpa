@@ -159,6 +159,8 @@ app.post('/send-email', upload.single('arquivo'), (req, res) => {
     mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
   } else if (fluxo === 'Inserir anexo em doc SEI') {
     mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+  } else if (fluxo === 'Inserir imagem em doc SEI') {
+    mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
   }
 
   const transporter = nodemailer.createTransport({
