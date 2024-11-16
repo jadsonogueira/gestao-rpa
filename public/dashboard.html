@@ -24,9 +24,26 @@
       color: #007bff;
     }
 
+    .loading-spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      margin-right: 0.5rem;
+    }
+
     .navbar-brand img {
       height: 30px;
       margin-right: 10px;
+    }
+
+    .navbar {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      margin-right: 1rem;
     }
 
     .user-avatar {
@@ -118,6 +135,60 @@
     </div>
 
     <div class="row">
+      <!-- Consultar Empenho -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Consultar empenho')">
+          <div class="card-body text-center">
+            <i class="fas fa-search service-icon"></i>
+            <h5 class="card-title">Consultar Empenho</h5>
+            <p class="service-description">Verifique informações sobre empenhos e contratos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Liberar Assinatura Externa -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Liberar assinatura externa')">
+          <div class="card-body text-center">
+            <i class="fas fa-signature service-icon"></i>
+            <h5 class="card-title">Liberar Assinatura Externa</h5>
+            <p class="service-description">Solicite liberação para assinatura externa de documentos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Liberar Acesso Externo -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Liberar acesso externo')">
+          <div class="card-body text-center">
+            <i class="fas fa-key service-icon"></i>
+            <h5 class="card-title">Liberar Acesso Externo</h5>
+            <p class="service-description">Solicite acesso externo para processos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alterar Ordem de Documentos -->
+      <div class="col-md-6 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Alterar ordem de documentos')">
+          <div class="card-body text-center">
+            <i class="fas fa-sort service-icon"></i>
+            <h5 class="card-title">Alterar Ordem de Documentos</h5>
+            <p class="service-description">Modifique a ordem dos documentos em um processo</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inserir Anexo em Doc SEI -->
+      <div class="col-md-6 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Inserir anexo em doc SEI')">
+          <div class="card-body text-center">
+            <i class="fas fa-paperclip service-icon"></i>
+            <h5 class="card-title">Inserir Anexo em Doc SEI</h5>
+            <p class="service-description">Adicione anexos a documentos existentes</p>
+          </div>
+        </div>
+      </div>
       <!-- Inserir Imagem em Doc SEI -->
       <div class="col-md-6 mb-4">
         <div class="card service-card" onclick="abrirFormulario('Inserir imagem em doc SEI')">
@@ -147,9 +218,7 @@
             <span id="modalInfo">Por favor, preencha todos os campos obrigatórios.</span>
           </div>
           <form id="fluxoForm" enctype="multipart/form-data">
-            <!-- Campos dinâmicos -->
-            <div id="camposExtras"></div>
-            <button type="submit" class="btn btn-primary btn-block mt-3">Enviar</button>
+            <!-- Campos do formulário serão adicionados dinamicamente -->
           </form>
         </div>
       </div>
