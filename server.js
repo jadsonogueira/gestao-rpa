@@ -9,13 +9,24 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 
-// Configuração do multer para armazenar arquivos na memória
-const upload = multer({ storage: multer.memoryStorage() }); // Armazena o arquivo na memória
+// Configuração do Multer para armazenar arquivos na memória com validação
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    // Aceitar apenas arquivos de imagem
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas arquivos de imagem são permitidos.'));
+    }
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB por arquivo
+});
 
 const app = express();
 app.use(cors());
 
-// Remover o uso global do express.json() para evitar conflitos com multer
+// Remover o uso global do express.json() para evitar conflitos com Multer
 // app.use(express.json()); // Removido
 
 // Verificação de variáveis de ambiente essenciais
@@ -134,67 +145,73 @@ app.get('/protected', (req, res) => {
 });
 
 // Rota para envio de e-mails
-app.post('/send-email', upload.single('arquivo'), (req, res) => {
-  const fluxo = req.body.fluxo;
-  const dados = req.body;
-
-  if (!dados.email) {
-    return res.status(400).send('O campo de e-mail é obrigatório.');
-  }
-
-  let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
-  mailContent += `Requerente: ${dados.requerente || ''}\n`;
-  mailContent += `Email: ${dados.email || ''}\n`;
-
-  if (fluxo === 'Liberar assinatura externa') {
-    mailContent += `Assinante: ${dados.assinante || ''}\n`;
-    mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
-  } else if (fluxo === 'Consultar empenho') {
-    mailContent += `Contrato SEI: ${dados.contratoSei || ''}\n`;
-  } else if (fluxo === 'Liberar acesso externo') {
-    mailContent += `Usuário: ${dados.user || ''}\n`;
-    mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
-  } else if (fluxo === 'Alterar ordem de documentos') {
-    mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
-    mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
-  } else if (fluxo === 'Inserir anexo em doc SEI') {
-    mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
-  } else if (fluxo === 'Inserir imagem em doc SEI') {
-    mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
-  }
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: 'jadson.pena@dnit.gov.br',
-    subject: `${fluxo}`,
-    text: mailContent,
-  };
-
-  // Se um arquivo foi enviado, adicioná-lo como anexo
-  if (req.file) {
-    mailOptions.attachments = [
-      {
-        filename: req.file.originalname,
-        content: req.file.buffer,
-      },
-    ];
-  }
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('Erro ao enviar o e-mail:', error);
-      return res.status(500).send('Erro ao enviar o e-mail');
+app.post('/send-email', (req, res) => {
+  // Utilizar o upload dentro da função para capturar erros do Multer
+  upload.any()(req, res, (err) => {
+    if (err) {
+      console.error('Erro no upload dos arquivos:', err);
+      return res.status(400).send(err.message);
     }
 
-    res.send('E-mail enviado com sucesso');
+    const fluxo = req.body.fluxo;
+    const dados = req.body;
+
+    if (!dados.email) {
+      return res.status(400).send('O campo de e-mail é obrigatório.');
+    }
+
+    let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
+    mailContent += `Requerente: ${dados.requerente || ''}\n`;
+    mailContent += `Email: ${dados.email || ''}\n`;
+
+    if (fluxo === 'Liberar assinatura externa') {
+      mailContent += `Assinante: ${dados.assinante || ''}\n`;
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+    } else if (fluxo === 'Consultar empenho') {
+      mailContent += `Contrato SEI: ${dados.contratoSei || ''}\n`;
+    } else if (fluxo === 'Liberar acesso externo') {
+      mailContent += `Usuário: ${dados.user || ''}\n`;
+      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+    } else if (fluxo === 'Alterar ordem de documentos') {
+      mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
+      mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
+    } else if (fluxo === 'Inserir anexo em doc SEI') {
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+    } else if (fluxo === 'Inserir imagem em doc SEI') {
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: 'jadson.pena@dnit.gov.br', // Ajuste o destinatário conforme necessário
+      subject: `${fluxo}`,
+      text: mailContent,
+    };
+
+    // Se arquivos foram enviados, adicioná-los como anexos
+    if (req.files && req.files.length > 0) {
+      mailOptions.attachments = req.files.map((file) => ({
+        filename: file.originalname,
+        content: file.buffer,
+      }));
+    }
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Erro ao enviar o e-mail:', error);
+        return res.status(500).send('Erro ao enviar o e-mail');
+      }
+
+      res.send('E-mail enviado com sucesso');
+    });
   });
 });
 
