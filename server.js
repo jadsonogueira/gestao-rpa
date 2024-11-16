@@ -9,20 +9,6 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 
-// Configuração do Multer para armazenar arquivos na memória com validação
-const upload = multer({
-  storage: multer.memoryStorage(),
-  fileFilter: (req, file, cb) => {
-    // Aceitar apenas arquivos de imagem
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Apenas arquivos de imagem são permitidos.'));
-    }
-  },
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB por arquivo
-});
-
 const app = express();
 app.use(cors());
 
@@ -142,6 +128,23 @@ app.get('/protected', (req, res) => {
 
   // Provisoriamente permitir o acesso
   res.send('Acesso temporariamente permitido sem autenticação');
+});
+
+// Configuração do Multer para aceitar até 31 arquivos com validação
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    // Aceitar apenas arquivos de imagem
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas arquivos de imagem são permitidos.'));
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024, // Limite de 5MB por arquivo
+    files: 31, // Limite de 31 arquivos
+  },
 });
 
 // Rota para envio de e-mails
