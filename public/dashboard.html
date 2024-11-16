@@ -203,53 +203,60 @@
   </div>
 
   <!-- Modal do Formulário -->
-  <!-- Modal do Formulário -->
-<div class="modal fade" id="fluxoModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalTitle"></h5>
-        <button type="button" class="close" data-dismiss="modal">
-          <span>&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-info" role="alert">
-          <i class="fas fa-info-circle mr-2"></i>
-          <span id="modalInfo">Por favor, preencha todos os campos obrigatórios.</span>
+  <div class="modal fade" id="fluxoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <!-- Cabeçalho do Modal -->
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle"></h5>
+          <button type="button" class="close" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
         </div>
-        <form id="fluxoForm" enctype="multipart/form-data">
-          <!-- Campos do formulário serão adicionados dinamicamente -->
-          
-          <!-- Campo para selecionar o número de imagens -->
-          <div class="form-group" id="numeroImagensGroup" style="display: none;">
-            <label for="numeroImagens">Número de Imagens:</label>
-            <select class="form-control" id="numeroImagens" name="numeroImagens">
-              <option value="" selected disabled>Selecione o número de imagens</option>
-              <!-- Você pode ajustar o número máximo conforme necessário -->
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-            </select>
+        <!-- Corpo do Modal -->
+        <div class="modal-body">
+          <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle mr-2"></i>
+            <span id="modalInfo">Por favor, preencha todos os campos obrigatórios.</span>
           </div>
+          <form id="fluxoForm" enctype="multipart/form-data">
+            <!-- Campos do formulário serão adicionados dinamicamente -->
 
-          <!-- Div onde os campos de upload de imagem serão inseridos -->
-          <div id="imagensContainer"></div>
+            <!-- Campo para selecionar o número de imagens -->
+            <div class="form-group" id="numeroImagensGroup" style="display: none;">
+              <label for="numeroImagens">Número de Imagens:</label>
+              <select class="form-control" id="numeroImagens" name="numeroImagens">
+                <option value="" selected disabled>Selecione o número de imagens</option>
+                <!-- Opções serão geradas dinamicamente -->
+              </select>
+            </div>
 
-          <!-- Botão de submissão do formulário -->
-          <button type="submit" class="btn btn-primary">Enviar</button>
-        </form>
+            <!-- Div onde os campos de upload de imagem serão inseridos -->
+            <div id="imagensContainer"></div>
+
+            <!-- Botão de submissão do formulário -->
+            <button type="submit" class="btn btn-primary">Enviar</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
-</div>
-
 
   <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="script.js"></script>
+  <!-- Script para gerar as opções do número de imagens -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const numeroImagensSelect = document.getElementById('numeroImagens');
+      for (let i = 1; i <= 31; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = i;
+        numeroImagensSelect.appendChild(option);
+      }
+    });
+  </script>
 </body>
 </html>
