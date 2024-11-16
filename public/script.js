@@ -117,7 +117,7 @@ function abrirFormulario(fluxo) {
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
-      { id: 'numeroImagens', placeholder: 'Número de Imagens', type: 'select', options: [1,2,3,4,5] },
+      { id: 'numeroImagens', placeholder: 'Número de Imagens', type: 'select', options: Array.from({ length: 31 }, (_, i) => i + 1) },
       // Os inputs de imagem serão gerados dinamicamente
     ];
   } else {
