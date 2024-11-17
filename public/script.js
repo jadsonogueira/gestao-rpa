@@ -164,6 +164,7 @@ function abrirFormulario(fluxo) {
       input.rows = 3;
       input.className = 'form-control';
       input.required = true;
+      input.placeholder = campo.placeholder;
     } else if (campo.type === 'radio') {
       input = document.createElement('div');
       input.id = campo.id;
@@ -350,14 +351,32 @@ function abrirFormulario(fluxo) {
   zipGroup.appendChild(zipInput);
   zipContainer.appendChild(zipGroup);
 
-  // O indicador de progresso já está no HTML
+  // Adiciona o indicador de progresso
+  const progressContainer = document.createElement('div');
+  progressContainer.className = 'progress mt-3';
+  progressContainer.id = 'uploadProgressContainer';
+  progressContainer.style.display = 'none';
 
+  const progressBar = document.createElement('div');
+  progressBar.className = 'progress-bar';
+  progressBar.id = 'uploadProgressBar';
+  progressBar.role = 'progressbar';
+  progressBar.style.width = '0%';
+  progressBar.setAttribute('aria-valuenow', '0');
+  progressBar.setAttribute('aria-valuemin', '0');
+  progressBar.setAttribute('aria-valuemax', '100');
+
+  progressContainer.appendChild(progressBar);
+  fluxoForm.appendChild(progressContainer);
+
+  // Botão de submit
   const submitButton = document.createElement('button');
   submitButton.type = 'submit';
   submitButton.textContent = 'Enviar';
   submitButton.className = 'btn btn-primary btn-block mt-3';
   fluxoForm.appendChild(submitButton);
 
+  // Evento de submit do formulário
   fluxoForm.onsubmit = enviarFormulario;
 
   $('#fluxoModal').modal('show');
