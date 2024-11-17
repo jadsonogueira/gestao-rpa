@@ -162,6 +162,8 @@ function abrirFormulario(fluxo) {
     } else if (campo.type === 'textarea') {
       input = document.createElement('textarea');
       input.rows = 3;
+      input.className = 'form-control';
+      input.required = true;
     } else if (campo.type === 'radio') {
       input = document.createElement('div');
       input.id = campo.id;
@@ -194,32 +196,55 @@ function abrirFormulario(fluxo) {
         const metodo = e.target.value;
         const imagensContainer = document.getElementById('imagensContainer');
         const zipContainer = document.getElementById('zipContainer');
+        const zipInput = document.getElementById('arquivoZip');
+        const numeroImagensSelect = document.getElementById('numeroImagens');
 
         if (metodo === 'Imagens Individuais') {
           // Mostrar campos para imagens individuais
           imagensContainer.style.display = 'block';
           zipContainer.style.display = 'none';
+
+          // Ajusta os campos required
+          zipInput.required = false;
+          zipInput.value = ''; // Limpa o campo ZIP
+
+          numeroImagensSelect.required = true;
+
+          // Se os inputs de imagem já foram gerados, marca-os como required
+          const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
+          imageInputs.forEach(input => {
+            input.required = true;
+          });
         } else if (metodo === 'Arquivo ZIP') {
           // Mostrar campo para arquivo ZIP
           imagensContainer.style.display = 'none';
           zipContainer.style.display = 'block';
+
+          // Ajusta os campos required
+          zipInput.required = true;
+
+          numeroImagensSelect.required = false;
+          numeroImagensSelect.value = ''; // Reseta a seleção
+
+          // Remove o required dos inputs de imagem
+          const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
+          imageInputs.forEach(input => {
+            input.required = false;
+            input.value = ''; // Limpa os inputs de imagem
+          });
         }
       });
 
     } else {
       input = document.createElement('input');
       input.type = campo.type;
+      input.className = 'form-control';
+      input.required = true;
+      input.placeholder = campo.placeholder;
     }
 
     input.id = campo.id;
     input.name = campo.id;
-    if (campo.type !== 'radio') {
-      input.className = 'form-control';
-      if (campo.type !== 'file') {
-        input.placeholder = campo.placeholder;
-      }
-    }
-    input.required = true;
 
     formGroup.appendChild(label);
     formGroup.appendChild(input);
@@ -245,7 +270,7 @@ function abrirFormulario(fluxo) {
   numeroImagensSelect.id = 'numeroImagens';
   numeroImagensSelect.name = 'numeroImagens';
   numeroImagensSelect.className = 'form-control';
-  numeroImagensSelect.required = true;
+  numeroImagensSelect.required = false; // Inicialmente não é required
 
   // Adiciona a opção inicial
   const optionInicial = document.createElement('option');
@@ -287,7 +312,7 @@ function abrirFormulario(fluxo) {
       input.name = 'imagem' + i;
       input.className = 'form-control-file';
       input.accept = 'image/*';
-      input.required = true;
+      input.required = true; // Marca como required
 
       formGroup.appendChild(label);
       formGroup.appendChild(input);
@@ -319,29 +344,13 @@ function abrirFormulario(fluxo) {
   zipInput.name = 'arquivoZip';
   zipInput.className = 'form-control-file';
   zipInput.accept = '.zip';
-  zipInput.required = true;
+  zipInput.required = false; // Inicialmente não é required
 
   zipGroup.appendChild(zipLabel);
   zipGroup.appendChild(zipInput);
   zipContainer.appendChild(zipGroup);
 
-  // Adiciona o indicador de progresso
-  const progressContainer = document.createElement('div');
-  progressContainer.className = 'progress mt-3';
-  progressContainer.id = 'uploadProgressContainer';
-  progressContainer.style.display = 'none';
-
-  const progressBar = document.createElement('div');
-  progressBar.className = 'progress-bar';
-  progressBar.id = 'uploadProgressBar';
-  progressBar.role = 'progressbar';
-  progressBar.style.width = '0%';
-  progressBar.setAttribute('aria-valuenow', '0');
-  progressBar.setAttribute('aria-valuemin', '0');
-  progressBar.setAttribute('aria-valuemax', '100');
-
-  progressContainer.appendChild(progressBar);
-  fluxoForm.appendChild(progressContainer);
+  // O indicador de progresso já está no HTML
 
   const submitButton = document.createElement('button');
   submitButton.type = 'submit';
@@ -368,12 +377,8 @@ function enviarFormulario(e) {
   const inputs = e.target.querySelectorAll('input, textarea, select');
   inputs.forEach((input) => {
     if (input.type === 'file' && input.files.length > 0) {
-      if (input.multiple) {
-        for (let i = 0; i < input.files.length; i++) {
-          formData.append(input.name, input.files[i]);
-        }
-      } else {
-        formData.append(input.name, input.files[0]);
+      for (let i = 0; i < input.files.length; i++) {
+        formData.append(input.name, input.files[i]);
       }
     } else if (input.type !== 'file' && input.type !== 'radio') {
       formData.append(input.name, input.value.trim());
