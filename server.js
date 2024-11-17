@@ -8,6 +8,7 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const AdmZip = require('adm-zip'); // Pacote para manipular arquivos ZIP
 
 const app = express();
 app.use(cors());
@@ -130,27 +131,18 @@ app.get('/protected', (req, res) => {
   res.send('Acesso temporariamente permitido sem autenticação');
 });
 
-// Configuração do Multer para aceitar até 31 arquivos com validação
+// Configuração do Multer para aceitar múltiplos arquivos
 const upload = multer({
   storage: multer.memoryStorage(),
-  fileFilter: (req, file, cb) => {
-    // Aceitar apenas arquivos de imagem
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Apenas arquivos de imagem são permitidos.'));
-    }
-  },
   limits: {
-    fileSize: 5 * 1024 * 1024, // Limite de 5MB por arquivo
-    files: 31, // Limite de 31 arquivos
+    fileSize: 50 * 1024 * 1024, // Limite de 50MB por arquivo
   },
 });
 
 // Rota para envio de e-mails
 app.post('/send-email', (req, res) => {
   // Utilizar o upload dentro da função para capturar erros do Multer
-  upload.any()(req, res, (err) => {
+  upload.any()(req, res, async (err) => {
     if (err) {
       console.error('Erro no upload dos arquivos:', err);
       return res.status(400).send(err.message);
@@ -199,12 +191,79 @@ app.post('/send-email', (req, res) => {
       text: mailContent,
     };
 
-    // Se arquivos foram enviados, adicioná-los como anexos
+    const attachments = [];
+
+    // Processar os arquivos enviados
     if (req.files && req.files.length > 0) {
-      mailOptions.attachments = req.files.map((file) => ({
-        filename: file.originalname,
-        content: file.buffer,
-      }));
+      for (const file of req.files) {
+        if (file.fieldname.startsWith('imagem')) {
+          // Arquivos de imagem individuais
+          // Validar o tipo de arquivo
+          if (!file.mimetype.startsWith('image/')) {
+            return res.status(400).send(`Tipo de arquivo não permitido: ${file.originalname}`);
+          }
+          // Validar o tamanho do arquivo (limite de 5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            return res.status(400).send(`Arquivo muito grande: ${file.originalname}`);
+          }
+          // Adicionar aos anexos
+          attachments.push({
+            filename: file.originalname,
+            content: file.buffer,
+          });
+        } else if (file.fieldname === 'arquivoZip') {
+          // Arquivo ZIP
+          try {
+            const zip = new AdmZip(file.buffer);
+            const zipEntries = zip.getEntries();
+
+            // Verificar se há mais de 31 arquivos (somando com os individuais)
+            if (attachments.length + zipEntries.length > 31) {
+              return res.status(400).send('O total de arquivos excede o limite de 31.');
+            }
+
+            for (const entry of zipEntries) {
+              // Ignorar diretórios
+              if (entry.isDirectory) continue;
+
+              // Validar o tipo de arquivo
+              const extension = path.extname(entry.entryName).toLowerCase();
+              const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
+              if (!allowedExtensions.includes(extension)) {
+                return res.status(400).send(`Tipo de arquivo não permitido no ZIP: ${entry.entryName}`);
+              }
+
+              // Extrair o conteúdo do arquivo
+              const fileContent = entry.getData();
+
+              // Validar o tamanho do arquivo (limite de 5MB)
+              if (fileContent.length > 5 * 1024 * 1024) {
+                return res.status(400).send(`Arquivo muito grande no ZIP: ${entry.entryName}`);
+              }
+
+              // Adicionar aos anexos
+              attachments.push({
+                filename: entry.entryName,
+                content: fileContent,
+              });
+            }
+          } catch (error) {
+            console.error('Erro ao processar o arquivo ZIP:', error);
+            return res.status(400).send('Erro ao processar o arquivo ZIP.');
+          }
+        } else if (file.fieldname === 'arquivo') {
+          // Outros arquivos (por exemplo, para 'Inserir anexo em doc SEI')
+          attachments.push({
+            filename: file.originalname,
+            content: file.buffer,
+          });
+        }
+      }
+    }
+
+    // Verificar se há anexos para adicionar
+    if (attachments.length > 0) {
+      mailOptions.attachments = attachments;
     }
 
     transporter.sendMail(mailOptions, (error, info) => {
