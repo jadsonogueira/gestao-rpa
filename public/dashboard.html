@@ -221,6 +221,18 @@
           </div>
           <form id="fluxoForm" enctype="multipart/form-data">
             <!-- Campos do formulário serão adicionados dinamicamente -->
+            <!-- Indicador de progresso -->
+            <div class="progress mt-3" style="display: none;" id="uploadProgressContainer">
+              <div
+                class="progress-bar"
+                role="progressbar"
+                id="uploadProgressBar"
+                style="width: 0%;"
+                aria-valuenow="0"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              ></div>
+            </div>
           </form>
         </div>
       </div>

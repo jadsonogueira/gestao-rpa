@@ -7,14 +7,13 @@ const nodemailer = require('nodemailer');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
-const fs = require('fs');
-const AdmZip = require('adm-zip'); // Pacote para manipular arquivos ZIP
+const AdmZip = require('adm-zip');
 
 const app = express();
 app.use(cors());
 
-// Remover o uso global do express.json() para evitar conflitos com Multer
-// app.use(express.json()); // Removido
+// Configuração para processar dados do tipo application/x-www-form-urlencoded
+app.use(express.urlencoded({ extended: true }));
 
 // Verificação de variáveis de ambiente essenciais
 if (
@@ -113,24 +112,6 @@ app.post('/login', express.json(), async (req, res) => {
   }
 });
 
-// Rota de exemplo para desativar a proteção temporariamente
-app.get('/protected', (req, res) => {
-  // Remova temporariamente a verificação do token
-  // const token = req.headers['authorization'];
-  // if (!token) return res.status(401).send('Acesso negado, token não fornecido');
-
-  // try {
-  //   const verified = jwt.verify(token, process.env.JWT_SECRET);
-  //   req.user = verified;
-  //   res.send('Você tem acesso autorizado!');
-  // } catch (err) {
-  //   res.status(400).send('Token inválido');
-  // }
-
-  // Provisoriamente permitir o acesso
-  res.send('Acesso temporariamente permitido sem autenticação');
-});
-
 // Configuração do Multer para aceitar múltiplos arquivos
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -140,14 +121,8 @@ const upload = multer({
 });
 
 // Rota para envio de e-mails
-app.post('/send-email', (req, res) => {
-  // Utilizar o upload dentro da função para capturar erros do Multer
-  upload.any()(req, res, async (err) => {
-    if (err) {
-      console.error('Erro no upload dos arquivos:', err);
-      return res.status(400).send(err.message);
-    }
-
+app.post('/send-email', upload.any(), async (req, res) => {
+  try {
     const fluxo = req.body.fluxo;
     const dados = req.body;
 
@@ -274,7 +249,10 @@ app.post('/send-email', (req, res) => {
 
       res.send('E-mail enviado com sucesso');
     });
-  });
+  } catch (err) {
+    console.error('Erro ao processar o envio de e-mail:', err);
+    res.status(500).send('Erro no servidor');
+  }
 });
 
 // Servir a página inicial (dashboard.html) ao acessar a rota raiz

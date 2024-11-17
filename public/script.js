@@ -159,36 +159,6 @@ function abrirFormulario(fluxo) {
         input.appendChild(option);
       });
 
-      // Se o campo for 'numeroImagens', adiciona o listener para gerar os inputs de arquivo
-      if (campo.id === 'numeroImagens') {
-        input.addEventListener('change', function() {
-          const numImagens = parseInt(this.value);
-          const imagensContainer = document.getElementById('imagensContainer');
-          // Remove inputs anteriores
-          imagensContainer.innerHTML = '';
-          for (let i = 1; i <= numImagens; i++) {
-            const formGroup = document.createElement('div');
-            formGroup.className = 'form-group';
-
-            const label = document.createElement('label');
-            label.htmlFor = 'imagem' + i;
-            label.textContent = 'Imagem ' + i;
-
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.id = 'imagem' + i;
-            input.name = 'imagem' + i;
-            input.className = 'form-control-file';
-            input.accept = 'image/*';
-            input.required = true;
-
-            formGroup.appendChild(label);
-            formGroup.appendChild(input);
-            imagensContainer.appendChild(formGroup);
-          }
-        });
-      }
-
     } else if (campo.type === 'textarea') {
       input = document.createElement('textarea');
       input.rows = 3;
@@ -355,6 +325,24 @@ function abrirFormulario(fluxo) {
   zipGroup.appendChild(zipInput);
   zipContainer.appendChild(zipGroup);
 
+  // Adiciona o indicador de progresso
+  const progressContainer = document.createElement('div');
+  progressContainer.className = 'progress mt-3';
+  progressContainer.id = 'uploadProgressContainer';
+  progressContainer.style.display = 'none';
+
+  const progressBar = document.createElement('div');
+  progressBar.className = 'progress-bar';
+  progressBar.id = 'uploadProgressBar';
+  progressBar.role = 'progressbar';
+  progressBar.style.width = '0%';
+  progressBar.setAttribute('aria-valuenow', '0');
+  progressBar.setAttribute('aria-valuemin', '0');
+  progressBar.setAttribute('aria-valuemax', '100');
+
+  progressContainer.appendChild(progressBar);
+  fluxoForm.appendChild(progressContainer);
+
   const submitButton = document.createElement('button');
   submitButton.type = 'submit';
   submitButton.textContent = 'Enviar';
@@ -366,8 +354,8 @@ function abrirFormulario(fluxo) {
   $('#fluxoModal').modal('show');
 }
 
-// Função para enviar o formulário
-async function enviarFormulario(e) {
+// Função para enviar o formulário com indicador de progresso
+function enviarFormulario(e) {
   e.preventDefault();
   const fluxo = document.getElementById('modalTitle').innerText;
 
@@ -394,21 +382,43 @@ async function enviarFormulario(e) {
     }
   });
 
-  try {
-    const res = await fetch(`${apiUrl}/send-email`, {
-      method: 'POST',
-      body: formData,
-    });
+  // Exibe o indicador de progresso
+  const progressContainer = document.getElementById('uploadProgressContainer');
+  const progressBar = document.getElementById('uploadProgressBar');
+  progressContainer.style.display = 'block';
+  progressBar.style.width = '0%';
+  progressBar.setAttribute('aria-valuenow', '0');
 
-    const data = await res.text();
-    if (res.ok) {
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${apiUrl}/send-email`);
+
+  xhr.upload.addEventListener('progress', function (e) {
+    if (e.lengthComputable) {
+      const percentCompleted = Math.round((e.loaded * 100) / e.total);
+      progressBar.style.width = percentCompleted + '%';
+      progressBar.setAttribute('aria-valuenow', percentCompleted);
+    }
+  });
+
+  xhr.onload = function () {
+    progressContainer.style.display = 'none';
+    const data = xhr.responseText;
+    if (xhr.status === 200) {
       showAlert('Solicitação enviada com sucesso.', 'success');
     } else {
       showAlert(`Erro ao enviar a solicitação: ${data}`, 'danger');
     }
-  } catch (error) {
-    showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
-  } finally {
     $('#fluxoModal').modal('hide');
-  }
+  };
+
+  xhr.onerror = function () {
+    progressContainer.style.display = 'none';
+    showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
+    $('#fluxoModal').modal('hide');
+  };
+
+  xhr.send(formData);
 }
+
+// Torna as funções globais para serem acessíveis no HTML
+window.abrirFormulario = abrirFormulario;
