@@ -282,7 +282,7 @@ function abrirFormulario(fluxo) {
   numeroImagensSelect.appendChild(optionInicial);
 
   // Adiciona as opções de 1 a 31
-  for (let i = 1; i <= 50; i++) {
+  for (let i = 1; i <= 100; i++) {
     const option = document.createElement('option');
     option.value = i;
     option.textContent = i;
