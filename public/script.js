@@ -281,7 +281,7 @@ function abrirFormulario(fluxo) {
   optionInicial.textContent = 'Selecione o número de imagens';
   numeroImagensSelect.appendChild(optionInicial);
 
-  // Adiciona as opções de 1 a 31
+  // Adiciona as opções de 1 a 100
   for (let i = 1; i <= 100; i++) {
     const option = document.createElement('option');
     option.value = i;
@@ -356,6 +356,7 @@ function abrirFormulario(fluxo) {
   progressContainer.className = 'progress mt-3';
   progressContainer.id = 'uploadProgressContainer';
   progressContainer.style.display = 'none';
+  progressContainer.style.height = '20px'; // Define a altura da barra
 
   const progressBar = document.createElement('div');
   progressBar.className = 'progress-bar';
