@@ -192,9 +192,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
             const zip = new AdmZip(file.buffer);
             const zipEntries = zip.getEntries();
 
-            // Verificar se há mais de 31 arquivos (somando com os individuais)
-            if (attachments.length + zipEntries.length > 31) {
-              return res.status(400).send('O total de arquivos excede o limite de 31.');
+            // Verificar se há mais de 100 arquivos (somando com os individuais)
+            if (attachments.length + zipEntries.length > 100) {
+              return res.status(400).send('O total de arquivos excede o limite de 100.');
             }
 
             for (const entry of zipEntries) {
