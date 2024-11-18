@@ -417,12 +417,17 @@ function enviarFormulario(e) {
   xhr.open('POST', `${apiUrl}/send-email`);
 
   xhr.upload.addEventListener('progress', function (e) {
+    console.log('Evento de progresso disparado:', e);
     if (e.lengthComputable) {
       const percentCompleted = Math.round((e.loaded * 100) / e.total);
       progressBar.style.width = percentCompleted + '%';
       progressBar.setAttribute('aria-valuenow', percentCompleted);
+      console.log(`Progresso: ${percentCompleted}%`);
+    } else {
+      console.log('Não é possível computar o progresso');
     }
   });
+  
 
   xhr.onload = function () {
     progressContainer.style.display = 'none';
