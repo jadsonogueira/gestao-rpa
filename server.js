@@ -150,20 +150,21 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Inserir imagem em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Criar Doc SEI Externo') {
-      // Obtém a data local correta
-      const hoje = new Date();
-      const dia = String(hoje.getDate()).padStart(2, '0'); // Dia
-      const mes = String(hoje.getMonth() + 1).padStart(2, '0'); // Mês
-      const ano = hoje.getFullYear(); // Ano
-      const dataFormatada = `${dia}/${mes}/${ano}`; // Formato: dd/mm/aaaa
+      // Obtém a data local formatada diretamente
+      const hoje = new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).format(new Date());
     
       // Adiciona as informações ao conteúdo do e-mail
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
-      mailContent += `Data: ${dataFormatada}\n`; // Data local formatada
+      mailContent += `Data: ${hoje}\n`; // Data formatada diretamente
       mailContent += `Tipo do Documento: ${dados.tipoDocumento || ''}\n`;
       mailContent += `Número: ${dados.numero || ''}\n`;
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
-    }  
+    }
+     
  
     const transporter = nodemailer.createTransport({
       service: 'gmail',
