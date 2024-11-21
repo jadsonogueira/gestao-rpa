@@ -150,7 +150,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Inserir imagem em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Criar Doc SEI Externo') {
-      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+      mailContent += `Número do Processo SEI: ${dados.processosei || ''}\n`;
+      mailContent += `Número: ${dados.numero || ''}\n`;
+      mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
 
     const transporter = nodemailer.createTransport({
