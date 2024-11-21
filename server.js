@@ -150,20 +150,20 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Inserir imagem em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Criar Doc SEI Externo') {
-      // Obtém a data de hoje
+      // Obtém a data local correta
       const hoje = new Date();
-      const dia = String(hoje.getDate()).padStart(2, '0'); // Adiciona zero à esquerda se necessário
-      const mes = String(hoje.getMonth() + 1).padStart(2, '0'); // Mês começa do 0, então soma 1
-      const ano = hoje.getFullYear();
+      const dia = String(hoje.getDate()).padStart(2, '0'); // Dia
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0'); // Mês
+      const ano = hoje.getFullYear(); // Ano
       const dataFormatada = `${dia}/${mes}/${ano}`; // Formato: dd/mm/aaaa
     
       // Adiciona as informações ao conteúdo do e-mail
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
-      mailContent += `Data: ${dataFormatada}\n`; // Adiciona a data formatada
+      mailContent += `Data: ${dataFormatada}\n`; // Data local formatada
       mailContent += `Tipo do Documento: ${dados.tipoDocumento || ''}\n`;
       mailContent += `Número: ${dados.numero || ''}\n`;
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
-    }
+    }  
  
     const transporter = nodemailer.createTransport({
       service: 'gmail',
