@@ -121,6 +121,13 @@ function abrirFormulario(fluxo) {
       { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP'] },
       // Os inputs de imagem ou zip serão gerados dinamicamente
     ];
+  } else if (fluxo === 'Criar Doc SEI Externo') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+      { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
+    ];
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
     return;
