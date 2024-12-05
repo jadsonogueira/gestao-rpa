@@ -131,6 +131,16 @@ function abrirFormulario(fluxo) {
       { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
       { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
     ];
+  } else if (fluxo === 'Criar Doc SEI Editável') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
+      { id: 'tipoDocumento', placeholder: 'Tipo do Documento', type: 'text' },
+      { id: 'numero', placeholder: 'Número', type: 'text' },
+      { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
+      { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
+    ];
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
     return;
