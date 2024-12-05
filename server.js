@@ -150,6 +150,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Inserir imagem em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Criar Doc SEI Externo') {
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+    } else if (fluxo === 'Criar Doc SEI Editável') {
       // Obtém a data atual e ajusta o fuso horário (UTC-3 para horário de Brasília)
       const agora = new Date();
       agora.setHours(agora.getHours() - 3); // Ajusta o fuso horário para UTC-3
