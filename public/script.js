@@ -21,6 +21,7 @@ function showAlert(message, type = 'success') {
 // Lista de usuários para os campos de seleção
 const listaUsuarios = [
   'Bruno Moreira de Medeiros',
+  'Bruno Zafalon Martins Ferreira',
   'Francisco Jailson Nascimento dos Santos',
   'Jadson Nogueira Pena',
   'José Joaquim da Silva Júnior',
