@@ -23,7 +23,6 @@ const listaUsuarios = [
   'Bruno Moreira de Medeiros',
   'Bruno Zafalon Martins Ferreira',
   'Francisco Jailson Nascimento dos Santos',
-  'Jadson Nogueira Pena',
   'José Joaquim da Silva Júnior',
   'Lucas Veloso Facury Lasmar',
   'Natália Maria do Carmo Lopes Guimarães Battaglini',
