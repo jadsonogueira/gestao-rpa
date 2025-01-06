@@ -26,6 +26,7 @@ const listaUsuarios = [
   'José Joaquim da Silva Júnior',
   'Lucas Veloso Facury Lasmar',
   'Natália Maria do Carmo Lopes Guimarães Battaglini',
+  'Rodrigo Emanuel Tahan',
   'Wagner Ferreira da Cunha'
 ];
 
