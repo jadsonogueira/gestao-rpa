@@ -152,6 +152,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Criar Doc SEI Externo') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Tipo do Documento: ${dados.tipoDocumento || ''}\n`;
+      mailContent += `Data: ${dados.dataFormatada}\n`;
       mailContent += `Número: ${dados.numero || ''}\n`;
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     } else if (fluxo === 'Criar Doc SEI Editável') {
