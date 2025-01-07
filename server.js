@@ -150,7 +150,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Inserir imagem em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Criar Doc SEI Externo') {
-      mailContent += `Número do Processo SEI:: ${dados.processo_sei || ''}\n`;
+      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
     } else if (fluxo === 'Criar Doc SEI Editável') {
       mailContent += `Número do Processo SEI:: ${dados.processo_sei || ''}\n`;
       // Obtém a data atual e ajusta o fuso horário (UTC-3 para horário de Brasília)
