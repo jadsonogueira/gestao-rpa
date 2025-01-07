@@ -132,7 +132,13 @@ function abrirFormulario(fluxo) {
       { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
       { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
     ];
-  } else if (fluxo === 'Criar Doc SEI Editável') {
+  } else if (fluxo === 'Assinatura em doc SEI') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+    ];
+  }  else if (fluxo === 'Criar Doc SEI Editável') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
