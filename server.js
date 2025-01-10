@@ -152,19 +152,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Assinatura em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Criar Doc SEI Editável') {
-      mailContent += `Número do Processo SEI:: ${dados.processoSei || ''}\n`;
-      // Obtém a data atual e ajusta o fuso horário (UTC-3 para horário de Brasília)
-      const agora = new Date();
-      agora.setHours(agora.getHours() - 3); // Ajusta o fuso horário para UTC-3
-    
-      const dia = String(agora.getDate()).padStart(2, '0');
-      const mes = String(agora.getMonth() + 1).padStart(2, '0');
-      const ano = agora.getFullYear();
-      const dataFormatada = `${dia}/${mes}/${ano}`;
-    
-      // Adiciona as informações ao conteúdo do e-mail
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
-      mailContent += `Data: ${dataFormatada}\n`;
       mailContent += `Tipo do Documento: ${dados.tipoDocumento || ''}\n`;
       mailContent += `Número: ${dados.numero || ''}\n`;
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
