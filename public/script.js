@@ -99,6 +99,15 @@ function abrirFormulario(fluxo) {
       { id: 'user', placeholder: 'Usuário', type: 'select', options: listaUsuarios },
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
+
+    } else if (fluxo === 'Analise de processo') {
+      campos = [
+        { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+        { id: 'email', placeholder: 'Email', type: 'email' },
+        { id: 'user', placeholder: 'Usuário', type: 'select', options: listaUsuarios },
+        { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
+      ];
+
   } else if (fluxo === 'Alterar ordem de documentos') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
