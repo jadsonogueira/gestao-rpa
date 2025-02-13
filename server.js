@@ -142,6 +142,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Liberar acesso externo') {
       mailContent += `Usuário: ${dados.user || ''}\n`;
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+    } else if (fluxo === 'Analise de processo') {
+      mailContent += `Usuário: ${dados.user || ''}\n`;
+      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
     } else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
