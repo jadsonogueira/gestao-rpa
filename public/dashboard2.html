@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>AppDNIT - Dashboard Moderno</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Dependências -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-color: #2A5C82;
+      --secondary-color: #F8F9FA;
+      --accent-color: #4CAF50;
+      --text-muted: #6c757d;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--secondary-color);
+    }
+
+    /* Navbar Modernizada */
+    .navbar {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #1E3A5F 100%);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .navbar-brand {
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .navbar-brand i {
+      color: #fff;
+      font-size: 1.5rem;
+    }
+
+    /* Cards Interativos */
+    .service-card {
+      border: none;
+      border-radius: 12px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: white;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .service-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--primary-color);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .service-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .service-card:hover::before {
+      opacity: 1;
+    }
+
+    .service-icon {
+      font-size: 2.5rem;
+      background: linear-gradient(45deg, var(--primary-color), #3B82F6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Modal Aprimorado */
+    .modal-header {
+      border-bottom: 2px solid var(--primary-color);
+      background: var(--secondary-color);
+    }
+
+    .modal-title {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 0.2rem rgba(42,92,130,0.25);
+    }
+
+    /* Alertas Modernos */
+    .alert-container {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 9999;
+      max-width: 350px;
+    }
+
+    .alert {
+      border-left: 4px solid var(--primary-color);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* Progress Bar Estilizada */
+    .progress {
+      height: 8px;
+      border-radius: 4px;
+    }
+
+    .progress-bar {
+      background-color: var(--primary-color);
+      transition: width 0.5s ease;
+    }
+
+    /* Layout Responsivo */
+    @media (max-width: 768px) {
+      .service-card {
+        margin-bottom: 1rem;
+      }
+      
+      .navbar-brand i {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar Atualizada -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-road"></i>
+        <span class="ml-2">AppDNIT</span>
+      </a>
+      
+      <!-- Menu de Usuário -->
+      <div class="dropdown">
+        <div class="user-profile dropdown-toggle" data-toggle="dropdown">
+          <div class="user-avatar">
+            <i class="fas fa-user"></i>
+          </div>
+          <span class="d-none d-md-inline text-white">Usuário</span>
+        </div>
+        <div class="dropdown-menu dropdown-menu-right">
+          <a class="dropdown-item" href="#"><i class="fas fa-cog mr-2"></i>Configurações</a>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item text-danger" id="logoutButton">
+            <i class="fas fa-sign-out-alt mr-2"></i>Sair
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Conteúdo Principal (mantido igual) -->
+  <div class="container py-5">
+    <!-- ... Seção de Serviços Original ... -->
+  </div>
+
+  <!-- Modal do Formulário (estrutura original mantida) -->
+  <div class="modal fade" id="fluxoModal" tabindex="-1">
+    <!-- ... Conteúdo Original do Modal ... -->
+  </div>
+
+  <!-- Scripts (mantidos originais) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+
+</body>
+</html>

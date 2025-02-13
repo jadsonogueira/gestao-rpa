@@ -139,42 +139,26 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Consultar empenho') {
       mailContent += `Contrato SEI: ${dados.contratoSei || ''}\n`;
-    } 
-    
-      else if (fluxo === 'Liberar acesso externo') {
+    } else if (fluxo === 'Liberar acesso externo') {
       mailContent += `Usuário: ${dados.user || ''}\n`;
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
-    } 
-    
-      else if (fluxo === 'Analise de processo') {
-      mailContent += `Usuário: ${dados.user || ''}\n`;
-      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
-    } 
-
-      else if (fluxo === 'Alterar ordem de documentos') {
+    } else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
-    } 
-    
-      else if (fluxo === 'Inserir anexo em doc SEI') {
+    } else if (fluxo === 'Inserir anexo em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
-    } 
-      
-      else if (fluxo === 'Inserir imagem em doc SEI') {
+    } else if (fluxo === 'Inserir imagem em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
-    } 
-    
-      else if (fluxo === 'Criar Doc SEI Externo') {
+    } else if (fluxo === 'Assinatura em doc SEI') {
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+    } else if (fluxo === 'Criar Doc SEI Editável') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Tipo do Documento: ${dados.tipoDocumento || ''}\n`;
-      mailContent += `Data: ${dados.dataFormatada}\n`;
       mailContent += `Número: ${dados.numero || ''}\n`;
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
-    } 
-    
-      else if (fluxo === 'Criar Doc SEI Editável') {
-      mailContent += `Número do Processo SEI:: ${dados.processoSei || ''}\n`;
-      // Obtém a data atual e ajusta o fuso horário (UTC-3 para horário de Brasília)
+      
+    } else if (fluxo === 'Criar Doc SEI Externo') {
+     // Obtém a data atual e ajusta o fuso horário (UTC-3 para horário de Brasília)
       const agora = new Date();
       agora.setHours(agora.getHours() - 3); // Ajusta o fuso horário para UTC-3
     
@@ -191,8 +175,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
     
-     
- 
+   
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
