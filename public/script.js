@@ -149,15 +149,7 @@ function abrirFormulario(fluxo) {
       { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
       { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
     ];
-
-  } else if (fluxo === 'Analise de processo') {
-    campos = [
-      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
-    ];
-  }  
-    else {
+  } else {
     console.warn("Fluxo não reconhecido:", fluxo);
     return;
   }
