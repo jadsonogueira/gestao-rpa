@@ -26,13 +26,6 @@
       color: #007bff;
     }
 
-    .loading-spinner {
-      display: inline-block;
-      width: 1rem;
-      height: 1rem;
-      margin-right: 0.5rem;
-    }
-
     .navbar-brand img {
       height: 30px;
       margin-right: 10px;
@@ -67,14 +60,10 @@
       max-width: 350px;
     }
 
-    .modal-header {
-      background-color: #f8f9fa;
-      border-bottom: 1px solid #dee2e6;
-    }
-
+    .modal-header,
     .modal-footer {
       background-color: #f8f9fa;
-      border-top: 1px solid #dee2e6;
+      border-color: #dee2e6;
     }
 
     .form-group label {
@@ -97,9 +86,8 @@
     }
 
     .progress-bar {
-    background-color: #007bff;
+      background-color: #007bff;
     }
-
   </style>
 </head>
 <body class=".bg-dark">
@@ -200,13 +188,14 @@
           </div>
         </div>
       </div>
-      <!-- Inserir Imagem em Doc SEI -->
+      
+      <!-- Inserir Imagem em Doc SEI (inclui novo método de upload) -->
       <div class="col-md-6 mb-4">
         <div class="card service-card" onclick="abrirFormulario('Inserir imagem em doc SEI')">
           <div class="card-body text-center">
             <i class="fas fa-camera service-icon"></i>
             <h5 class="card-title">Inserir Imagem em Doc SEI</h5>
-            <p class="service-description">Adicione imagens a documentos existentes</p>
+            <p class="service-description">Adicione imagens ou envie um PDF para conversão em JPG</p>
           </div>
         </div>
       </div>
@@ -222,8 +211,8 @@
         </div>
       </div>
 
-       <!-- Criar Doc SEI Externo -->
-       <div class="col-md-6 mb-4">
+      <!-- Criar Doc SEI Externo -->
+      <div class="col-md-6 mb-4">
         <div class="card service-card" onclick="abrirFormulario('Criar Doc SEI Externo')">
           <div class="card-body text-center">
             <i class="fas fa-file service-icon"></i>
@@ -254,10 +243,6 @@
           </div>
         </div>
       </div>
-
-
-
-
     </div>
   </div>
 
@@ -274,11 +259,8 @@
         </div>
         <!-- Corpo do Modal -->
         <div class="modal-body">
-          <!-- Instruções do formulário serão adicionadas dinamicamente -->
-          <!-- Formulário -->
           <form id="fluxoForm" enctype="multipart/form-data">
-            <!-- Campos do formulário serão adicionados dinamicamente -->
-                     
+            <!-- Campos serão adicionados dinamicamente -->
           </form>
         </div>
       </div>
@@ -286,10 +268,8 @@
   </div>
 
   <!-- Scripts -->
-  <!-- jQuery e Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Seu arquivo JavaScript -->
   <script src="script.js"></script>
 </body>
 </html>
