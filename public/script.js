@@ -41,21 +41,16 @@ const listacontratos = [
   '12 00594'
 ];
 
-// Instruções específicas para cada fluxo
+// Objeto com instruções específicas para cada fluxo
 const fluxoInstrucoes = {
   'Consultar empenho': 'Por favor, preencha todos os campos. Certifique-se de selecionar o contrato SEI correto da lista disponível. Após o processamento, você receberá um email com o resultado da pesquisa.',
   'Liberar assinatura externa': 'Por favor, preencha todos os campos. O número do DOC_SEI deve ser informado no formato numérico (exemplo: 12345678). Envie uma solicitação para cada documento.',
   'Liberar acesso externo': 'Por favor, preencha todos os campos. O número do processo SEI deve seguir o formato: 50600.001234/2024-00.',
   'Alterar ordem de documentos': 'Por favor, preencha todos os campos. No campo de instruções, descreva detalhadamente a ordem desejada dos documentos na árvore do processo SEI digitado.',
-  'Inserir anexo em doc SEI': 'Por favor, preencha todos os campos.',
-  'Inserir imagem em doc SEI': 'Por favor, preencha todos os campos. Escolha o método de upload: Imagens Individuais, Arquivo ZIP ou PDF para JPG.',
-  'Assinatura em doc SEI': 'Assinar Doc SEI',
-  'Criar Doc SEI Externo': 'Crie um documento SEI do tipo EXTERNO',
-  'Criar Doc SEI Editável': 'Crie um documento SEI do tipo Editável',
-  'Analise de processo': 'Analise de processo SEI'
+  'Inserir imagem em doc SEI': 'Por favor, preencha todos os campos. Escolha o método de upload: imagens individuais ou arquivo ZIP contendo as imagens.'
 };
 
-// Função para abrir o formulário conforme o fluxo selecionado
+// Função para abrir o formulário de acordo com o fluxo selecionado
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
   const modalBody = document.querySelector('.modal-body');
@@ -79,6 +74,7 @@ function abrirFormulario(fluxo) {
   const fluxoForm = document.createElement('form');
   fluxoForm.id = 'fluxoForm';
   fluxoForm.enctype = 'multipart/form-data';
+
   modalBody.appendChild(fluxoForm);
 
   let campos = [];
@@ -103,12 +99,14 @@ function abrirFormulario(fluxo) {
       { id: 'user', placeholder: 'Usuário', type: 'select', options: listaUsuarios },
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
-  } else if (fluxo === 'Analise de processo') {
-    campos = [
-      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
-    ];
+
+    } else if (fluxo === 'Analise de processo') {
+      campos = [
+        { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+        { id: 'email', placeholder: 'Email', type: 'email' },
+        { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
+      ];
+
   } else if (fluxo === 'Alterar ordem de documentos') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
@@ -128,13 +126,9 @@ function abrirFormulario(fluxo) {
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
-      { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] },
-    ];
-  } else if (fluxo === 'Assinatura em doc SEI') {
-    campos = [
-      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+      // Campo para selecionar o método de upload
+      { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP'] },
+      // Os inputs de imagem ou zip serão gerados dinamicamente
     ];
   } else if (fluxo === 'Criar Doc SEI Externo') {
     campos = [
@@ -147,7 +141,13 @@ function abrirFormulario(fluxo) {
       { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
       { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
     ];
-  } else if (fluxo === 'Criar Doc SEI Editável') {
+  } else if (fluxo === 'Assinatura em doc SEI') {
+    campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+    ];
+  }  else if (fluxo === 'Criar Doc SEI Editável') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
@@ -178,18 +178,23 @@ function abrirFormulario(fluxo) {
       input.name = campo.id;
       input.className = 'form-control';
       input.required = true;
+
+      // Adiciona a opção inicial
       const optionInicial = document.createElement('option');
       optionInicial.value = '';
       optionInicial.disabled = true;
       optionInicial.selected = true;
       optionInicial.textContent = 'Selecione uma opção';
       input.appendChild(optionInicial);
+
+      // Adiciona as opções do select
       campo.options.forEach((opcao) => {
         const option = document.createElement('option');
         option.value = opcao;
         option.textContent = opcao;
         input.appendChild(option);
       });
+
     } else if (campo.type === 'textarea') {
       input = document.createElement('textarea');
       input.rows = 3;
@@ -199,10 +204,12 @@ function abrirFormulario(fluxo) {
     } else if (campo.type === 'radio') {
       input = document.createElement('div');
       input.id = campo.id;
+
       campo.options.forEach((optionText, index) => {
         const optionId = `${campo.id}_${index}`;
         const radioDiv = document.createElement('div');
         radioDiv.className = 'form-check';
+
         const radioInput = document.createElement('input');
         radioInput.type = 'radio';
         radioInput.id = optionId;
@@ -210,200 +217,183 @@ function abrirFormulario(fluxo) {
         radioInput.value = optionText;
         radioInput.className = 'form-check-input';
         radioInput.required = true;
+
         const radioLabel = document.createElement('label');
         radioLabel.htmlFor = optionId;
         radioLabel.className = 'form-check-label';
         radioLabel.textContent = optionText;
+
         radioDiv.appendChild(radioInput);
         radioDiv.appendChild(radioLabel);
         input.appendChild(radioDiv);
       });
+
+      // Listener para mostrar/ocultar campos com base na seleção
       input.addEventListener('change', function(e) {
         const metodo = e.target.value;
         const imagensContainer = document.getElementById('imagensContainer');
         const zipContainer = document.getElementById('zipContainer');
-        const pdfContainer = document.getElementById('pdfContainer');
         const zipInput = document.getElementById('arquivoZip');
         const numeroImagensSelect = document.getElementById('numeroImagens');
-        const pdfInput = document.getElementById('arquivoPdf');
-        
+
         if (metodo === 'Imagens Individuais') {
+          // Mostrar campos para imagens individuais
           imagensContainer.style.display = 'block';
           zipContainer.style.display = 'none';
-          pdfContainer.style.display = 'none';
+
+          // Ajusta os campos required
           zipInput.required = false;
-          zipInput.value = '';
+          zipInput.value = ''; // Limpa o campo ZIP
+
           numeroImagensSelect.required = true;
-          if(pdfInput) {
-            pdfInput.required = false;
-            pdfInput.value = '';
-          }
+
+          // Se os inputs de imagem já foram gerados, marca-os como required
           const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
           imageInputs.forEach(input => {
             input.required = true;
           });
         } else if (metodo === 'Arquivo ZIP') {
+          // Mostrar campo para arquivo ZIP
           imagensContainer.style.display = 'none';
           zipContainer.style.display = 'block';
-          pdfContainer.style.display = 'none';
+
+          // Ajusta os campos required
           zipInput.required = true;
+
           numeroImagensSelect.required = false;
-          numeroImagensSelect.value = '';
-          if(pdfInput) {
-            pdfInput.required = false;
-            pdfInput.value = '';
-          }
+          numeroImagensSelect.value = ''; // Reseta a seleção
+
+          // Remove o required dos inputs de imagem
           const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
           imageInputs.forEach(input => {
             input.required = false;
-            input.value = '';
+            input.value = ''; // Limpa os inputs de imagem
           });
-        } else if (metodo === 'PDF para JPG') {
-          imagensContainer.style.display = 'none';
-          zipContainer.style.display = 'none';
-          pdfContainer.style.display = 'block';
-          zipInput.required = false;
-          zipInput.value = '';
-          numeroImagensSelect.required = false;
-          numeroImagensSelect.value = '';
-          const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
-          imageInputs.forEach(input => {
-            input.required = false;
-            input.value = '';
-          });
-          if(pdfInput) {
-            pdfInput.required = true;
-          }
         }
       });
+
     } else {
       input = document.createElement('input');
       input.type = campo.type;
       input.className = 'form-control';
       input.required = true;
       input.placeholder = campo.placeholder;
-      if (campo.multiple) {
-        input.multiple = true;
-      }
-      if (campo.accept) {
-        input.accept = campo.accept;
-      }
     }
 
     input.id = campo.id;
     input.name = campo.id;
+
     formGroup.appendChild(label);
     formGroup.appendChild(input);
     fluxoForm.appendChild(formGroup);
   });
 
-  // Container para imagens individuais (usado com "Imagens Individuais")
+  // Adiciona os containers para imagens e zip
+  // Container para imagens individuais
   const imagensContainer = document.createElement('div');
   imagensContainer.id = 'imagensContainer';
-  imagensContainer.style.display = 'none';
+  imagensContainer.style.display = 'none'; // Inicialmente oculto
   fluxoForm.appendChild(imagensContainer);
 
+  // Campo para selecionar o número de imagens
   const numeroImagensGroup = document.createElement('div');
   numeroImagensGroup.className = 'form-group';
+
   const numeroImagensLabel = document.createElement('label');
   numeroImagensLabel.htmlFor = 'numeroImagens';
   numeroImagensLabel.textContent = 'Número de Imagens';
+
   const numeroImagensSelect = document.createElement('select');
   numeroImagensSelect.id = 'numeroImagens';
   numeroImagensSelect.name = 'numeroImagens';
   numeroImagensSelect.className = 'form-control';
-  numeroImagensSelect.required = false;
+  numeroImagensSelect.required = false; // Inicialmente não é required
+
+  // Adiciona a opção inicial
   const optionInicial = document.createElement('option');
   optionInicial.value = '';
   optionInicial.disabled = true;
   optionInicial.selected = true;
   optionInicial.textContent = 'Selecione o número de imagens';
   numeroImagensSelect.appendChild(optionInicial);
+
+  // Adiciona as opções de 1 a 100
   for (let i = 1; i <= 100; i++) {
     const option = document.createElement('option');
     option.value = i;
     option.textContent = i;
     numeroImagensSelect.appendChild(option);
   }
+
   numeroImagensGroup.appendChild(numeroImagensLabel);
   numeroImagensGroup.appendChild(numeroImagensSelect);
   imagensContainer.appendChild(numeroImagensGroup);
 
+  // Listener para gerar os inputs de arquivo
   numeroImagensSelect.addEventListener('change', function() {
     const numImagens = parseInt(this.value);
     const arquivosContainer = document.getElementById('arquivosContainer');
+    // Remove inputs anteriores
     arquivosContainer.innerHTML = '';
     for (let i = 1; i <= numImagens; i++) {
       const formGroup = document.createElement('div');
       formGroup.className = 'form-group';
+
       const label = document.createElement('label');
       label.htmlFor = 'imagem' + i;
       label.textContent = 'Imagem ' + i;
+
       const input = document.createElement('input');
       input.type = 'file';
       input.id = 'imagem' + i;
       input.name = 'imagem' + i;
       input.className = 'form-control-file';
       input.accept = 'image/*';
-      input.required = true;
+      input.required = true; // Marca como required
+
       formGroup.appendChild(label);
       formGroup.appendChild(input);
       arquivosContainer.appendChild(formGroup);
     }
   });
 
+  // Container para os inputs de arquivo
   const arquivosContainer = document.createElement('div');
   arquivosContainer.id = 'arquivosContainer';
   imagensContainer.appendChild(arquivosContainer);
 
-  // Container para upload de ZIP
+  // Container para o upload do arquivo ZIP
   const zipContainer = document.createElement('div');
   zipContainer.id = 'zipContainer';
-  zipContainer.style.display = 'none';
+  zipContainer.style.display = 'none'; // Inicialmente oculto
   fluxoForm.appendChild(zipContainer);
+
   const zipGroup = document.createElement('div');
   zipGroup.className = 'form-group';
+
   const zipLabel = document.createElement('label');
   zipLabel.htmlFor = 'arquivoZip';
   zipLabel.textContent = 'Selecione o arquivo ZIP';
+
   const zipInput = document.createElement('input');
   zipInput.type = 'file';
   zipInput.id = 'arquivoZip';
   zipInput.name = 'arquivoZip';
   zipInput.className = 'form-control-file';
   zipInput.accept = '.zip';
-  zipInput.required = false;
+  zipInput.required = false; // Inicialmente não é required
+
   zipGroup.appendChild(zipLabel);
   zipGroup.appendChild(zipInput);
   zipContainer.appendChild(zipGroup);
 
-  // Container para upload de PDF (novo método "PDF para JPG")
-  const pdfContainer = document.createElement('div');
-  pdfContainer.id = 'pdfContainer';
-  pdfContainer.style.display = 'none';
-  fluxoForm.appendChild(pdfContainer);
-  const pdfGroup = document.createElement('div');
-  pdfGroup.className = 'form-group';
-  const pdfLabel = document.createElement('label');
-  pdfLabel.htmlFor = 'arquivoPdf';
-  pdfLabel.textContent = 'Selecione o(s) arquivo(s) PDF';
-  const pdfInput = document.createElement('input');
-  pdfInput.type = 'file';
-  pdfInput.id = 'arquivoPdf';
-  pdfInput.name = 'arquivoPdf';
-  pdfInput.className = 'form-control-file';
-  pdfInput.accept = '.pdf';
-  pdfInput.required = false;
-  pdfGroup.appendChild(pdfLabel);
-  pdfGroup.appendChild(pdfInput);
-  pdfContainer.appendChild(pdfGroup);
-
-  // Indicador de progresso
+  // Adiciona o indicador de progresso
   const progressContainer = document.createElement('div');
   progressContainer.className = 'progress mt-3';
   progressContainer.id = 'uploadProgressContainer';
   progressContainer.style.display = 'none';
-  progressContainer.style.height = '20px';
+  progressContainer.style.height = '20px'; // Define a altura da barra
+
   const progressBar = document.createElement('div');
   progressBar.className = 'progress-bar';
   progressBar.id = 'uploadProgressBar';
@@ -412,6 +402,7 @@ function abrirFormulario(fluxo) {
   progressBar.setAttribute('aria-valuenow', '0');
   progressBar.setAttribute('aria-valuemin', '0');
   progressBar.setAttribute('aria-valuemax', '100');
+
   progressContainer.appendChild(progressBar);
   fluxoForm.appendChild(progressContainer);
 
@@ -424,6 +415,7 @@ function abrirFormulario(fluxo) {
 
   // Evento de submit do formulário
   fluxoForm.onsubmit = enviarFormulario;
+
   $('#fluxoModal').modal('show');
 }
 
@@ -431,8 +423,13 @@ function abrirFormulario(fluxo) {
 function enviarFormulario(e) {
   e.preventDefault();
   const fluxo = document.getElementById('modalTitle').innerText;
+
   const formData = new FormData();
+
+  // Inclui o fluxo no formData
   formData.append('fluxo', fluxo);
+
+  // Coleta todos os inputs, inclusive os inputs de arquivo dinâmicos
   const inputs = e.target.querySelectorAll('input, textarea, select');
   inputs.forEach((input) => {
     if (input.type === 'file' && input.files.length > 0) {
@@ -445,20 +442,30 @@ function enviarFormulario(e) {
       formData.append(input.name, input.value);
     }
   });
+
+  // Exibe o indicador de progresso
   const progressContainer = document.getElementById('uploadProgressContainer');
   const progressBar = document.getElementById('uploadProgressBar');
   progressContainer.style.display = 'block';
   progressBar.style.width = '0%';
   progressBar.setAttribute('aria-valuenow', '0');
+
   const xhr = new XMLHttpRequest();
   xhr.open('POST', `${apiUrl}/send-email`);
+
   xhr.upload.addEventListener('progress', function (e) {
+    console.log('Evento de progresso disparado:', e);
     if (e.lengthComputable) {
       const percentCompleted = Math.round((e.loaded * 100) / e.total);
       progressBar.style.width = percentCompleted + '%';
       progressBar.setAttribute('aria-valuenow', percentCompleted);
+      console.log(`Progresso: ${percentCompleted}%`);
+    } else {
+      console.log('Não é possível computar o progresso');
     }
   });
+  
+
   xhr.onload = function () {
     progressContainer.style.display = 'none';
     const data = xhr.responseText;
@@ -469,13 +476,15 @@ function enviarFormulario(e) {
     }
     $('#fluxoModal').modal('hide');
   };
+
   xhr.onerror = function () {
     progressContainer.style.display = 'none';
     showAlert('Erro ao enviar o formulário. Tente novamente mais tarde.', 'danger');
     $('#fluxoModal').modal('hide');
   };
+
   xhr.send(formData);
 }
 
-// Torna as funções globais acessíveis no HTML
+// Torna as funções globais para serem acessíveis no HTML
 window.abrirFormulario = abrirFormulario;
