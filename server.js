@@ -8,6 +8,7 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
+const { fromBuffer } = require("pdf2pic");
 
 const app = express();
 app.use(cors());
@@ -64,7 +65,6 @@ app.post('/signup', express.json(), async (req, res) => {
       return res.status(400).send('Todos os campos são obrigatórios');
     }
 
-    // Verifica se o usuário ou email já existe
     const existingUser = await User.findOne({
       $or: [{ username }, { email }],
     });
@@ -73,8 +73,6 @@ app.post('/signup', express.json(), async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Criar o novo usuário no banco de dados
     const user = new User({ username, email, password: hashedPassword });
     await user.save();
 
@@ -151,6 +149,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Inserir imagem em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+    } else if (fluxo === 'Inserir PDF em doc SEI') {
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Assinatura em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Criar Doc SEI Editável') {
@@ -158,18 +158,14 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Tipo do Documento: ${dados.tipoDocumento || ''}\n`;
       mailContent += `Número: ${dados.numero || ''}\n`;
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
-      
     } else if (fluxo === 'Criar Doc SEI Externo') {
-     // Obtém a data atual e ajusta o fuso horário (UTC-3 para horário de Brasília)
       const agora = new Date();
-      agora.setHours(agora.getHours() - 3); // Ajusta o fuso horário para UTC-3
-    
+      agora.setHours(agora.getHours() - 3);
       const dia = String(agora.getDate()).padStart(2, '0');
       const mes = String(agora.getMonth() + 1).padStart(2, '0');
       const ano = agora.getFullYear();
       const dataFormatada = `${dia}/${mes}/${ano}`;
-    
-      // Adiciona as informações ao conteúdo do e-mail
+
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Data: ${dataFormatada}\n`;
       mailContent += `Tipo do Documento: ${dados.tipoDocumento || ''}\n`;
@@ -177,7 +173,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
     
-   
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -188,7 +183,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: 'jadson.pena@dnit.gov.br', // Ajuste o destinatário conforme necessário
+      to: 'jadson.pena@dnit.gov.br',
       subject: `${fluxo}`,
       text: mailContent,
     };
@@ -199,51 +194,39 @@ app.post('/send-email', upload.any(), async (req, res) => {
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         if (file.fieldname.startsWith('imagem')) {
-          // Arquivos de imagem individuais
-          // Validar o tipo de arquivo
           if (!file.mimetype.startsWith('image/')) {
             return res.status(400).send(`Tipo de arquivo não permitido: ${file.originalname}`);
           }
-          // Validar o tamanho do arquivo (limite de 5MB)
           if (file.size > 5 * 1024 * 1024) {
             return res.status(400).send(`Arquivo muito grande: ${file.originalname}`);
           }
-          // Adicionar aos anexos
           attachments.push({
             filename: file.originalname,
             content: file.buffer,
           });
         } else if (file.fieldname === 'arquivoZip') {
-          // Arquivo ZIP
           try {
             const zip = new AdmZip(file.buffer);
             const zipEntries = zip.getEntries();
 
-            // Verificar se há mais de 100 arquivos (somando com os individuais)
             if (attachments.length + zipEntries.length > 100) {
               return res.status(400).send('O total de arquivos excede o limite de 100.');
             }
 
             for (const entry of zipEntries) {
-              // Ignorar diretórios
               if (entry.isDirectory) continue;
 
-              // Validar o tipo de arquivo
               const extension = path.extname(entry.entryName).toLowerCase();
               const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
               if (!allowedExtensions.includes(extension)) {
                 return res.status(400).send(`Tipo de arquivo não permitido no ZIP: ${entry.entryName}`);
               }
 
-              // Extrair o conteúdo do arquivo
               const fileContent = entry.getData();
-
-              // Validar o tamanho do arquivo (limite de 5MB)
               if (fileContent.length > 5 * 1024 * 1024) {
                 return res.status(400).send(`Arquivo muito grande no ZIP: ${entry.entryName}`);
               }
 
-              // Adicionar aos anexos
               attachments.push({
                 filename: entry.entryName,
                 content: fileContent,
@@ -254,16 +237,35 @@ app.post('/send-email', upload.any(), async (req, res) => {
             return res.status(400).send('Erro ao processar o arquivo ZIP.');
           }
         } else if (file.fieldname === 'arquivo') {
-          // Outros arquivos (por exemplo, para 'Inserir anexo em doc SEI')
           attachments.push({
             filename: file.originalname,
             content: file.buffer,
           });
+        } else if (file.fieldname === 'arquivoPdf') {
+          try {
+            const pdfOptions = {
+              density: 150,
+              format: "jpg",
+              width: 1240,
+              height: 1754
+            };
+            const converter = fromBuffer(file.buffer, pdfOptions);
+            const convertedPages = await converter.bulk(-1);
+            for (const pageResult of convertedPages) {
+              const imageBuffer = Buffer.from(pageResult.base64, 'base64');
+              attachments.push({
+                filename: `${file.originalname.replace(/\.pdf$/i, '')}_page_${pageResult.page}.jpg`,
+                content: imageBuffer
+              });
+            }
+          } catch (error) {
+            console.error("Erro na conversão de PDF para JPG:", error);
+            return res.status(400).send("Erro na conversão do PDF para JPG.");
+          }
         }
       }
     }
 
-    // Verificar se há anexos para adicionar
     if (attachments.length > 0) {
       mailOptions.attachments = attachments;
     }
@@ -282,7 +284,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
   }
 });
 
-// Servir a página inicial (dashboard.html) ao acessar a rota raiz
+// Servir a página inicial (dashboard.html)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
