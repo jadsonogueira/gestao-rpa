@@ -196,38 +196,39 @@ app.post('/send-email', upload.any(), async (req, res) => {
           }
         } else if (file.fieldname === 'arquivo') {
           attachments.push({ filename: file.originalname, content: file.buffer });
-       
-        
         } else if (file.fieldname === 'arquivoPdf') {
-  try {
-    const pdfOptions = {
-      density: 150,
-      format: "jpg",
-      width: 1240,
-      height: 1754
-    };
-    const converter = fromBuffer(file.buffer, pdfOptions);
-    
-    // Use pdf-parse para contar o número de páginas
-    const data = await pdfParse(file.buffer);
-    const numPages = data.numpages;
-    const pages = Array.from({ length: numPages }, (_, i) => i + 1);
-    
-    // Converter todas as páginas
-    const convertedPages = await converter.bulk(pages);
-    for (const pageResult of convertedPages) {
-      const imageBuffer = Buffer.from(pageResult.base64, 'base64');
-      attachments.push({
-        filename: `${file.originalname.replace(/\.pdf$/i, '')}_page_${pageResult.page}.jpg`,
-        content: imageBuffer
-      });
-    }
-  } catch (error) {
-    console.error("Erro na conversão de PDF para JPG:", error);
-    return res.status(400).send("Erro na conversão do PDF para JPG.");
-  }
-}
-
+          try {
+            const pdfOptions = {
+              density: 150,
+              format: "jpg",
+              width: 1240,
+              height: 1754,
+              // savePath não é necessário se você quiser apenas o base64
+            };
+            const converter = fromBuffer(file.buffer, pdfOptions);
+            // Contar páginas usando pdf-parse
+            const data = await pdfParse(file.buffer);
+            const numPages = data.numpages;
+            console.log(`PDF possui ${numPages} páginas.`);
+            const pages = Array.from({ length: numPages }, (_, i) => i + 1);
+            // Converter cada página individualmente
+            const convertedPages = await Promise.all(pages.map(page => converter.convert(page)));
+            console.log(`Conversão concluída para ${convertedPages.length} páginas.`);
+            for (const pageResult of convertedPages) {
+              if (!pageResult.base64) {
+                throw new Error("Conversão sem resultado base64.");
+              }
+              const imageBuffer = Buffer.from(pageResult.base64, 'base64');
+              attachments.push({
+                filename: `${file.originalname.replace(/\.pdf$/i, '')}_page_${pageResult.page}.jpg`,
+                content: imageBuffer
+              });
+            }
+          } catch (error) {
+            console.error("Erro na conversão de PDF para JPG:", error.message);
+            return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
+          }
+        }
       }
     }
     
