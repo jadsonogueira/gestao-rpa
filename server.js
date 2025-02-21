@@ -9,6 +9,7 @@ const path = require('path');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
 const { fromBuffer } = require("pdf2pic");
+const pdfParse = require("pdf-parse");
 
 const app = express();
 app.use(cors());
@@ -195,28 +196,38 @@ app.post('/send-email', upload.any(), async (req, res) => {
           }
         } else if (file.fieldname === 'arquivo') {
           attachments.push({ filename: file.originalname, content: file.buffer });
+       
+        
         } else if (file.fieldname === 'arquivoPdf') {
-          try {
-            const pdfOptions = {
-              density: 150,
-              format: "jpg",
-              width: 1240,
-              height: 1754
-            };
-            const converter = fromBuffer(file.buffer, pdfOptions);
-            const convertedPages = await converter.bulk(-1);
-            for (const pageResult of convertedPages) {
-              const imageBuffer = Buffer.from(pageResult.base64, 'base64');
-              attachments.push({
-                filename: `${file.originalname.replace(/\.pdf$/i, '')}_page_${pageResult.page}.jpg`,
-                content: imageBuffer
-              });
-            }
-          } catch (error) {
-            console.error("Erro na conversão de PDF para JPG:", error);
-            return res.status(400).send("Erro na conversão do PDF para JPG.");
-          }
-        }
+  try {
+    const pdfOptions = {
+      density: 150,
+      format: "jpg",
+      width: 1240,
+      height: 1754
+    };
+    const converter = fromBuffer(file.buffer, pdfOptions);
+    
+    // Use pdf-parse para contar o número de páginas
+    const data = await pdfParse(file.buffer);
+    const numPages = data.numpages;
+    const pages = Array.from({ length: numPages }, (_, i) => i + 1);
+    
+    // Converter todas as páginas
+    const convertedPages = await converter.bulk(pages);
+    for (const pageResult of convertedPages) {
+      const imageBuffer = Buffer.from(pageResult.base64, 'base64');
+      attachments.push({
+        filename: `${file.originalname.replace(/\.pdf$/i, '')}_page_${pageResult.page}.jpg`,
+        content: imageBuffer
+      });
+    }
+  } catch (error) {
+    console.error("Erro na conversão de PDF para JPG:", error);
+    return res.status(400).send("Erro na conversão do PDF para JPG.");
+  }
+}
+
       }
     }
     
