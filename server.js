@@ -8,7 +8,6 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
-const { fromBuffer } = require("pdf2pic");
 const pdfParse = require("pdf-parse");
 
 const app = express();
@@ -38,7 +37,7 @@ mongoose
 
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
-  email: { type: String, required: true, unique: true },
+  email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
 });
 const User = mongoose.model('User', userSchema);
@@ -198,21 +197,34 @@ app.post('/send-email', upload.any(), async (req, res) => {
           attachments.push({ filename: file.originalname, content: file.buffer });
         } else if (file.fieldname === 'arquivoPdf') {
           try {
+            // Para contornar o erro "fromBuffer is not a function", usamos fromPath.
+            const fs = require("fs");
+            const os = require("os");
+            // Cria um arquivo temporário para o PDF
+            const tempDir = os.tmpdir();
+            const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
+            fs.writeFileSync(tempFilePath, file.buffer);
+            
+            // Importa a função fromPath do pdf2pic
+            const { fromPath } = require("pdf2pic");
             const pdfOptions = {
               density: 150,
               format: "jpg",
               width: 1240,
               height: 1754,
-              // savePath não é necessário se você quiser apenas o base64
+              saveFilename: "temp_conversion",
+              savePath: tempDir
             };
-            const converter = fromBuffer(file.buffer, pdfOptions);
+            const converter = fromPath(tempFilePath, pdfOptions);
+            
             // Contar páginas usando pdf-parse
             const data = await pdfParse(file.buffer);
             const numPages = data.numpages;
             console.log(`PDF possui ${numPages} páginas.`);
             const pages = Array.from({ length: numPages }, (_, i) => i + 1);
+            
             // Converter cada página individualmente
-            const convertedPages = await Promise.all(pages.map(page => converter.convert(page)));
+            const convertedPages = await Promise.all(pages.map(page => converter(page)));
             console.log(`Conversão concluída para ${convertedPages.length} páginas.`);
             for (const pageResult of convertedPages) {
               if (!pageResult.base64) {
@@ -224,6 +236,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
                 content: imageBuffer
               });
             }
+            // Remove o arquivo temporário
+            fs.unlinkSync(tempFilePath);
           } catch (error) {
             console.error("Erro na conversão de PDF para JPG:", error.message);
             return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
