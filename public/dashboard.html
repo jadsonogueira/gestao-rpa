@@ -99,7 +99,6 @@
     .progress-bar {
       background-color: #007bff;
     }
-
   </style>
 </head>
 <body class=".bg-dark">
@@ -207,22 +206,11 @@
           <div class="card-body text-center">
             <i class="fas fa-camera service-icon"></i>
             <h5 class="card-title">Inserir Imagem em Doc SEI</h5>
-            <p class="service-description">Adicione imagens a documentos existentes</p>
+            <p class="service-description">Adicione imagens a documentos existentes com múltiplas opções de upload</p>
           </div>
         </div>
       </div>
-
-      <!-- Inserir PDF em Doc SEI -->
-      <div class="col-md-6 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Inserir PDF em doc SEI')">
-          <div class="card-body text-center">
-            <i class="fas fa-file-pdf service-icon"></i>
-            <h5 class="card-title">Inserir PDF em Doc SEI</h5>
-            <p class="service-description">Converter PDF para JPG e enviar como anexo</p>
-          </div>
-        </div>
-      </div>
-
+      
       <!-- Assinatura em Doc SEI -->
       <div class="col-md-6 mb-4">
         <div class="card service-card" onclick="abrirFormulario('Assinatura em doc SEI')">
@@ -271,34 +259,4 @@
   </div>
 
   <!-- Modal do Formulário -->
-  <div class="modal fade" id="fluxoModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <!-- Cabeçalho do Modal -->
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalTitle"></h5>
-          <button type="button" class="close" data-dismiss="modal">
-            <span>&times;</span>
-          </button>
-        </div>
-        <!-- Corpo do Modal -->
-        <div class="modal-body">
-          <!-- Instruções do formulário serão adicionadas dinamicamente -->
-          <!-- Formulário -->
-          <form id="fluxoForm" enctype="multipart/form-data">
-            <!-- Campos do formulário serão adicionados dinamicamente -->
-                     
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scripts -->
-  <!-- jQuery e Bootstrap JS -->
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Seu arquivo JavaScript -->
-  <script src="script.js"></script>
-</body>
-</html>
+  <div class="modal fade
