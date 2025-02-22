@@ -153,7 +153,7 @@ function abrirFormulario(fluxo) {
       id: 'tipoDocumento', 
       placeholder: 'Tipo do Documento', 
       type: 'select', 
-      options: ['planilha de ISSQN', 'Nota(s) Fiscal(is)', 'Curva S']
+      options: ['planilha de ISSQN', 'Nota(s) Fiscal(is)', 'Curva S','Diário de Obras', 'Boletim de Desempenho Parcial - Medições', ]
     },
     { id: 'numero', placeholder: 'Número', type: 'text' },
     { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
