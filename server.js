@@ -29,7 +29,8 @@ const path = require('path');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
-// Importa a classe PDFImage do pdf-image (ImageMagick e Ghostscript devem estar instalados no servidor)
+
+// Importa a classe PDFImage do pdf-image
 const PDFImage = require("pdf-image").PDFImage;
 
 const app = express();
