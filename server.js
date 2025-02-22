@@ -231,6 +231,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
             const pdfImageOptions = {
               convertOptions: {
                 "-density": "150",
+                "-background": "white",
+                "-alpha": "remove",
+                "-resize": "1000",
                 "-quality": "90"
               }
             };
