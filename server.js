@@ -1,4 +1,24 @@
 require('dotenv').config();
+const { exec } = require('child_process');
+
+// Verifica se o ImageMagick está instalado
+exec('convert -version', (error, stdout, stderr) => {
+  if (error) {
+    console.error(`ImageMagick não está instalado ou não está no PATH: ${error.message}`);
+  } else {
+    console.log(`ImageMagick:\n${stdout}`);
+  }
+});
+
+// Verifica se o Ghostscript está instalado
+exec('gs -version', (error, stdout, stderr) => {
+  if (error) {
+    console.error(`Ghostscript não está instalado ou não está no PATH: ${error.message}`);
+  } else {
+    console.log(`Ghostscript:\n${stdout}`);
+  }
+});
+
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -9,9 +29,8 @@ const path = require('path');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
-
-// Importa o módulo pdf2pic conforme a documentação
-const { fromPath } = require("pdf2pic");
+// Importa a classe PDFImage do pdf-image (ImageMagick e Ghostscript devem estar instalados no servidor)
+const PDFImage = require("pdf-image").PDFImage;
 
 const app = express();
 app.use(cors());
@@ -207,41 +226,42 @@ app.post('/send-email', upload.any(), async (req, res) => {
             const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
             fs.writeFileSync(tempFilePath, file.buffer);
             
-            const pdfOptions = {
-              density: 150,
-              format: "jpg",
-              width: 1240,
-              height: 1754,
-              saveFilename: "temp_conversion",
-              savePath: tempDir
+            // Configura as opções para pdf-image (ImageMagick e Ghostscript devem estar instalados)
+            const pdfImageOptions = {
+              convertOptions: {
+                "-density": "150",
+                "-quality": "90"
+              }
             };
+            const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
             
             // Contar páginas usando pdf-parse
             const parsedData = await pdfParse(file.buffer);
             const numPages = parsedData.numpages;
             console.log(`PDF possui ${numPages} páginas.`);
-            const pages = Array.from({ length: numPages }, (_, i) => i + 1);
             
-            // Converter cada página individualmente utilizando fromPath sem "new"
-            const converter = fromPath(tempFilePath, pdfOptions);
-            const convertedPages = await Promise.all(
-              pages.map(page => converter(String(page)))
-            );
-            console.log(`Conversão concluída para ${convertedPages.length} páginas.`);
-            for (const pageResult of convertedPages) {
-              if (!pageResult.base64) {
-                throw new Error("Conversão sem resultado base64.");
-              }
-              const imageBuffer = Buffer.from(pageResult.base64, 'base64');
+            // Converter cada página (as páginas são indexadas a partir de 0)
+            let promises = [];
+            for (let i = 0; i < numPages; i++) {
+              promises.push(pdfImage.convertPage(i));
+            }
+            const imagePaths = await Promise.all(promises);
+            console.log(`Conversão concluída para ${imagePaths.length} páginas.`);
+            
+            // Ler cada imagem convertida e anexar
+            for (let i = 0; i < imagePaths.length; i++) {
+              const imageBuffer = fs.readFileSync(imagePaths[i]);
               attachments.push({
-                filename: `${file.originalname.replace(/\.pdf$/i, '')}_page_${pageResult.page}.jpg`,
+                filename: `${file.originalname.replace(/\.pdf$/i, '')}_page_${i + 1}.jpg`,
                 content: imageBuffer
               });
+              // Remove a imagem temporária
+              fs.unlinkSync(imagePaths[i]);
             }
-            // Remove o arquivo temporário
+            // Remove o arquivo temporário do PDF
             fs.unlinkSync(tempFilePath);
           } catch (error) {
-            console.error("Erro na conversão de PDF para JPG:", error.message);
+            console.error("Erro na conversão de PDF para JPG usando pdf-image:", error.message);
             return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
           }
         }
