@@ -10,9 +10,8 @@ const multer = require('multer');
 const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
 
-// Ajusta a importação do pdf2pic para suportar export default ou named export
-const pdf2picModule = require("pdf2pic");
-const fromPath = pdf2picModule.default ? pdf2picModule.default.fromPath : pdf2picModule.fromPath;
+// Importa pdf2pic diretamente (sem desestruturação)
+const fromPath = require("pdf2pic");
 
 const app = express();
 app.use(cors());
@@ -208,7 +207,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
             const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
             fs.writeFileSync(tempFilePath, file.buffer);
             
-            // Configurações para conversão
             const pdfOptions = {
               density: 150,
               format: "jpg",
@@ -225,7 +223,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
             const pages = Array.from({ length: numPages }, (_, i) => i + 1);
             
             // Converter cada página individualmente usando fromPath
-            const convertedPages = await Promise.all(pages.map(page => fromPath(tempFilePath, pdfOptions)(page)));
+            const convertedPages = await Promise.all(
+              pages.map(page => fromPath(tempFilePath, pdfOptions)(page))
+            );
             console.log(`Conversão concluída para ${convertedPages.length} páginas.`);
             for (const pageResult of convertedPages) {
               if (!pageResult.base64) {
