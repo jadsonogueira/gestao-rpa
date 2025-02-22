@@ -10,7 +10,7 @@ const multer = require('multer');
 const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
 
-// Importa pdf2pic diretamente (sem desestruturação)
+// Importa o módulo pdf2pic
 const fromPath = require("pdf2pic");
 
 const app = express();
@@ -222,9 +222,12 @@ app.post('/send-email', upload.any(), async (req, res) => {
             console.log(`PDF possui ${numPages} páginas.`);
             const pages = Array.from({ length: numPages }, (_, i) => i + 1);
             
-            // Converter cada página individualmente usando fromPath
+            // Instancia a classe do pdf2pic usando new
+            const converter = new fromPath(tempFilePath, pdfOptions);
+            
+            // Converter cada página individualmente usando Promise.all
             const convertedPages = await Promise.all(
-              pages.map(page => fromPath(tempFilePath, pdfOptions)(page))
+              pages.map(page => converter.convert(page))
             );
             console.log(`Conversão concluída para ${convertedPages.length} páginas.`);
             for (const pageResult of convertedPages) {
