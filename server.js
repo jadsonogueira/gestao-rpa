@@ -10,6 +10,10 @@ const multer = require('multer');
 const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
 
+// Ajusta a importação do pdf2pic para suportar export default ou named export
+const pdf2picModule = require("pdf2pic");
+const fromPath = pdf2picModule.default ? pdf2picModule.default.fromPath : pdf2picModule.fromPath;
+
 const app = express();
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
@@ -197,16 +201,14 @@ app.post('/send-email', upload.any(), async (req, res) => {
           attachments.push({ filename: file.originalname, content: file.buffer });
         } else if (file.fieldname === 'arquivoPdf') {
           try {
-            // Para contornar o erro "fromBuffer is not a function", usamos fromPath.
             const fs = require("fs");
             const os = require("os");
-            // Cria um arquivo temporário para o PDF
+            // Grava o buffer em um arquivo temporário
             const tempDir = os.tmpdir();
             const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
             fs.writeFileSync(tempFilePath, file.buffer);
             
-            // Importa a função fromPath do pdf2pic
-            const { fromPath } = require("pdf2pic");
+            // Configurações para conversão
             const pdfOptions = {
               density: 150,
               format: "jpg",
@@ -215,16 +217,15 @@ app.post('/send-email', upload.any(), async (req, res) => {
               saveFilename: "temp_conversion",
               savePath: tempDir
             };
-            const converter = fromPath(tempFilePath, pdfOptions);
             
             // Contar páginas usando pdf-parse
-            const data = await pdfParse(file.buffer);
-            const numPages = data.numpages;
+            const parsedData = await pdfParse(file.buffer);
+            const numPages = parsedData.numpages;
             console.log(`PDF possui ${numPages} páginas.`);
             const pages = Array.from({ length: numPages }, (_, i) => i + 1);
             
-            // Converter cada página individualmente
-            const convertedPages = await Promise.all(pages.map(page => converter(page)));
+            // Converter cada página individualmente usando fromPath
+            const convertedPages = await Promise.all(pages.map(page => fromPath(tempFilePath, pdfOptions)(page)));
             console.log(`Conversão concluída para ${convertedPages.length} páginas.`);
             for (const pageResult of convertedPages) {
               if (!pageResult.base64) {
