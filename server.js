@@ -37,37 +37,45 @@ const app = express();
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
-if (
- !process.env.MONGODB_URL ||
- !process.env.JWT_SECRET ||
- !process.env.EMAIL_USER ||
- !process.env.EMAIL_PASS
-) {
-console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
-process.exit(1);
-}
+/*
+// Caso queira manter a checagem e encerrar se as variáveis não estiverem definidas,
+// descomente o bloco abaixo. Caso contrário, ele permanecerá comentado para evitar
+// a saída forçada da aplicação quando as variáveis não estiverem setadas.
+
+// if (
+//   !process.env.MONGODB_URL ||
+//   !process.env.JWT_SECRET ||
+//   !process.env.EMAIL_USER ||
+//   !process.env.EMAIL_PASS
+// ) {
+//   console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
+//   process.exit(1);
+// }
+*/
 
 mongoose
- .connect(process.env.MONGODB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
- })
+  .connect(process.env.MONGODB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log('MongoDB conectado'))
   .catch((err) => {
-  console.error('Erro ao conectar ao MongoDB:', err);
-process.exit(1);
-});
+    console.error('Erro ao conectar ao MongoDB:', err);
+    // Aqui não encerra mais o processo, mas se quiser encerrar, descomente:
+    // process.exit(1);
+  });
 
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
 });
+
 const User = mongoose.model('User', userSchema);
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/test-db', (req, res) => {
-  res.send('Conexão com o MongoDB funcionando.');
+  res.send('Conexão com o MongoDB funcionando (se o MONGODB_URL estiver configurado).');
 });
 
 app.post('/signup', express.json(), async (req, res) => {
@@ -104,7 +112,8 @@ app.post('/login', express.json(), async (req, res) => {
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).send('Senha incorreta');
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    // Se JWT_SECRET não estiver definido, esse jwt.sign falhará:
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'chave_padrao', {
       expiresIn: '1h',
     });
     res.send({ token });
@@ -126,10 +135,12 @@ app.post('/send-email', upload.any(), async (req, res) => {
     if (!dados.email) {
       return res.status(400).send('O campo de e-mail é obrigatório.');
     }
+
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
     mailContent += `Requerente: ${dados.requerente || ''}\n`;
     mailContent += `Email: ${dados.email || ''}\n`;
     
+    // Exemplos de campos adicionais, dependendo do "fluxo"
     if (fluxo === 'Liberar assinatura externa') {
       mailContent += `Assinante: ${dados.assinante || ''}\n`;
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
@@ -168,14 +179,18 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
     
+    // Se EMAIL_USER e EMAIL_PASS não estiverem definidos, isso poderá falhar
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      auth: { 
+        user: process.env.EMAIL_USER || 'usuario_nao_definido@gmail.com',
+        pass: process.env.EMAIL_PASS || 'senha_nao_definida'
+      },
     });
     
     const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: 'jadson.pena@dnit.gov.br',
+      from: process.env.EMAIL_USER || 'usuario_nao_definido@gmail.com',
+      to: 'jadson.pena@dnit.gov.br', // Ajuste conforme necessário
       subject: `${fluxo}`,
       text: mailContent,
     };
@@ -293,5 +308,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
+// Porta padrão ou 8080 se não estiver definida no .env
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
