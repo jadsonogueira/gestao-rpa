@@ -20,7 +20,7 @@ exec('gs -version', (error, stdout, stderr) => {
 });
 
 const express = require('express');
-//const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -37,26 +37,26 @@ const app = express();
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
-//if (
- // !process.env.MONGODB_URL ||
- // !process.env.JWT_SECRET ||
- // !process.env.EMAIL_USER ||
- // !process.env.EMAIL_PASS
-//) {
-  //console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
-  //process.exit(1);
-//}
+if (
+ !process.env.MONGODB_URL ||
+ !process.env.JWT_SECRET ||
+ !process.env.EMAIL_USER ||
+ !process.env.EMAIL_PASS
+) {
+console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
+process.exit(1);
+}
 
-//mongoose
- // .connect(process.env.MONGODB_URL, {
- //   useNewUrlParser: true,
- //   useUnifiedTopology: true,
-//  })
-  //.then(() => console.log('MongoDB conectado'))
-  //.catch((err) => {
-    //console.error('Erro ao conectar ao MongoDB:', err);
-    //process.exit(1);
-  //});
+mongoose
+ .connect(process.env.MONGODB_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+ })
+  .then(() => console.log('MongoDB conectado'))
+  .catch((err) => {
+  console.error('Erro ao conectar ao MongoDB:', err);
+process.exit(1);
+});
 
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
