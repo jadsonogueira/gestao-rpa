@@ -20,7 +20,7 @@ exec('gs -version', (error, stdout, stderr) => {
 });
 
 const express = require('express');
-const mongoose = require('mongoose');
+//const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
