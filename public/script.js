@@ -55,7 +55,7 @@ const fluxoInstrucoes = {
   'Analise de processo': 'Preencha os campos para análise do processo SEI.'
 };
 
-// Abre o modal e gera o formulário dinamicamente
+// Função para abrir o modal e gerar o formulário
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
   const modalBody = document.querySelector('.modal-body');
@@ -68,7 +68,7 @@ function abrirFormulario(fluxo) {
   // Instruções
   const instrucaoText = document.createElement('p');
   instrucaoText.textContent = fluxoInstrucoes[fluxo] || 'Preencha todos os campos.';
-
+  
   modalBody.innerHTML = '';
   modalBody.appendChild(instrucaoText);
 
@@ -78,9 +78,8 @@ function abrirFormulario(fluxo) {
   fluxoForm.enctype = 'multipart/form-data';
   modalBody.appendChild(fluxoForm);
 
-  let campos = [];
-
   // Define os campos de acordo com o fluxo
+  let campos = [];
   if (fluxo === 'Consultar empenho') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
@@ -165,7 +164,7 @@ function abrirFormulario(fluxo) {
     return;
   }
 
-  // Cria os campos do formulário dinamicamente
+  // Cria os campos dinamicamente
   campos.forEach((campo) => {
     const formGroup = document.createElement('div');
     formGroup.className = 'form-group';
@@ -181,12 +180,14 @@ function abrirFormulario(fluxo) {
       input.name = campo.id;
       input.className = 'form-control';
       input.required = true;
+
       const optionInicial = document.createElement('option');
       optionInicial.value = '';
       optionInicial.disabled = true;
       optionInicial.selected = true;
       optionInicial.textContent = 'Selecione uma opção';
       input.appendChild(optionInicial);
+
       campo.options.forEach((opcao) => {
         const option = document.createElement('option');
         option.value = opcao;
@@ -225,7 +226,7 @@ function abrirFormulario(fluxo) {
         input.appendChild(radioDiv);
       });
 
-      // Listener para mostrar/ocultar containers conforme o método escolhido
+      // Listener para exibir containers (Imagens, ZIP, PDF) dependendo do método
       input.addEventListener('change', function(e) {
         const metodo = e.target.value;
         const imagensContainer = document.getElementById('imagensContainer');
@@ -247,7 +248,7 @@ function abrirFormulario(fluxo) {
             pdfInput.value = '';
           }
           const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
-          imageInputs.forEach(input => input.required = true);
+          imageInputs.forEach(inp => inp.required = true);
         } else if (metodo === 'Arquivo ZIP') {
           imagensContainer.style.display = 'none';
           zipContainer.style.display = 'block';
@@ -260,7 +261,7 @@ function abrirFormulario(fluxo) {
             pdfInput.value = '';
           }
           const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
-          imageInputs.forEach(input => { input.required = false; input.value = ''; });
+          imageInputs.forEach(inp => { inp.required = false; inp.value = ''; });
         } else if (metodo === 'PDF para JPG') {
           imagensContainer.style.display = 'none';
           zipContainer.style.display = 'none';
@@ -270,11 +271,12 @@ function abrirFormulario(fluxo) {
           numeroImagensSelect.required = false;
           numeroImagensSelect.value = '';
           const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
-          imageInputs.forEach(input => { input.required = false; input.value = ''; });
+          imageInputs.forEach(inp => { inp.required = false; inp.value = ''; });
           if (pdfInput) pdfInput.required = true;
         }
       });
     } else {
+      // input padrão (text, email, file, etc.)
       input = document.createElement('input');
       input.type = campo.type;
       input.className = 'form-control';
@@ -334,6 +336,7 @@ function abrirFormulario(fluxo) {
     for (let i = 1; i <= numImagens; i++) {
       const formGroup = document.createElement('div');
       formGroup.className = 'form-group';
+
       const label = document.createElement('label');
       label.htmlFor = 'imagem' + i;
       label.textContent = 'Imagem ' + i;
@@ -404,25 +407,6 @@ function abrirFormulario(fluxo) {
   pdfGroup.appendChild(pdfInput);
   pdfContainer.appendChild(pdfGroup);
 
-  // Barra de Progresso
-  const progressContainer = document.createElement('div');
-  progressContainer.className = 'progress mt-3';
-  progressContainer.id = 'uploadProgressContainer';
-  progressContainer.style.display = 'none';
-  progressContainer.style.height = '20px';
-
-  const progressBar = document.createElement('div');
-  progressBar.className = 'progress-bar';
-  progressBar.id = 'uploadProgressBar';
-  progressBar.role = 'progressbar';
-  progressBar.style.width = '0%';
-  progressBar.setAttribute('aria-valuenow', '0');
-  progressBar.setAttribute('aria-valuemin', '0');
-  progressBar.setAttribute('aria-valuemax', '100');
-
-  progressContainer.appendChild(progressBar);
-  fluxoForm.appendChild(progressContainer);
-
   // Botão de submit
   const submitButton = document.createElement('button');
   submitButton.type = 'submit';
@@ -432,10 +416,12 @@ function abrirFormulario(fluxo) {
 
   // Evento de submit do formulário
   fluxoForm.onsubmit = enviarFormularioAxios;
+
+  // Abre o modal
   $('#fluxoModal').modal('show');
 }
 
-// Envia o formulário usando Axios
+// Envia o formulário usando Axios (SEM barra de progresso)
 function enviarFormularioAxios(e) {
   e.preventDefault();
   const fluxo = document.getElementById('modalTitle').innerText;
@@ -458,43 +444,24 @@ function enviarFormularioAxios(e) {
     }
   });
 
-  // Exibe a barra de progresso
-  const progressContainer = document.getElementById('uploadProgressContainer');
-  const progressBar = document.getElementById('uploadProgressBar');
-  progressContainer.style.display = 'block';
-  progressBar.style.width = '0%';
-  progressBar.setAttribute('aria-valuenow', '0');
-
-  // Envia via Axios
-  axios.post(`${apiUrl}/send-email`, formData, {
-    onUploadProgress: function (progressEvent) {
-      // Se o ambiente permitir, aqui teremos o progresso
-      if (progressEvent.lengthComputable) {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        progressBar.style.width = percentCompleted + '%';
-        progressBar.setAttribute('aria-valuenow', percentCompleted);
+  // Envia via Axios (sem onUploadProgress)
+  axios.post(`${apiUrl}/send-email`, formData)
+    .then(response => {
+      if (response.status === 200) {
+        showAlert('Solicitação enviada com sucesso.', 'success');
+      } else {
+        showAlert(`Erro ao enviar a solicitação: ${response.data}`, 'danger');
       }
-    }
-  })
-  .then(response => {
-    // Upload completo ou servidor respondeu
-    progressContainer.style.display = 'none';
-    if (response.status === 200) {
-      showAlert('Solicitação enviada com sucesso.', 'success');
-    } else {
-      showAlert(`Erro ao enviar a solicitação: ${response.data}`, 'danger');
-    }
-    $('#fluxoModal').modal('hide');
-  })
-  .catch(error => {
-    progressContainer.style.display = 'none';
-    if (error.response) {
-      showAlert(`Erro ao enviar: ${error.response.data}`, 'danger');
-    } else {
-      showAlert(`Erro ao enviar o formulário: ${error.message}`, 'danger');
-    }
-    $('#fluxoModal').modal('hide');
-  });
+      $('#fluxoModal').modal('hide');
+    })
+    .catch(error => {
+      if (error.response) {
+        showAlert(`Erro ao enviar: ${error.response.data}`, 'danger');
+      } else {
+        showAlert(`Erro ao enviar o formulário: ${error.message}`, 'danger');
+      }
+      $('#fluxoModal').modal('hide');
+    });
 }
 
 // Expõe a função abrirFormulario no escopo global (para o HTML)
