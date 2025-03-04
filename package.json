@@ -28,6 +28,7 @@
     "nodemailer": "^6.9.15",
     "pdf-image": "1.1.0",
     "pdf-parse": "^1.1.1",
+    "pdf-poppler": "^0.2.1",
     "pdf2pic": "^3.1.4",
     "pg": "^8.13.0"
   }
