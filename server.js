@@ -230,11 +230,11 @@ app.post('/send-email', upload.any(), async (req, res) => {
             // Configura as opções para pdf-image (ImageMagick e Ghostscript devem estar instalados)
             const pdfImageOptions = {
               convertOptions: {
-                "-density": "150",
+                "-density": "72",
                 "-background": "white",
                 "-alpha": "remove",
-                "-resize": "1000",
-                "-quality": "90"
+                "-resize": "800",
+                "-quality": "80"
               }
             };
             const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
