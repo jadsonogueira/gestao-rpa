@@ -37,39 +37,46 @@ const app = express();
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
+// Verifica variáveis de ambiente obrigatórias
 if (
- !process.env.MONGODB_URL ||
- !process.env.JWT_SECRET ||
- !process.env.EMAIL_USER ||
- !process.env.EMAIL_PASS
+  !process.env.MONGODB_URL ||
+  !process.env.JWT_SECRET ||
+  !process.env.EMAIL_USER ||
+  !process.env.EMAIL_PASS
 ) {
-console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
-process.exit(1);
+  console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
+  process.exit(1);
 }
 
+// Conexão com MongoDB
 mongoose
- .connect(process.env.MONGODB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
- })
+  .connect(process.env.MONGODB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log('MongoDB conectado'))
   .catch((err) => {
-  console.error('Erro ao conectar ao MongoDB:', err);
-process.exit(1);
-});
+    console.error('Erro ao conectar ao MongoDB:', err);
+    process.exit(1);
+  });
 
+// Schema e Model de usuário
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
 });
 const User = mongoose.model('User', userSchema);
+
+// Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Rota de teste da DB
 app.get('/test-db', (req, res) => {
   res.send('Conexão com o MongoDB funcionando.');
 });
 
+// Rota de cadastro
 app.post('/signup', express.json(), async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -92,6 +99,7 @@ app.post('/signup', express.json(), async (req, res) => {
   }
 });
 
+// Rota de login
 app.post('/login', express.json(), async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -104,6 +112,7 @@ app.post('/login', express.json(), async (req, res) => {
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).send('Senha incorreta');
+    
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: '1h',
     });
@@ -114,11 +123,13 @@ app.post('/login', express.json(), async (req, res) => {
   }
 });
 
+// Configuração do multer
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
 });
 
+// Rota principal de envio de e-mail
 app.post('/send-email', upload.any(), async (req, res) => {
   try {
     const fluxo = req.body.fluxo;
@@ -126,10 +137,13 @@ app.post('/send-email', upload.any(), async (req, res) => {
     if (!dados.email) {
       return res.status(400).send('O campo de e-mail é obrigatório.');
     }
+
+    // Monta conteúdo do e-mail
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
     mailContent += `Requerente: ${dados.requerente || ''}\n`;
     mailContent += `Email: ${dados.email || ''}\n`;
-    
+
+    // Ajusta campos conforme o fluxo
     if (fluxo === 'Liberar assinatura externa') {
       mailContent += `Assinante: ${dados.assinante || ''}\n`;
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
@@ -167,31 +181,37 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Número: ${dados.numero || ''}\n`;
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
-    
+
+    // Configura o transporte de e-mail
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
-    
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: 'jadson.pena@dnit.gov.br',
       subject: `${fluxo}`,
       text: mailContent,
     };
-    
+
+    // Array para anexos
     const attachments = [];
-    
+
+    // Verifica se há arquivos enviados
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         if (file.fieldname.startsWith('imagem')) {
+          // Valida se é imagem
           if (!file.mimetype.startsWith('image/')) {
             return res.status(400).send(`Tipo de arquivo não permitido: ${file.originalname}`);
           }
+          // Limite de 5 MB
           if (file.size > 5 * 1024 * 1024) {
             return res.status(400).send(`Arquivo muito grande: ${file.originalname}`);
           }
           attachments.push({ filename: file.originalname, content: file.buffer });
+
         } else if (file.fieldname === 'arquivoZip') {
           try {
             const zip = new AdmZip(file.buffer);
@@ -216,18 +236,22 @@ app.post('/send-email', upload.any(), async (req, res) => {
             console.error('Erro ao processar o arquivo ZIP:', error);
             return res.status(400).send('Erro ao processar o arquivo ZIP.');
           }
+
         } else if (file.fieldname === 'arquivo') {
+          // Apenas anexa o arquivo diretamente
           attachments.push({ filename: file.originalname, content: file.buffer });
+
         } else if (file.fieldname === 'arquivoPdf') {
+          // Conversão de PDF em JPG
           try {
             const fs = require("fs");
             const os = require("os");
-            // Grava o buffer em um arquivo temporário
+            // Salva o PDF temporariamente
             const tempDir = os.tmpdir();
             const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
             fs.writeFileSync(tempFilePath, file.buffer);
-            
-            // Configura as opções para pdf-image (ImageMagick e Ghostscript devem estar instalados)
+
+            // Opções para pdf-image (ImageMagick/Ghostscript devem estar instalados)
             const pdfImageOptions = {
               convertOptions: {
                 "-density": "72",
@@ -238,32 +262,35 @@ app.post('/send-email', upload.any(), async (req, res) => {
               }
             };
             const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
-            
-            // Contar páginas usando pdf-parse
+
+            // Conta as páginas usando pdf-parse
             const parsedData = await pdfParse(file.buffer);
             const numPages = parsedData.numpages;
             console.log(`PDF possui ${numPages} páginas.`);
-            
-            // Converter cada página (as páginas são indexadas a partir de 0)
-            let promises = [];
+
+            // Converte cada página de forma SEQUENCIAL
+            const imagePaths = [];
             for (let i = 0; i < numPages; i++) {
-              promises.push(pdfImage.convertPage(i));
+              console.log(`Convertendo página ${i + 1} de ${numPages}...`);
+              // Converte a página i
+              const convertedPath = await pdfImage.convertPage(i);
+              imagePaths.push(convertedPath);
             }
-            const imagePaths = await Promise.all(promises);
             console.log(`Conversão concluída para ${imagePaths.length} páginas.`);
-            
-            // Ler cada imagem convertida e anexar
+
+            // Lê cada imagem e anexa
             for (let i = 0; i < imagePaths.length; i++) {
               const imageBuffer = fs.readFileSync(imagePaths[i]);
               attachments.push({
                 filename: `${file.originalname.replace(/\.pdf$/i, '')}_page_${i + 1}.jpg`,
                 content: imageBuffer
               });
-              // Remove a imagem temporária
+              // Remove o arquivo de imagem temporário
               fs.unlinkSync(imagePaths[i]);
             }
-            // Remove o arquivo temporário do PDF
+            // Remove o PDF temporário
             fs.unlinkSync(tempFilePath);
+
           } catch (error) {
             console.error("Erro na conversão de PDF para JPG usando pdf-image:", error.message);
             return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
@@ -271,11 +298,13 @@ app.post('/send-email', upload.any(), async (req, res) => {
         }
       }
     }
-    
+
+    // Se houver anexos, adiciona ao e-mail
     if (attachments.length > 0) {
       mailOptions.attachments = attachments;
     }
-    
+
+    // Envia o e-mail
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error('Erro ao enviar o e-mail:', error);
@@ -289,9 +318,11 @@ app.post('/send-email', upload.any(), async (req, res) => {
   }
 });
 
+// Rota para a página principal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
+// Inicia o servidor
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
