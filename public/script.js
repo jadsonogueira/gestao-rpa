@@ -18,6 +18,21 @@ function showAlert(message, type = 'success') {
   }
 }
 
+// Funções para mostrar/esconder o overlay "Aguarde"
+function showLoadingOverlay() {
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
+    overlay.style.display = 'flex'; // "flex" para centralizar o conteúdo
+  }
+}
+
+function hideLoadingOverlay() {
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+}
+
 // Listas para seleção
 const listaUsuarios = [
   'Bruno Moreira de Medeiros',
@@ -421,16 +436,18 @@ function abrirFormulario(fluxo) {
   $('#fluxoModal').modal('show');
 }
 
-// Envia o formulário usando Axios (SEM barra de progresso)
+// Envia o formulário usando Axios, com overlay "Aguarde"
 function enviarFormularioAxios(e) {
   e.preventDefault();
+
+  // Exibe overlay de "Processando, aguarde..."
+  showLoadingOverlay();
+
   const fluxo = document.getElementById('modalTitle').innerText;
   const formData = new FormData();
-
-  // Adiciona o campo "fluxo"
   formData.append('fluxo', fluxo);
 
-  // Coleta todos os inputs e monta o FormData
+  // Coleta inputs do form
   const inputs = e.target.querySelectorAll('input, textarea, select');
   inputs.forEach((input) => {
     if (input.type === 'file' && input.files.length > 0) {
@@ -444,9 +461,12 @@ function enviarFormularioAxios(e) {
     }
   });
 
-  // Envia via Axios (sem onUploadProgress)
+  // Faz requisição via Axios
   axios.post(`${apiUrl}/send-email`, formData)
     .then(response => {
+      // Oculta overlay
+      hideLoadingOverlay();
+
       if (response.status === 200) {
         showAlert('Solicitação enviada com sucesso.', 'success');
       } else {
@@ -455,6 +475,8 @@ function enviarFormularioAxios(e) {
       $('#fluxoModal').modal('hide');
     })
     .catch(error => {
+      hideLoadingOverlay();
+
       if (error.response) {
         showAlert(`Erro ao enviar: ${error.response.data}`, 'danger');
       } else {
