@@ -254,9 +254,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
             // Opções para pdf-image (ImageMagick/Ghostscript devem estar instalados)
             const pdfImageOptions = {
               convertOptions: {
-                "-density": "160",         // Aumenta a nitidez de texto
+                "-density": "2000",         // Aumenta a nitidez de texto
                 "-background": "white",
-                "-alpha": "remove",
                 "-resize": "1100",
                 "-strip": null,
                 "-colorspace": "Gray",
