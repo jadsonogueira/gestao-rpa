@@ -258,7 +258,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
                 "-background": "white",
                 "-resize": "1100",
                 "-strip": null,
-                "-colorspace": "Gray",
                 "-quality": "100"           // Reduz um pouco a qualidade (compressão) para não inflar o arquivo
               }
             };
