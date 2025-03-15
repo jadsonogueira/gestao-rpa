@@ -29,6 +29,8 @@ const path = require('path');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
+const fs = require("fs");
+const os = require("os");
 
 // Importa a classe PDFImage do pdf-image
 const PDFImage = require("pdf-image").PDFImage;
@@ -36,6 +38,19 @@ const PDFImage = require("pdf-image").PDFImage;
 const app = express();
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
+
+// -----------------------------------------------------
+// Função para remover acentos e caracteres especiais do nome do arquivo
+function sanitizeFilename(filename) {
+  return filename
+    // Separa acentos
+    .normalize("NFD")
+    // Remove acentos (faixa U+0300 a U+036f)
+    .replace(/[\u0300-\u036f]/g, "")
+    // Substitui qualquer caractere fora de [a-zA-Z0-9._-] por underscore
+    .replace(/[^\w.\-]/g, "_");
+}
+// -----------------------------------------------------
 
 // Verifica variáveis de ambiente obrigatórias
 if (
@@ -201,6 +216,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
     // Verifica se há arquivos enviados
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
+        // Sanitiza o nome do arquivo enviado
+        const safeOriginalName = sanitizeFilename(file.originalname);
+
         if (file.fieldname.startsWith('imagem')) {
           // Valida se é imagem
           if (!file.mimetype.startsWith('image/')) {
@@ -210,7 +228,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
           if (file.size > 5 * 1024 * 1024) {
             return res.status(400).send(`Arquivo muito grande: ${file.originalname}`);
           }
-          attachments.push({ filename: file.originalname, content: file.buffer });
+          attachments.push({ filename: safeOriginalName, content: file.buffer });
 
         } else if (file.fieldname === 'arquivoZip') {
           try {
@@ -230,7 +248,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
               if (fileContent.length > 5 * 1024 * 1024) {
                 return res.status(400).send(`Arquivo muito grande no ZIP: ${entry.entryName}`);
               }
-              attachments.push({ filename: entry.entryName, content: fileContent });
+              // Sanitiza o nome de cada arquivo dentro do ZIP
+              const safeZipName = sanitizeFilename(entry.entryName);
+              attachments.push({ filename: safeZipName, content: fileContent });
             }
           } catch (error) {
             console.error('Erro ao processar o arquivo ZIP:', error);
@@ -238,15 +258,12 @@ app.post('/send-email', upload.any(), async (req, res) => {
           }
 
         } else if (file.fieldname === 'arquivo') {
-          // Apenas anexa o arquivo diretamente
-          attachments.push({ filename: file.originalname, content: file.buffer });
+          // Apenas anexa o arquivo diretamente, com nome sanitizado
+          attachments.push({ filename: safeOriginalName, content: file.buffer });
 
         } else if (file.fieldname === 'arquivoPdf') {
           // Conversão de PDF em JPG
           try {
-            const fs = require("fs");
-            const os = require("os");
-            // Salva o PDF temporariamente
             const tempDir = os.tmpdir();
             const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
             fs.writeFileSync(tempFilePath, file.buffer);
@@ -258,7 +275,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
                 "-background": "white",
                 "-resize": "1100",
                 "-strip": null,
-                "-quality": "100"           // Reduz um pouco a qualidade (compressão) para não inflar o arquivo
+                "-quality": "100"          // Menos compressão (arquivo maior)
               }
             };
             
@@ -273,17 +290,21 @@ app.post('/send-email', upload.any(), async (req, res) => {
             const imagePaths = [];
             for (let i = 0; i < numPages; i++) {
               console.log(`Convertendo página ${i + 1} de ${numPages}...`);
-              // Converte a página i
               const convertedPath = await pdfImage.convertPage(i);
               imagePaths.push(convertedPath);
             }
             console.log(`Conversão concluída para ${imagePaths.length} páginas.`);
 
             // Lê cada imagem e anexa
+            // Gera um nome base sem ".pdf"
+            const baseName = file.originalname.replace(/\.pdf$/i, '');
+            const safeBase = sanitizeFilename(baseName);
+
             for (let i = 0; i < imagePaths.length; i++) {
               const imageBuffer = fs.readFileSync(imagePaths[i]);
+              // Nome final ex.: "Documento_page_1.jpg"
               attachments.push({
-                filename: `${file.originalname.replace(/\.pdf$/i, '')}_page_${i + 1}.jpg`,
+                filename: `${safeBase}_page_${i + 1}.jpg`,
                 content: imageBuffer
               });
               // Remove o arquivo de imagem temporário
