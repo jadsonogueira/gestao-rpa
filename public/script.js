@@ -173,6 +173,7 @@ function abrirFormulario(fluxo) {
       { id: 'numero', placeholder: 'Número', type: 'text' },
       { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
       { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
+      { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] },
     ];
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
