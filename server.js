@@ -271,14 +271,13 @@ app.post('/send-email', upload.any(), async (req, res) => {
             // Opções para pdf-image (ImageMagick/Ghostscript devem estar instalados)
             const pdfImageOptions = {
               convertOptions: {
-                "-density": "400",         // Aumenta a nitidez de texto
+                "-density": "300",
                 "-background": "white",
-                "-resize": "1000",
                 "-strip": null,
-                "-quality": "100"          // Menos compressão (arquivo maior)
+                "-quality": "90"        // Menos compressão (arquivo maior)
               }
             };
-            
+   
             const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
 
             // Conta as páginas usando pdf-parse
