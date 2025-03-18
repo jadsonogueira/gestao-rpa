@@ -270,11 +270,12 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
             // Opções para pdf-image (ImageMagick/Ghostscript devem estar instalados)
             const pdfImageOptions = {
-              convertOptions: {
-                "-density": "300",
-                "-background": "white",
-                "-strip": null,
-                "-quality": "90"        // Menos compressão (arquivo maior)
+             convertOptions: {
+            "-density": "200",   // Rasterização moderada
+            "-background": "white",
+            "-resize": "1000",   // Limita a 1000 px de largura
+            "-strip": null,
+            "-quality": "90"
               }
             };
    
