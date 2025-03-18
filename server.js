@@ -309,7 +309,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
               const imageBuffer = fs.readFileSync(imagePaths[i]);
               // Nome final ex.: "Documento_page_1.jpg"
               attachments.push({
-                filename: `${safeBase}_page_${i + 1}.jpg`,
+                filename: `${safeBase}_page_${i + 1}.png`,
                 content: imageBuffer
               });
               // Remove o arquivo de imagem temporário
