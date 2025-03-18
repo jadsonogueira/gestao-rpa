@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const { exec } = require('child_process');
 
@@ -263,28 +262,25 @@ app.post('/send-email', upload.any(), async (req, res) => {
           attachments.push({ filename: safeOriginalName, content: file.buffer });
 
         } else if (file.fieldname === 'arquivoPdf') {
-          // Conversão de PDF em JPG
+          // Conversão de PDF para PNG
           try {
             const tempDir = os.tmpdir();
             const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
             fs.writeFileSync(tempFilePath, file.buffer);
 
             const pdfImageOptions = {
-            // Indica explicitamente o tipo de arquivo de saída
-            convertFileType: "png",
-          
-            // Opções do ImageMagick/Ghostscript
-            convertOptions: {
-              "-density": "300",
-              "-background": "white",
-              "-strip": null,
-              "-resize": "1000",
-              // "-sharpen": "0x1.0",  // opcional, se quiser reforçar nitidez pós-resize
-              // "-colorspace": "Gray" // se quiser P&B
-              // Remova "-quality" pois é um parâmetro específico de JPEG
-            }
-          };
-               
+              // Força saída em PNG
+              convertFileType: "png",
+              // Opções do ImageMagick/Ghostscript
+              convertOptions: {
+                "-density": "300",
+                "-background": "white",
+                "-strip": null,
+                "-resize": "1000"
+                // Se quiser, pode testar "-sharpen": "0x1.0" ou "-colorspace": "Gray"
+              }
+            };
+            
             const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
 
             // Conta as páginas usando pdf-parse
@@ -308,9 +304,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
             for (let i = 0; i < imagePaths.length; i++) {
               const imageBuffer = fs.readFileSync(imagePaths[i]);
-              // Nome final ex.: "Documento_page_1.jpg"
+              // Nome final ex.: "Documento_page_1.png"
               attachments.push({
-                filename: `${safeBase}_page_${i + 1}.jpg`,
+                filename: `${safeBase}_page_${i + 1}.png`,
                 content: imageBuffer
               });
               // Remove o arquivo de imagem temporário
@@ -320,8 +316,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
             fs.unlinkSync(tempFilePath);
 
           } catch (error) {
-            console.error("Erro na conversão de PDF para JPG usando pdf-image:", error.message);
-            return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
+            console.error("Erro na conversão de PDF usando pdf-image:", error.message);
+            return res.status(400).send("Erro na conversão do PDF: " + error.message);
           }
         }
       }
