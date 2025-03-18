@@ -268,19 +268,22 @@ app.post('/send-email', upload.any(), async (req, res) => {
             const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
             fs.writeFileSync(tempFilePath, file.buffer);
 
-            // Opções para pdf-image (ImageMagick/Ghostscript devem estar instalados)
             const pdfImageOptions = {
+            // Indica explicitamente o tipo de arquivo de saída
+            convertFileType: "png",
+          
+            // Opções do ImageMagick/Ghostscript
             convertOptions: {
-              "-density": "200",
+              "-density": "300",
               "-background": "white",
               "-strip": null,
               "-resize": "1000",
-              "-sharpen": "0x1.0",   // Ajuste o valor (ex.: 0x1.0 ou 0x2.0)
-              "-quality": "90"
+              // "-sharpen": "0x1.0",  // opcional, se quiser reforçar nitidez pós-resize
+              // "-colorspace": "Gray" // se quiser P&B
+              // Remova "-quality" pois é um parâmetro específico de JPEG
             }
           };
-
-   
+               
             const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
 
             // Conta as páginas usando pdf-parse
