@@ -271,7 +271,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
             const pdfImageOptions = {
             convertFileType: "png",
             convertOptions: {
-              "-density": "200",
+              "-density": "250",
               "-background": "white",
               "-alpha": "remove",
               "-alpha": "off",
@@ -279,7 +279,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
               "-strip": null,
               "-filter": "Lanczos",
               "-resize": "1200",
-              "-sharpen": "1x1.0"
+              "-sharpen": "2x1.0"
             }
           };
                
