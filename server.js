@@ -274,7 +274,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
           
             // Opções do ImageMagick/Ghostscript
             convertOptions: {
-              "-density": "350",
+              "-density": "200",
               "-background": "white",
               "-strip": null,
               "-resize": "1000",
