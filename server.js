@@ -279,7 +279,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
               "-strip": null,
               "-filter": "Lanczos",
               "-resize": "1200",
-              "-sharpen": "2x1.0"
+              "-sharpen": "2x2.0"
             }
           };
                
