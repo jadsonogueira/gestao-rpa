@@ -35,6 +35,7 @@ function hideLoadingOverlay() {
 
 // Listas para seleção
 const listaUsuarios = [
+  'Antônio Sílvio Rabelo Neto',
   'Bruno Moreira de Medeiros',
   'Bruno Zafalon Martins Ferreira',
   'Francisco Jailson Nascimento dos Santos',
