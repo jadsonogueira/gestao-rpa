@@ -273,8 +273,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
             convertOptions: {
               "-density": "300",
               "-background": "white",
-              "-alpha": "remove",
-              "-alpha": "off",
               "-flatten": null,
               "-strip": null,
               "-filter": "Lanczos",
