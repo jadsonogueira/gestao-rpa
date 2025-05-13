@@ -48,6 +48,7 @@ const listaUsuarios = [
 
 const listacontratos = [
   '00 00121',
+  '12 00121',
   '12 00088',
   '12 00101',
   '12 00212',
