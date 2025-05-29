@@ -149,6 +149,8 @@ function abrirFormulario(fluxo) {
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+      { id: 'user', placeholder: 'Usuário', type: 'text' },
+      { id: 'key', placeholder: 'Senha', type: 'text' },
     ];
   } else if (fluxo === 'Criar Doc SEI Externo') {
     campos = [
