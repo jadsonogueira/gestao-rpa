@@ -178,6 +178,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
     } else if (fluxo === 'Assinatura em doc SEI') {
       mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+      mailContent += `Usuário: ${dados.user || ''}\n`;
+      mailContent += `Senha: ${dados.key || ''}\n`;
     } else if (fluxo === 'Criar Doc SEI Editável') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Tipo do Documento: ${dados.tipoDocumento || ''}\n`;
