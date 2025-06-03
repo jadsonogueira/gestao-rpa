@@ -1,5 +1,5 @@
 // Define a URL da API com base no ambiente
-const apiUrl = window.location.origin;
+const apiUrl = 'https://gestao-rpa.onrender.com';
 
 // Função para exibir alertas
 function showAlert(message, type = 'success') {
