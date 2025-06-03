@@ -349,6 +349,30 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
+// Rota para verificação do token JWT
+app.post('/verify-token', (req, res) => {
+  let body = '';
+  req.on('data', chunk => (body += chunk));
+  req.on('end', () => {
+    try {
+      const { token } = JSON.parse(body);
+      if (!token) return res.status(400).json({ valid: false, error: 'Token ausente' });
+
+      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(401).json({ valid: false, error: 'Token inválido ou expirado' });
+        }
+        res.json({ valid: true, userId: decoded.id });
+      });
+    } catch (err) {
+      console.error('Erro ao verificar token:', err);
+      res.status(500).json({ valid: false, error: 'Erro interno no servidor' });
+    }
+  });
+});
+
+
+
 // Inicia o servidor
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
