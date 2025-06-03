@@ -492,3 +492,36 @@ function enviarFormularioAxios(e) {
 
 // Expõe a função abrirFormulario no escopo global (para o HTML)
 window.abrirFormulario = abrirFormulario;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('signupForm');
+  if (form) {
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      try {
+        const response = await fetch(`${apiUrl}/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+
+        const msg = await response.text();
+
+        if (response.ok) {
+          showAlert('✅ Usuário cadastrado com sucesso!', 'success');
+          form.reset();
+        } else {
+          showAlert('❌ Erro no cadastro: ' + msg, 'danger');
+        }
+      } catch (err) {
+        showAlert('❌ Erro na conexão com o servidor.', 'danger');
+        console.error(err);
+      }
+    });
+  }
+});
