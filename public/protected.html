@@ -66,47 +66,7 @@
       }
     }
 
-    // Verifica se o token JWT está presente e válido
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      showAlert('Você não está autenticado. Redirecionando para o login...', 'warning');
-      setTimeout(() => {
-        window.location.href = 'login.html'; // Redireciona para a página de login se não estiver autenticado
-      }, 2000);
-    } else {
-      // Faz uma requisição à API para verificar o token
-      fetch(`${apiUrl}/protected`, {
-        method: 'GET',
-        headers: {
-          'Authorization': token,
-        },
-      })
-      .then(res => {
-        if (!res.ok) {
-          showAlert('Token inválido ou expirado. Redirecionando para o login...', 'danger');
-          setTimeout(() => {
-            window.location.href = 'login.html';
-          }, 2000);
-        }
-      })
-      .catch(() => {
-        showAlert('Erro ao verificar a autenticação. Redirecionando para o login...', 'danger');
-        setTimeout(() => {
-          window.location.href = 'login.html';
-        }, 2000);
-      });
-    }
-
-    // Logout
-    const logoutButton = document.getElementById('logoutButton');
-    if (logoutButton) {
-      logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('token'); // Remove o token JWT
-        window.location.href = 'login.html'; // Redireciona para a página de login após o logout
-      });
-    }
-  </script>
+   
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
