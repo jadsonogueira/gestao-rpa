@@ -322,6 +322,14 @@
     });
   });
 </script>
-
+<script>
+  const logoutBtn = document.getElementById('logoutButton');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    });
+  }
+</script>
   
 </html>
