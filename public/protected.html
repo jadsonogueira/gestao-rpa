@@ -39,6 +39,7 @@
   <div class="container mt-5">
     <h1 class="text-center">Bem-vindo à Página Protegida</h1>
     <p class="text-center">Somente usuários autenticados podem ver esta página.</p>
+    <p class="text-center">Você será redirecionado para o painel em instantes...</p>
   </div>
 
   <!-- Scripts JavaScript do Bootstrap (necessários para componentes interativos) -->
@@ -108,5 +109,13 @@
   }
 </script>
 
+<script>
+  // Redireciona para o dashboard após 2 segundos
+  setTimeout(() => {
+    window.location.href = 'dashboard.html';
+  }, 2000);
+</script>
+
+  
 </body>
 </html>
