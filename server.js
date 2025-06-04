@@ -162,6 +162,28 @@ app.post('/login', express.json(), async (req, res) => {
   }
 });
 
+// Rota para inserir usuários externos
+app.post('/usuarios-externos', express.json(), async (req, res) => {
+  try {
+    const usuarios = req.body;
+
+    if (!Array.isArray(usuarios)) {
+      return res.status(400).send('Esperado um array de usuários externos.');
+    }
+
+    const inseridos = await UsuarioExterno.insertMany(usuarios, { ordered: false });
+    res.status(201).send(`Inseridos ${inseridos.length} usuários externos`);
+  } catch (err) {
+    console.error('Erro ao inserir usuários externos:', err);
+    if (err.code === 11000) {
+      res.status(409).send('ID de usuário externo duplicado.');
+    } else {
+      res.status(500).send('Erro no servidor');
+    }
+  }
+});
+
+
 // Configuração do multer
 const upload = multer({
   storage: multer.memoryStorage(),
