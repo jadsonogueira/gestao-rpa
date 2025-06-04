@@ -94,6 +94,22 @@ const usuarioExternoSchema = new mongoose.Schema({
 });
 const UsuarioExterno = mongoose.model('UsuarioExterno', usuarioExternoSchema);
 
+// Rota para remover um usuário externo pelo ID
+app.delete('/usuarios-externos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const resultado = await UsuarioExterno.findByIdAndDelete(id);
+
+    if (!resultado) {
+      return res.status(404).json({ message: 'Usuário externo não encontrado' });
+    }
+
+    res.json({ message: 'Usuário externo removido com sucesso' });
+  } catch (err) {
+    console.error('Erro ao remover usuário externo:', err);
+    res.status(500).json({ message: 'Erro no servidor' });
+  }
+});
 
 
 // Servir arquivos estáticos
