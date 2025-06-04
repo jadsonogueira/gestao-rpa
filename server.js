@@ -83,8 +83,25 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
+// Modelo de dados para usuários (já existe, vamos reaproveitar)
+const Usuario = User; // para manter coerência com /usuarios
+
+
 // Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Rota para listar usuários (sem a senha)
+app.get('/usuarios', async (req, res) => {
+  try {
+    const usuarios = await Usuario.find({}, { password: 0 });
+    res.json(usuarios);
+  } catch (err) {
+    console.error('Erro ao buscar usuários:', err);
+    res.status(500).send('Erro ao buscar usuários');
+  }
+});
+
+
 
 // Rota de teste da DB
 app.get('/test-db', (req, res) => {
@@ -371,6 +388,15 @@ app.post('/verify-token', (req, res) => {
   });
 });
 
+app.get('/usuarios', async (req, res) => {
+  try {
+    const usuarios = await User.find({}, { password: 0 }).sort({ username: 1 }); // exclui senha
+    res.json(usuarios);
+  } catch (err) {
+    console.error('Erro ao buscar usuários:', err);
+    res.status(500).send('Erro ao buscar usuários');
+  }
+});
 
 
 // Inicia o servidor
