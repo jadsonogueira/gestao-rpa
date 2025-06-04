@@ -86,12 +86,14 @@ const User = mongoose.model('User', userSchema);
 // Modelo de dados para usuários (já existe, vamos reaproveitar)
 const Usuario = User; // para manter coerência com /usuarios
 
-// Schema e Model de UsuarioExterno
+// Schema e model para usuários externos autorizados
 const usuarioExternoSchema = new mongoose.Schema({
-  nome: { type: String, required: true }
+  idExterno: { type: String, required: true, unique: true },
+  nome:      { type: String, required: true },
+  empresa:   { type: String, required: true },
 });
-
 const UsuarioExterno = mongoose.model('UsuarioExterno', usuarioExternoSchema);
+
 
 
 // Servir arquivos estáticos
