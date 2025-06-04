@@ -218,9 +218,8 @@ const upload = multer({
 });
 
 // Rota principal de envio de e-mail
-console.log('Dados recebidos no formulário:', req.body);
-
 app.post('/send-email', upload.any(), async (req, res) => {
+  console.log('Dados recebidos no formulário:', req.body);
   try {
     const fluxo = req.body.fluxo;
     const dados = req.body;
