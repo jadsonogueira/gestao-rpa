@@ -231,7 +231,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
     mailContent += `Requerente: ${dados.requerente || ''}\n`;
     mailContent += `Email: ${dados.email || ''}\n`;
-
+    const usuariosExternos = await buscarUsuariosExternos();
     // Ajusta campos conforme o fluxo
     if (fluxo === 'Liberar assinatura externa') {
   campos = [
@@ -243,7 +243,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Consultar empenho') {
       mailContent += `Contrato SEI: ${dados.contratoSei || ''}\n`;
     } else if (fluxo === 'Liberar acesso externo') {
-  const usuariosExternos = await buscarUsuariosExternos();
+  
   campos = [
     { id: 'requerente', placeholder: 'Requerente', type: 'text' },
     { id: 'email', placeholder: 'Email', type: 'email' },
