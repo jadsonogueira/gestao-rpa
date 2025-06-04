@@ -86,6 +86,13 @@ const User = mongoose.model('User', userSchema);
 // Modelo de dados para usuários (já existe, vamos reaproveitar)
 const Usuario = User; // para manter coerência com /usuarios
 
+// Schema e Model de UsuarioExterno
+const usuarioExternoSchema = new mongoose.Schema({
+  nome: { type: String, required: true }
+});
+
+const UsuarioExterno = mongoose.model('UsuarioExterno', usuarioExternoSchema);
+
 
 // Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
@@ -100,8 +107,6 @@ app.get('/usuarios', async (req, res) => {
     res.status(500).send('Erro ao buscar usuários');
   }
 });
-
-
 
 // Rota de teste da DB
 app.get('/test-db', (req, res) => {
