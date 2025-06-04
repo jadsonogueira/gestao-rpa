@@ -121,17 +121,19 @@ if (fluxo === 'Liberar assinatura externa' || fluxo === 'Liberar acesso externo'
       { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listacontratos },
     ];
   } else if (fluxo === 'Liberar assinatura externa') {
+     const usuariosExternos = await buscarUsuariosExternos();
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
+      { id: 'email', placeholder: 'Email', type: 'email' }
+      { id: 'assinante', placeholder: 'Assinante', type: 'select', options: usuariosExternos },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
     ];
   } else if (fluxo === 'Liberar acesso externo') {
-    campos = [
+     const usuariosExternos = await buscarUsuariosExternos();
+      campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'user', placeholder: 'Usuário', type: 'select', options: listaUsuarios },
+      { id: 'assinante', placeholder: 'Assinante', type: 'select', options: usuariosExternos },
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
   } else if (fluxo === 'Analise de processo') {
