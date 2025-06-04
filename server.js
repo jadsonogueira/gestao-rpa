@@ -199,6 +199,17 @@ app.post('/usuarios-externos', express.json(), async (req, res) => {
   }
 });
 
+// Rota para listar todos os usuários externos
+app.get('/usuarios-externos', async (req, res) => {
+  try {
+    const lista = await UsuarioExterno.find().sort({ nome: 1 }); // ordena por nome
+    res.json(lista);
+  } catch (err) {
+    console.error('Erro ao buscar usuários externos:', err);
+    res.status(500).send('Erro ao buscar usuários externos');
+  }
+});
+
 
 // Configuração do multer
 const upload = multer({
