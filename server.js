@@ -234,7 +234,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     // Ajusta campos conforme o fluxo
     if (fluxo === 'Liberar assinatura externa') {
-  const usuariosExternos = await buscarUsuariosExternos();
   campos = [
     { id: 'requerente', placeholder: 'Requerente', type: 'text' },
     { id: 'email', placeholder: 'Email', type: 'email' },
