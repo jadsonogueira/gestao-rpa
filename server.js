@@ -233,13 +233,23 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     // Ajusta campos conforme o fluxo
     if (fluxo === 'Liberar assinatura externa') {
-      mailContent += `Assinante: ${dados.assinante || ''}\n`;
-      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+  const usuariosExternos = await buscarUsuariosExternos();
+  campos = [
+    { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+    { id: 'email', placeholder: 'Email', type: 'email' },
+    { id: 'assinante', placeholder: 'Assinante', type: 'select', options: usuariosExternos },
+    { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+  ];
     } else if (fluxo === 'Consultar empenho') {
       mailContent += `Contrato SEI: ${dados.contratoSei || ''}\n`;
     } else if (fluxo === 'Liberar acesso externo') {
-      mailContent += `Usuário: ${dados.user || ''}\n`;
-      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+  const usuariosExternos = await buscarUsuariosExternos();
+  campos = [
+    { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+    { id: 'email', placeholder: 'Email', type: 'email' },
+    { id: 'user', placeholder: 'Usuário', type: 'select', options: usuariosExternos },
+    { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
+  ];
     } else if (fluxo === 'Analise de processo') {
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
     } else if (fluxo === 'Alterar ordem de documentos') {
