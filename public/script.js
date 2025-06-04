@@ -85,7 +85,7 @@ const fluxoInstrucoes = {
 };
 
 // Função para abrir o modal e gerar o formulário
-function abrirFormulario(fluxo) {
+async function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
   const modalBody = document.querySelector('.modal-body');
   if (!modalTitle || !modalBody) {
@@ -94,6 +94,11 @@ function abrirFormulario(fluxo) {
   }
   modalTitle.innerText = fluxo;
 
+let listaUsuarios = [];
+if (fluxo === 'Liberar assinatura externa' || fluxo === 'Liberar acesso externo') {
+  listaUsuarios = await buscarUsuariosExternos();
+}
+  
   // Instruções
   const instrucaoText = document.createElement('p');
   instrucaoText.textContent = fluxoInstrucoes[fluxo] || 'Preencha todos os campos.';
