@@ -34,17 +34,29 @@ function hideLoadingOverlay() {
 }
 
 // Listas para seleção
-const listaUsuarios = [
-  'Antônio Sílvio Rabelo Neto',
-  'Bruno Moreira de Medeiros',
-  'Bruno Zafalon Martins Ferreira',
-  'Francisco Jailson Nascimento dos Santos',
-  'José Joaquim da Silva Júnior',
-  'Lucas Veloso Facury Lasmar',
-  'Natália Maria do Carmo Lopes Guimarães Battaglini',
-  'Rodrigo Emanuel Tahan',
-  'Wagner Ferreira da Cunha'
-];
+//const listaUsuarios = [
+ // 'Antônio Sílvio Rabelo Neto',
+ // 'Bruno Moreira de Medeiros',
+ // 'Bruno Zafalon Martins Ferreira',
+ // 'Francisco Jailson Nascimento dos Santos',
+ // 'José Joaquim da Silva Júnior',
+ // 'Lucas Veloso Facury Lasmar',
+ // 'Natália Maria do Carmo Lopes Guimarães Battaglini',
+ // 'Rodrigo Emanuel Tahan',
+ // 'Wagner Ferreira da Cunha'
+// ];
+//
+
+async function buscarUsuariosExternos() {
+  try {
+    const response = await fetch(`${apiUrl}/usuarios-externos`);
+    const usuarios = await response.json();
+    return usuarios.map(u => u.nome); // retorna só os nomes
+  } catch (error) {
+    console.error('Erro ao buscar usuários externos:', error);
+    return []; // retorna lista vazia em caso de erro
+  }
+}
 
 const listacontratos = [
   '00 00121',
