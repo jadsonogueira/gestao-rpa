@@ -188,21 +188,6 @@ app.post('/usuarios-externos', express.json(), async (req, res) => {
   try {
     const usuarios = req.body;
 
-    if (!Array.isArray(usuarios)) {
-      return res.status(400).send('Esperado um array de usuários externos.');
-    }
-
-    const inseridos = await UsuarioExterno.insertMany(usuarios, { ordered: false });
-    res.status(201).send(`Inseridos ${inseridos.length} usuários externos`);
-  } catch (err) {
-    console.error('Erro ao inserir usuários externos:', err);
-    if (err.code === 11000) {
-      res.status(409).send('ID de usuário externo duplicado.');
-    } else {
-      res.status(500).send('Erro no servidor');
-    }
-  }
-});
 
 // Rota para listar todos os usuários externos
 app.get('/usuarios-externos', async (req, res) => {
@@ -215,49 +200,23 @@ app.get('/usuarios-externos', async (req, res) => {
   }
 });
 
-    if (!Array.isArray(contratos)) {
-      return res.status(400).send('Esperado um array de contratos.');
+    app.post('/contratos', express.json(), async (req, res) => {
+  try {
+    const { numero } = req.body;
+    if (!numero) {
+      return res.status(400).send('O número do contrato é obrigatório.');
     }
 
-    const docs = contratos.map(codigo => ({ codigo }));
-
-    const inseridos = await ContratoSei.insertMany(docs, { ordered: false });
-    res.status(201).send(`Inseridos ${inseridos.length} contratos SEI.`);
+    const novoContrato = new Contrato({ numero });
+    await novoContrato.save();
+    res.status(201).send('Contrato cadastrado com sucesso');
   } catch (err) {
-    console.error('Erro ao inserir contratos:', err);
+    console.error('Erro ao cadastrar contrato:', err);
     if (err.code === 11000) {
-      res.status(409).send('Contrato duplicado.');
+      res.status(409).send('Contrato já existente.');
     } else {
-      res.status(500).send('Erro no servidor');
+      res.status(500).send('Erro ao cadastrar contrato');
     }
-  }
-});
-
-// Rota para listar contratos SEI
-app.get('/contratos', async (req, res) => {
-  try {
-    const lista = await ContratoSei.find().sort({ codigo: 1 });
-    res.json(lista);
-  } catch (err) {
-    console.error('Erro ao buscar contratos:', err);
-    res.status(500).send('Erro ao buscar contratos');
-  }
-});
-
-// Rota para remover um contrato pelo ID
-app.delete('/contratos/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const resultado = await ContratoSei.findByIdAndDelete(id);
-
-    if (!resultado) {
-      return res.status(404).json({ message: 'Contrato não encontrado' });
-    }
-
-    res.json({ message: 'Contrato removido com sucesso' });
-  } catch (err) {
-    console.error('Erro ao remover contrato:', err);
-    res.status(500).json({ message: 'Erro no servidor' });
   }
 });
 
