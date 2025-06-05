@@ -235,7 +235,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     if (fluxo === 'Liberar assinatura externa') {
   mailContent += `Assinante: ${dados.assinante || ''}\n`;
   mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
-}
+
     } else if (fluxo === 'Consultar empenho') {
       mailContent += `Contrato SEI: ${dados.contratoSei || ''}\n`;
     } else if (fluxo === 'Liberar acesso externo') {
