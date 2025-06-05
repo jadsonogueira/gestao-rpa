@@ -235,6 +235,16 @@ app.get('/usuarios-externos', async (req, res) => {
   }
 });
 
+// Rota para listar contratos (GET)
+app.get('/contratos', async (req, res) => {
+  try {
+    const contratos = await Contrato.find().sort({ numero: 1 });
+    res.json(contratos);
+  } catch (err) {
+    console.error('Erro ao buscar contratos:', err);
+    res.status(500).send('Erro ao buscar contratos');
+  }
+});
 
 // Configuração do multer
 const upload = multer({
