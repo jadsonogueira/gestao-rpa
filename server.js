@@ -473,7 +473,7 @@ app.post('/verify-token', (req, res) => {
         if (err) {
           return res.status(401).json({ valid: false, error: 'Token inválido ou expirado' });
         }
-        res.json({ valid: true, userId: decoded.id });
+        res.json({ valid: true, userId: decoded.id, role: decoded.role });
       });
     } catch (err) {
       console.error('Erro ao verificar token:', err);
