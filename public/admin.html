@@ -2,132 +2,55 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Cadastro de Usuário Externo</title>
+  <title>Administração - AppDNIT</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- CSS do Bootstrap -->
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Font Awesome para ícones -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
   <style>
-    .service-card {
-      transition: transform 0.2s, box-shadow 0.2s;
-      cursor: pointer;
-      height: 100%;
+    body {
+      background-color: #f8f9fa;
     }
-    
-    .service-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    .service-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-      color: #007bff;
-    }
-
-    .navbar-brand img {
-      height: 30px;
+    .navbar-brand i {
       margin-right: 10px;
     }
-
-    .navbar {
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    .container-max {
+      max-width: 960px;
+      margin: auto;
+      padding-top: 30px;
     }
-
-    .user-profile {
-      display: flex;
-      align-items: center;
-      margin-right: 1rem;
+    .table td, .table th {
+      vertical-align: middle;
     }
-
-    .user-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      margin-right: 0.5rem;
-      background-color: #e9ecef;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .alert-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1050;
-      max-width: 350px;
-    }
-
-    .modal-header,
-    .modal-footer {
-      background-color: #f8f9fa;
-      border-color: #dee2e6;
-    }
-
-    .form-group label {
-      font-weight: 500;
-      color: #495057;
-    }
-
-    .form-control:focus {
-      border-color: #80bdff;
-      box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
-    }
-
-    .service-description {
-      color: #6c757d;
-      font-size: 0.9rem;
-    }
-
-    .progress {
-      height: 20px;
-    }
-
-    .progress-bar {
-      background-color: #007bff;
+    .section-title {
+      margin-top: 40px;
     }
   </style>
 </head>
-<body class=".bg-dark">
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-light bg-white">
-    <div class="container">
-      <a class="navbar-brand" href="#">
-        <i class="fas fa-road mr-2"></i>
-        AppDNIT
-      </a>
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ml-auto">
-          <li class="nav-item">
-            <div class="user-profile">
-              <div class="user-avatar">
-                <i class="fas fa-user"></i>
-              </div>
-              <span class="d-none d-md-inline">Usuário</span>
-            </div>
-          </li>
-          <li class="nav-item">
-            <button id="logoutButton" class="btn btn-outline-secondary">
-              <i class="fas fa-sign-out-alt mr-1"></i>Sair
-            </button>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </nav>
+<body>
 
-  <!-- Alert Container -->
-  <div class="alert-container" id="alertPlaceholder"></div>
-<body class="container py-5">
-  <h2 class="mb-4">Cadastro de Usuário Externo</h2>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <a class="navbar-brand" href="/"><i class="fas fa-road"></i> AppDNIT</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#nav">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="nav">
+    <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <a href="/" class="nav-link"><i class="fas fa-arrow-left"></i> Voltar</a>
+      </li>
+      <li class="nav-item">
+        <button class="btn btn-outline-light ml-2" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i> Sair
+        </button>
+      </li>
+    </ul>
+  </div>
+</nav>
 
+<div class="container container-max">
   <div id="alertPlaceholder"></div>
 
+  <h2 class="section-title">Cadastro de Usuário Externo</h2>
   <form id="formUsuarioExterno">
     <div class="form-group">
       <label for="idExterno">ID</label>
@@ -144,209 +67,167 @@
     <button type="submit" class="btn btn-primary">Cadastrar</button>
   </form>
 
-<hr />
-<h2>Usuários Externos Cadastrados</h2>
-<table class="table table-striped" id="usuariosTable">
-  <thead>
-    <tr>
-      <th>Nome</th>
-      <th>Empresa</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <h4 class="section-title">Usuários Externos Cadastrados</h4>
+  <table class="table table-bordered" id="usuariosTable">
+    <thead class="thead-light">
+      <tr>
+        <th>Nome</th>
+        <th>Empresa</th>
+        <th style="width: 100px;">Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-  <hr />
-<h2>Contratos SEI Cadastrados</h2>
+  <h4 class="section-title">Contratos SEI Cadastrados</h4>
+  <form id="formContrato" class="mb-3">
+    <div class="form-group">
+      <label for="numeroContrato">Número do Contrato SEI</label>
+      <input type="text" id="numeroContrato" class="form-control" placeholder="Ex: 12 00121" required>
+    </div>
+    <button type="submit" class="btn btn-success">Cadastrar Contrato</button>
+  </form>
 
-<form id="formContrato" class="mb-3">
-  <div class="form-group">
-    <label for="numeroContrato">Número do Contrato SEI</label>
-    <input type="text" id="numeroContrato" class="form-control" placeholder="Ex: 12 00121" required>
-  </div>
-  <button type="submit" class="btn btn-primary">Cadastrar Contrato</button>
-</form>
-
-<table class="table table-striped" id="contratosTable">
-  <thead>
-    <tr>
-      <th>Número</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
-  
-  <script>
-    const apiUrl = window.location.origin;
-
-    const showAlert = (message, type = 'success') => {
-      document.getElementById('alertPlaceholder').innerHTML = `
-        <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
-          ${message}
-          <button type="button" class="close" data-dismiss="alert">&times;</button>
-        </div>`;
-    };
-
-    document.getElementById('formUsuarioExterno').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const idExterno = document.getElementById('idExterno').value.trim();
-      const nome = document.getElementById('nome').value.trim();
-      const empresa = document.getElementById('empresa').value.trim();
-
-      try {
-        const res = await fetch(`${apiUrl}/usuarios-externos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify([{ idExterno, nome, empresa }])
-        });
-
-        const msg = await res.text();
-
-        if (res.ok) {
-          showAlert('✅ Usuário externo cadastrado com sucesso!');
-          e.target.reset();
-        } else {
-          showAlert('❌ Erro: ' + msg, 'danger');
-        }
-      } catch (err) {
-        console.error(err);
-        showAlert('❌ Erro na conexão com o servidor', 'danger');
-      }
-    });
-  </script>
+  <table class="table table-bordered" id="contratosTable">
+    <thead class="thead-light">
+      <tr>
+        <th>Número</th>
+        <th style="width: 100px;">Ações</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
 <script>
+  const apiUrl = window.location.origin;
+
+  const showAlert = (message, type = 'success') => {
+    document.getElementById('alertPlaceholder').innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
+        ${message}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>`;
+  };
+
   async function carregarUsuariosExternos() {
     try {
       const res = await fetch(`${apiUrl}/usuarios-externos`);
       const lista = await res.json();
-
       const tbody = document.querySelector('#usuariosTable tbody');
       tbody.innerHTML = '';
-
       lista.forEach(usuario => {
-        const tr = document.createElement('tr');
-
-        tr.innerHTML = `
-          <td>${usuario.nome}</td>
-          <td>${usuario.empresa}</td>
-          <td>
-            <button class="btn btn-sm btn-danger" onclick="removerUsuarioExterno('${usuario._id}')">Remover</button>
-          </td>
-        `;
-
-        tbody.appendChild(tr);
+        tbody.innerHTML += `
+          <tr>
+            <td>${usuario.nome}</td>
+            <td>${usuario.empresa}</td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="removerUsuarioExterno('${usuario._id}')">Remover</button>
+            </td>
+          </tr>`;
       });
     } catch (error) {
-      console.error('Erro ao carregar usuários externos:', error);
+      console.error('Erro ao carregar usuários:', error);
     }
   }
 
   async function removerUsuarioExterno(id) {
-    if (!confirm('Tem certeza que deseja remover este usuário externo?')) return;
-
+    if (!confirm('Tem certeza que deseja remover este usuário?')) return;
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, {
-        method: 'DELETE'
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert(data.message);
-        carregarUsuariosExternos();
-      } else {
-        alert(data.message || 'Erro ao remover.');
-      }
-    } catch (error) {
-      console.error('Erro ao remover usuário externo:', error);
+      const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE' });
+      if (res.ok) carregarUsuariosExternos();
+    } catch (err) {
       alert('Erro ao remover usuário.');
     }
   }
 
-async function carregarContratos() {
-  try {
-    const res = await fetch(`${apiUrl}/contratos`);
-    const contratos = await res.json();
-
-    const tbody = document.querySelector('#contratosTable tbody');
-    tbody.innerHTML = '';
-
-    contratos.forEach(contrato => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${contrato.numero}</td>
-        <td>
-          <button class="btn btn-sm btn-danger" onclick="removerContrato('${contrato._id}')">Remover</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (error) {
-    console.error('Erro ao carregar contratos:', error);
-  }
-}
-
-async function removerContrato(id) {
-  if (!confirm('Deseja remover este contrato SEI?')) return;
-
-  try {
-    const res = await fetch(`${apiUrl}/contratos/${id}`, {
-      method: 'DELETE'
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      alert(data.message);
-      carregarContratos();
-    } else {
-      alert(data.message || 'Erro ao remover contrato.');
-    }
-  } catch (error) {
-    console.error('Erro ao remover contrato:', error);
-    alert('Erro ao remover contrato.');
-  }
-}
-
-document.getElementById('formContrato').addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const numeroContrato = document.getElementById('numeroContrato').value.trim();
-
-  try {
-    const res = await fetch(`${apiUrl}/contratos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ numero: numeroContrato })
-    });
-
-    const msg = await res.text();
-
-    if (res.ok) {
-      showAlert('✅ Contrato cadastrado com sucesso!');
-      e.target.reset();
-      carregarContratos();
-    } else {
-      showAlert('❌ Erro: ' + msg, 'danger');
-    }
+  async function carregarContratos() {
+    try {
+      const res = await fetch(`${apiUrl}/contratos`);
+      const contratos = await res.json();
+      const tbody = document.querySelector('#contratosTable tbody');
+      tbody.innerHTML = '';
+      contratos.forEach(c => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.numero}</td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}')">Remover</button>
+            </td>
+          </tr>`;
+      });
     } catch (err) {
-    console.error(err);
-    showAlert('❌ Erro na conexão com o servidor', 'danger');
+      console.error('Erro ao carregar contratos:', err);
+    }
   }
-});
 
-// ✅ Correto: isso deve estar fora do catch e fora de funções
-document.addEventListener('DOMContentLoaded', () => {
-  carregarUsuariosExternos();
-  carregarContratos(); // Chama os dois ao abrir a página
-});
-  
+  async function removerContrato(id) {
+    if (!confirm('Deseja remover este contrato?')) return;
+    try {
+      const res = await fetch(`${apiUrl}/contratos/${id}`, { method: 'DELETE' });
+      if (res.ok) carregarContratos();
+    } catch (err) {
+      alert('Erro ao remover contrato.');
+    }
+  }
+
+  document.getElementById('formUsuarioExterno').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const idExterno = document.getElementById('idExterno').value.trim();
+    const nome = document.getElementById('nome').value.trim();
+    const empresa = document.getElementById('empresa').value.trim();
+    try {
+      const res = await fetch(`${apiUrl}/usuarios-externos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([{ idExterno, nome, empresa }])
+      });
+      if (res.ok) {
+        showAlert('✅ Usuário cadastrado com sucesso!');
+        e.target.reset();
+        carregarUsuariosExternos();
+      } else {
+        const msg = await res.text();
+        showAlert(`❌ ${msg}`, 'danger');
+      }
+    } catch (err) {
+      showAlert('❌ Erro na conexão com o servidor', 'danger');
+    }
+  });
+
+  document.getElementById('formContrato').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const numero = document.getElementById('numeroContrato').value.trim();
+    try {
+      const res = await fetch(`${apiUrl}/contratos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numero })
+      });
+      if (res.ok) {
+        showAlert('✅ Contrato cadastrado com sucesso!');
+        e.target.reset();
+        carregarContratos();
+      } else {
+        const msg = await res.text();
+        showAlert(`❌ ${msg}`, 'danger');
+      }
+    } catch (err) {
+      showAlert('❌ Erro na conexão com o servidor', 'danger');
+    }
+  });
+
+  function logout() {
+    window.location.href = "/";
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    carregarUsuariosExternos();
+    carregarContratos();
+  });
 </script>
 
-  
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
