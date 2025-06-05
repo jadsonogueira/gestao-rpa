@@ -96,9 +96,40 @@ const UsuarioExterno = mongoose.model('UsuarioExterno', usuarioExternoSchema);
 
 // Schema e model para contratos SEI
 const contratoSchema = new mongoose.Schema({
-  codigo: { type: String, required: true, unique: true }
+  numero: { type: String, required: true, unique: true },
 });
-const ContratoSei = mongoose.model('ContratoSei', contratoSchema);
+const Contrato = mongoose.model('Contrato', contratoSchema);
+
+app.post('/contratos', express.json(), async (req, res) => {
+  try {
+    const { numero } = req.body;
+    if (!numero) {
+      return res.status(400).send('O número do contrato é obrigatório.');
+    }
+
+    const novoContrato = new Contrato({ numero });
+    await novoContrato.save();
+    res.status(201).send('Contrato cadastrado com sucesso');
+  } catch (err) {
+    console.error('Erro ao cadastrar contrato:', err);
+    if (err.code === 11000) {
+      res.status(409).send('Contrato já existente.');
+    } else {
+      res.status(500).send('Erro ao cadastrar contrato');
+    }
+  }
+});
+
+// Rota para listar usuários (sem a senha)
+app.get('/usuarios', async (req, res) => {
+  try {
+    const usuarios = await Usuario.find({}, { password: 0 });
+    res.json(usuarios);
+  } catch (err) {
+    console.error('Erro ao buscar usuários:', err);
+    res.status(500).send('Erro ao buscar usuários');
+  }
+});
 
 // Rota para remover um usuário externo pelo ID
 app.delete('/usuarios-externos/:id', async (req, res) => {
@@ -117,20 +148,8 @@ app.delete('/usuarios-externos/:id', async (req, res) => {
   }
 });
 
-
 // Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Rota para listar usuários (sem a senha)
-app.get('/usuarios', async (req, res) => {
-  try {
-    const usuarios = await Usuario.find({}, { password: 0 });
-    res.json(usuarios);
-  } catch (err) {
-    console.error('Erro ao buscar usuários:', err);
-    res.status(500).send('Erro ao buscar usuários');
-  }
-});
 
 // Rota de teste da DB
 app.get('/test-db', (req, res) => {
@@ -265,6 +284,29 @@ app.delete('/contratos/:id', async (req, res) => {
     res.status(500).json({ message: 'Erro no servidor' });
   }
 });
+
+app.get('/contratos', async (req, res) => {
+  try {
+    const contratos = await Contrato.find().sort({ numero: 1 });
+    res.json(contratos);
+  } catch (err) {
+    console.error('Erro ao buscar contratos:', err);
+    res.status(500).send('Erro ao buscar contratos');
+  }
+});
+
+app.delete('/contratos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletado = await Contrato.findByIdAndDelete(id);
+    if (!deletado) return res.status(404).send('Contrato não encontrado');
+    res.send({ message: 'Contrato removido com sucesso' });
+  } catch (err) {
+    console.error('Erro ao remover contrato:', err);
+    res.status(500).send('Erro ao remover contrato');
+  }
+});
+
 
 // Configuração do multer
 const upload = multer({
