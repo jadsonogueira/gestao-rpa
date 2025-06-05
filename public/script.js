@@ -122,7 +122,13 @@ async function abrirFormulario(fluxo) {
       { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
     ];
-  } else if (fluxo === 'Liberar acesso externo') {
+    } else if (fluxo === 'Consultar empenho') {
+  campos = [
+    { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+    { id: 'email', placeholder: 'Email', type: 'email' },
+    { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listacontratos },
+  ];
+   } else if (fluxo === 'Liberar acesso externo') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
