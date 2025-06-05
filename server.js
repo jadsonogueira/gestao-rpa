@@ -80,6 +80,7 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  role:     { type: String, enum: ['user', 'admin'], default: 'user' }
 });
 const User = mongoose.model('User', userSchema);
 
@@ -172,10 +173,11 @@ app.post('/login', express.json(), async (req, res) => {
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).send('Senha incorreta');
-    
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
+
+  const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+    expiresIn: '1h',
+  });
+
     res.send({ token });
   } catch (err) {
     console.error('Erro no login:', err);
