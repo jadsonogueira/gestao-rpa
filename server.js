@@ -94,6 +94,12 @@ const usuarioExternoSchema = new mongoose.Schema({
 });
 const UsuarioExterno = mongoose.model('UsuarioExterno', usuarioExternoSchema);
 
+// Schema e model para contratos SEI
+const contratoSchema = new mongoose.Schema({
+  codigo: { type: String, required: true, unique: true }
+});
+const ContratoSei = mongoose.model('ContratoSei', contratoSchema);
+
 // Rota para remover um usuário externo pelo ID
 app.delete('/usuarios-externos/:id', async (req, res) => {
   try {
@@ -210,6 +216,55 @@ app.get('/usuarios-externos', async (req, res) => {
   }
 });
 
+// Rota para inserir contratos SEI
+app.post('/contratos', express.json(), async (req, res) => {
+  try {
+    const contratos = req.body;
+
+    if (!Array.isArray(contratos)) {
+      return res.status(400).send('Esperado um array de contratos.');
+    }
+
+    const docs = contratos.map(codigo => ({ codigo }));
+    const inseridos = await ContratoSei.insertMany(docs, { ordered: false });
+    res.status(201).send(`Inseridos ${inseridos.length} contratos SEI.`);
+  } catch (err) {
+    console.error('Erro ao inserir contratos:', err);
+    if (err.code === 11000) {
+      res.status(409).send('Contrato duplicado.');
+    } else {
+      res.status(500).send('Erro no servidor');
+    }
+  }
+});
+
+// Rota para listar contratos SEI
+app.get('/contratos', async (req, res) => {
+  try {
+    const lista = await ContratoSei.find().sort({ codigo: 1 });
+    res.json(lista);
+  } catch (err) {
+    console.error('Erro ao buscar contratos:', err);
+    res.status(500).send('Erro ao buscar contratos');
+  }
+});
+
+// Rota para remover um contrato pelo ID
+app.delete('/contratos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const resultado = await ContratoSei.findByIdAndDelete(id);
+
+    if (!resultado) {
+      return res.status(404).json({ message: 'Contrato não encontrado' });
+    }
+
+    res.json({ message: 'Contrato removido com sucesso' });
+  } catch (err) {
+    console.error('Erro ao remover contrato:', err);
+    res.status(500).json({ message: 'Erro no servidor' });
+  }
+});
 
 // Configuração do multer
 const upload = multer({
