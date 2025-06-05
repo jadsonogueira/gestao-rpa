@@ -235,16 +235,12 @@ app.get('/usuarios-externos', async (req, res) => {
   }
 });
 
-// Rota para inserir contratos SEI
-app.post('/contratos', express.json(), async (req, res) => {
-  try {
-    const contratos = req.body;
-
     if (!Array.isArray(contratos)) {
       return res.status(400).send('Esperado um array de contratos.');
     }
 
     const docs = contratos.map(codigo => ({ codigo }));
+
     const inseridos = await ContratoSei.insertMany(docs, { ordered: false });
     res.status(201).send(`Inseridos ${inseridos.length} contratos SEI.`);
   } catch (err) {
