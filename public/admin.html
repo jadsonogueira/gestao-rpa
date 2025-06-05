@@ -26,6 +26,38 @@
     }
   </style>
 </head>
+
+<script>
+  document.addEventListener("DOMContentLoaded", async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Acesso restrito. Faça login primeiro.");
+      return window.location.href = "/login.html";
+    }
+
+    try {
+      const res = await fetch("/verify-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+
+      const result = await res.json();
+
+      if (!result.valid) {
+        alert("Sessão inválida ou expirada. Faça login novamente.");
+        localStorage.removeItem("token");
+        window.location.href = "/login.html";
+      }
+    } catch (err) {
+      console.error("Erro ao verificar token:", err);
+      alert("Erro ao verificar sessão. Tente novamente.");
+      window.location.href = "/login.html";
+    }
+  });
+</script>
+
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
