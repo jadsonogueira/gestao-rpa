@@ -100,26 +100,6 @@ const contratoSchema = new mongoose.Schema({
 });
 const Contrato = mongoose.model('Contrato', contratoSchema);
 
-app.post('/contratos', express.json(), async (req, res) => {
-  try {
-    const { numero } = req.body;
-    if (!numero) {
-      return res.status(400).send('O número do contrato é obrigatório.');
-    }
-
-    const novoContrato = new Contrato({ numero });
-    await novoContrato.save();
-    res.status(201).send('Contrato cadastrado com sucesso');
-  } catch (err) {
-    console.error('Erro ao cadastrar contrato:', err);
-    if (err.code === 11000) {
-      res.status(409).send('Contrato já existente.');
-    } else {
-      res.status(500).send('Erro ao cadastrar contrato');
-    }
-  }
-});
-
 // Rota para listar usuários (sem a senha)
 app.get('/usuarios', async (req, res) => {
   try {
