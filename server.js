@@ -222,7 +222,6 @@ app.get('/usuarios-externos', async (req, res) => {
     if (!numero) {
       return res.status(400).send('O número do contrato é obrigatório.');
     }
-
     const novoContrato = new Contrato({ numero });
     await novoContrato.save();
     res.status(201).send('Contrato cadastrado com sucesso');
@@ -233,28 +232,6 @@ app.get('/usuarios-externos', async (req, res) => {
     } else {
       res.status(500).send('Erro ao cadastrar contrato');
     }
-  }
-});
-
-app.get('/contratos', async (req, res) => {
-  try {
-    const contratos = await Contrato.find().sort({ numero: 1 });
-    res.json(contratos);
-  } catch (err) {
-    console.error('Erro ao buscar contratos:', err);
-    res.status(500).send('Erro ao buscar contratos');
-  }
-});
-
-app.delete('/contratos/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletado = await Contrato.findByIdAndDelete(id);
-    if (!deletado) return res.status(404).send('Contrato não encontrado');
-    res.send({ message: 'Contrato removido com sucesso' });
-  } catch (err) {
-    console.error('Erro ao remover contrato:', err);
-    res.status(500).send('Erro ao remover contrato');
   }
 });
 
