@@ -26,7 +26,6 @@
     }
   </style>
 </head>
-
 <script>
   document.addEventListener("DOMContentLoaded", async () => {
     const token = localStorage.getItem("token");
@@ -45,13 +44,12 @@
 
       const result = await res.json();
 
-      if (!result.valid) {
-        showAlert("⛔ Sessão expirada. Faça login novamente.", "danger");
+      if (!result.valid || result.role !== "admin") {
+        showAlert("⛔ Acesso negado. Área exclusiva para administradores.", "danger");
         localStorage.removeItem("token");
-        return setTimeout(() => window.location.href = "/login.html", 2000);
+        return setTimeout(() => window.location.href = "/", 3000);
       }
 
-      // Se tudo certo, carrega os dados da página
       carregarUsuariosExternos();
       carregarContratos();
 
@@ -63,7 +61,6 @@
   });
 </script>
 <body>
-
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
     <a class="navbar-brand" href="/">
