@@ -58,17 +58,28 @@ async function buscarUsuariosExternos() {
   }
 }
 
-const listacontratos = [
-  '00 00121',
-  '12 00121',
-  '12 00088',
-  '12 00101',
-  '12 00212',
-  '12 00426',
-  '12 00449',
-  '12 00458',
-  '12 00594'
-];
+////const listacontratos = [
+  //'00 00121',
+  //'12 00121',
+  //'12 00088',
+  //'12 00101',
+  //'12 00212',
+  //'12 00426',
+  //'12 00449',
+  //'12 00458',
+  //'12 00594'
+//];
+
+async function buscarContratos() {
+  try {
+    const response = await fetch(`${apiUrl}/contratos`);
+    const contratos = await response.json();
+    return contratos.map(c => c.numero);
+  } catch (error) {
+    console.error('Erro ao buscar contratos:', error);
+    return [];
+  }
+}
 
 // Instruções específicas para cada fluxo
 const fluxoInstrucoes = {
@@ -100,6 +111,11 @@ async function abrirFormulario(fluxo) {
     listaUsuarios = await buscarUsuariosExternos();
   }
 
+  let listaContratos = [];
+  if (fluxo === 'Consultar empenho') {
+    listaContratos = await buscarContratos();
+  }
+  
   // Instruções
   const instrucaoText = document.createElement('p');
   instrucaoText.textContent = fluxoInstrucoes[fluxo] || 'Preencha todos os campos.';
@@ -126,7 +142,7 @@ async function abrirFormulario(fluxo) {
   campos = [
     { id: 'requerente', placeholder: 'Requerente', type: 'text' },
     { id: 'email', placeholder: 'Email', type: 'email' },
-    { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listacontratos },
+    { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listaContratos },
   ];
    } else if (fluxo === 'Liberar acesso externo') {
     campos = [
