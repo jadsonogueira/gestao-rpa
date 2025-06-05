@@ -231,7 +231,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
     mailContent += `Requerente: ${dados.requerente || ''}\n`;
     mailContent += `Email: ${dados.email || ''}\n`;
-    const usuariosExternos = await buscarUsuariosExternos();
     // Ajusta campos conforme o fluxo
     if (fluxo === 'Liberar assinatura externa') {
   campos = [
