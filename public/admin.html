@@ -1,11 +1,128 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Cadastro de Usuário Externo</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- CSS do Bootstrap -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Font Awesome para ícones -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+  <style>
+    .service-card {
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      height: 100%;
+    }
+    
+    .service-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .service-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #007bff;
+    }
+
+    .navbar-brand img {
+      height: 30px;
+      margin-right: 10px;
+    }
+
+    .navbar {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      margin-right: 1rem;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      background-color: #e9ecef;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .alert-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1050;
+      max-width: 350px;
+    }
+
+    .modal-header,
+    .modal-footer {
+      background-color: #f8f9fa;
+      border-color: #dee2e6;
+    }
+
+    .form-group label {
+      font-weight: 500;
+      color: #495057;
+    }
+
+    .form-control:focus {
+      border-color: #80bdff;
+      box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+
+    .service-description {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+
+    .progress {
+      height: 20px;
+    }
+
+    .progress-bar {
+      background-color: #007bff;
+    }
+  </style>
 </head>
+<body class=".bg-dark">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-road mr-2"></i>
+        AppDNIT
+      </a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <div class="user-profile">
+              <div class="user-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <span class="d-none d-md-inline">Usuário</span>
+            </div>
+          </li>
+          <li class="nav-item">
+            <button id="logoutButton" class="btn btn-outline-secondary">
+              <i class="fas fa-sign-out-alt mr-1"></i>Sair
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Alert Container -->
+  <div class="alert-container" id="alertPlaceholder"></div>
 <body class="container py-5">
   <h2 class="mb-4">Cadastro de Usuário Externo</h2>
 
