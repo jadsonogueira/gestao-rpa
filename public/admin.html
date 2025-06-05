@@ -32,8 +32,8 @@
     const token = localStorage.getItem("token");
 
     if (!token) {
-      alert("Acesso restrito. Faça login primeiro.");
-      return window.location.href = "/login.html";
+      showAlert("⛔ Acesso restrito. Faça login primeiro.", "danger");
+      return setTimeout(() => window.location.href = "/login.html", 2000);
     }
 
     try {
@@ -46,18 +46,22 @@
       const result = await res.json();
 
       if (!result.valid) {
-        alert("Sessão inválida ou expirada. Faça login novamente.");
+        showAlert("⛔ Sessão expirada. Faça login novamente.", "danger");
         localStorage.removeItem("token");
-        window.location.href = "/login.html";
+        return setTimeout(() => window.location.href = "/login.html", 2000);
       }
+
+      // Se tudo certo, carrega os dados da página
+      carregarUsuariosExternos();
+      carregarContratos();
+
     } catch (err) {
       console.error("Erro ao verificar token:", err);
-      alert("Erro ao verificar sessão. Tente novamente.");
-      window.location.href = "/login.html";
+      showAlert("⛔ Erro na verificação da sessão.", "danger");
+      setTimeout(() => window.location.href = "/login.html", 2000);
     }
   });
 </script>
-
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
