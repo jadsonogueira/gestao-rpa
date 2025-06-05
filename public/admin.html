@@ -40,6 +40,26 @@
   <tbody></tbody>
 </table>
 
+  <hr />
+<h2>Contratos SEI Cadastrados</h2>
+
+<form id="formContrato" class="mb-3">
+  <div class="form-group">
+    <label for="numeroContrato">Número do Contrato SEI</label>
+    <input type="text" id="numeroContrato" class="form-control" placeholder="Ex: 12 00121" required>
+  </div>
+  <button type="submit" class="btn btn-primary">Cadastrar Contrato</button>
+</form>
+
+<table class="table table-striped" id="contratosTable">
+  <thead>
+    <tr>
+      <th>Número</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
   
   <script>
     const apiUrl = window.location.origin;
@@ -132,6 +152,83 @@
 
   // Chamada automática ao carregar a página
   document.addEventListener('DOMContentLoaded', carregarUsuariosExternos);
+
+async function carregarContratos() {
+  try {
+    const res = await fetch(`${apiUrl}/contratos`);
+    const contratos = await res.json();
+
+    const tbody = document.querySelector('#contratosTable tbody');
+    tbody.innerHTML = '';
+
+    contratos.forEach(contrato => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${contrato.numero}</td>
+        <td>
+          <button class="btn btn-sm btn-danger" onclick="removerContrato('${contrato._id}')">Remover</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error('Erro ao carregar contratos:', error);
+  }
+}
+
+async function removerContrato(id) {
+  if (!confirm('Deseja remover este contrato SEI?')) return;
+
+  try {
+    const res = await fetch(`${apiUrl}/contratos/${id}`, {
+      method: 'DELETE'
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert(data.message);
+      carregarContratos();
+    } else {
+      alert(data.message || 'Erro ao remover contrato.');
+    }
+  } catch (error) {
+    console.error('Erro ao remover contrato:', error);
+    alert('Erro ao remover contrato.');
+  }
+}
+
+document.getElementById('formContrato').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const numeroContrato = document.getElementById('numeroContrato').value.trim();
+
+  try {
+    const res = await fetch(`${apiUrl}/contratos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ numero: numeroContrato })
+    });
+
+    const msg = await res.text();
+
+    if (res.ok) {
+      showAlert('✅ Contrato cadastrado com sucesso!');
+      e.target.reset();
+      carregarContratos();
+    } else {
+      showAlert('❌ Erro: ' + msg, 'danger');
+    }
+  } catch (err) {
+    console.error(err);
+    showAlert('❌ Erro na conexão com o servidor', 'danger');
+
+    document.addEventListener('DOMContentLoaded', () => {
+  carregarUsuariosExternos();
+  carregarContratos(); // Chama os dois ao abrir a página
+});
+
+  
 </script>
 
   
