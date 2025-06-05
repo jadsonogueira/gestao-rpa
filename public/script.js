@@ -126,7 +126,7 @@ async function abrirFormulario(fluxo) {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
+      { id: 'user', placeholder: 'Usuário', type: 'select', options: listaUsuarios },
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
   } else if (fluxo === 'Analise de processo') {
