@@ -216,15 +216,17 @@ document.getElementById('formContrato').addEventListener('submit', async (e) => 
     } else {
       showAlert('❌ Erro: ' + msg, 'danger');
     }
-  } catch (err) {
+    } catch (err) {
     console.error(err);
     showAlert('❌ Erro na conexão com o servidor', 'danger');
+  }
+});
 
-    document.addEventListener('DOMContentLoaded', () => {
+// ✅ Correto: isso deve estar fora do catch e fora de funções
+document.addEventListener('DOMContentLoaded', () => {
   carregarUsuariosExternos();
   carregarContratos(); // Chama os dois ao abrir a página
 });
-
   
 </script>
 
