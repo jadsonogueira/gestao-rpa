@@ -150,9 +150,6 @@
     }
   }
 
-  // Chamada automática ao carregar a página
-  document.addEventListener('DOMContentLoaded', carregarUsuariosExternos);
-
 async function carregarContratos() {
   try {
     const res = await fetch(`${apiUrl}/contratos`);
