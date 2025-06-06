@@ -334,7 +334,54 @@
     });
   });
 </script>
-  
+
+<script>
+  let userRole = '';
+
+  async function obterNivelDoUsuario() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${window.location.origin}/verify-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+
+      const data = await res.json();
+      if (data.valid && data.userRole) {
+        userRole = data.userRole; // armazena o nível do usuário
+      }
+    } catch (err) {
+      console.error('Erro ao verificar token:', err);
+
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    await obterNivelDoUsuario(); // garante que userRole esteja carregado antes
+
+    const restricoes = {
+      'classe_a': ['Assinatura em doc SEI', 'Criar Doc SEI Editável', 'Criar Doc SEI Externo'],
+      'classe_b': ['Criar Doc SEI Editável', 'Criar Doc SEI Externo'],
+      'classe_c': ['Criar Doc SEI Externo'],
+      'classe_d': [],
+      'classe_e': [],
+      'admin': [] // tem acesso a tudo
+    };
+
+    const fluxosRestritos = restricoes[userRole] || [];
+
+    document.querySelectorAll('.card.service-card').forEach(card => {
+      const titulo = card.querySelector('.card-title')?.textContent.trim();
+      if (fluxosRestritos.includes(titulo)) {
+        card.classList.add('restrito');
+        card.removeAttribute('onclick');
+      }
+    });
+  });
+</script>
+      
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
