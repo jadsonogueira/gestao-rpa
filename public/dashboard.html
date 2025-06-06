@@ -308,39 +308,13 @@
   </body>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
-    if (!token) return;
-
-    fetch(`${window.location.origin}/verify-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.valid) {
-        localStorage.removeItem('token');
-        return window.location.href = 'login.html';
-      }
-
-      // Se o usuário NÃO for admin, aplica blur
-      if (data.role !== 'admin') {
-        document.querySelectorAll('[data-role="admin"]').forEach(el => {
-          el.classList.add('restrito');
-          el.title = 'Acesso restrito a administradores';
-        });
-      }
-    });
-  });
-</script>
-
-<script>
-  let userRole = '';
-
-  async function obterNivelDoUsuario() {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      alert('Você não está autenticado. Redirecionando para o login...');
+      window.location.href = 'login.html';
+      return;
+    }
 
     try {
       const res = await fetch(`${window.location.origin}/verify-token`, {
@@ -350,64 +324,41 @@
       });
 
       const data = await res.json();
-      if (data.valid && data.userRole) {
-        userRole = data.userRole; // armazena o nível do usuário
+      if (!data.valid) {
+        localStorage.removeItem('token');
+        return window.location.href = 'login.html';
       }
+
+      const userRole = data.userRole || data.role;
+
+      // Aplica restrição com base no atributo data-role
+      document.querySelectorAll('.card.service-card').forEach(card => {
+        const roleAttr = card.getAttribute('data-role');
+        if (!roleAttr) return;
+
+        // Transforma a string "classe_a,classe_b,admin" em um array
+        const allowedRoles = roleAttr.split(',').map(r => r.trim());
+
+        // Se o role do usuário NÃO está entre os permitidos
+        if (!allowedRoles.includes(userRole)) {
+          card.classList.add('restrito');
+          card.removeAttribute('onclick');
+          card.setAttribute('data-toggle', 'tooltip');
+          card.setAttribute('title', 'Acesso restrito: serviço disponível apenas para níveis superiores');
+        }
+      });
+
+      // Inicializar tooltips Bootstrap
+      $('[data-toggle="tooltip"]').tooltip();
     } catch (err) {
       console.error('Erro ao verificar token:', err);
-
-</script>
-
-<script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      alert('Você não está autenticado. Redirecionando para o login...');
-      window.location.href = 'login.html';
-      return;
-    }
-
-    const res = await fetch(`${window.location.origin}/verify-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
-    });
-
-    const data = await res.json();
-    if (!data.valid) {
-      alert('Token inválido ou expirado. Redirecionando para o login...');
+      alert('Erro ao verificar autenticação. Redirecionando para o login...');
       localStorage.removeItem('token');
-      return window.location.href = 'login.html';
+      window.location.href = 'login.html';
     }
-
-    const userRole = data.userRole || data.role;
-
-    const restricoes = {
-      'classe_a': ['Assinatura em doc SEI', 'Criar Doc SEI Editável', 'Criar Doc SEI Externo'],
-      'classe_b': ['Criar Doc SEI Editável', 'Criar Doc SEI Externo'],
-      'classe_c': ['Criar Doc SEI Externo'],
-      'classe_d': [],
-      'classe_e': [],
-      'admin': [] // acesso total
-    };
-
-    const fluxosRestritos = restricoes[userRole] || [];
-
-    document.querySelectorAll('.card.service-card').forEach(card => {
-      const titulo = card.querySelector('.card-title')?.textContent.trim();
-      if (fluxosRestritos.includes(titulo)) {
-        card.classList.add('restrito');
-        card.removeAttribute('onclick');
-        card.setAttribute('data-toggle', 'tooltip');
-        card.setAttribute('title', 'Acesso restrito: serviço disponível apenas para níveis superiores');
-      }
-    });
-
-    // Inicializar tooltips Bootstrap (deve ser após inserir os atributos)
-    $('[data-toggle="tooltip"]').tooltip();
   });
 </script>
+
 <script>
   const logoutBtn = document.getElementById('logoutButton');
   if (logoutBtn) {
