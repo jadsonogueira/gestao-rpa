@@ -301,7 +301,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+ <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="script.js"></script>
@@ -360,7 +360,28 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', async () => {
-    await obterNivelDoUsuario();
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      alert('Você não está autenticado. Redirecionando para o login...');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    const res = await fetch(`${window.location.origin}/verify-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
+
+    const data = await res.json();
+    if (!data.valid) {
+      alert('Token inválido ou expirado. Redirecionando para o login...');
+      localStorage.removeItem('token');
+      return window.location.href = 'login.html';
+    }
+
+    const userRole = data.userRole || data.role;
 
     const restricoes = {
       'classe_a': ['Assinatura em doc SEI', 'Criar Doc SEI Editável', 'Criar Doc SEI Externo'],
@@ -368,7 +389,7 @@
       'classe_c': ['Criar Doc SEI Externo'],
       'classe_d': [],
       'classe_e': [],
-      'admin': []
+      'admin': [] // acesso total
     };
 
     const fluxosRestritos = restricoes[userRole] || [];
@@ -383,64 +404,8 @@
       }
     });
 
-    // Inicializa todas as tooltips do Bootstrap
+    // Inicializar tooltips Bootstrap (deve ser após inserir os atributos)
     $('[data-toggle="tooltip"]').tooltip();
-  });
-</script>
-  
-<script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    await obterNivelDoUsuario(); // garante que userRole esteja carregado antes
-
-    const restricoes = {
-      'classe_a': ['Assinatura em doc SEI', 'Criar Doc SEI Editável', 'Criar Doc SEI Externo'],
-      'classe_b': ['Criar Doc SEI Editável', 'Criar Doc SEI Externo'],
-      'classe_c': ['Criar Doc SEI Externo'],
-      'classe_d': [],
-      'classe_e': [],
-      'admin': [] // tem acesso a tudo
-    };
-
-    const fluxosRestritos = restricoes[userRole] || [];
-
-    document.querySelectorAll('.card.service-card').forEach(card => {
-      const titulo = card.querySelector('.card-title')?.textContent.trim();
-      if (fluxosRestritos.includes(titulo)) {
-        card.classList.add('restrito');
-        card.removeAttribute('onclick');
-      }
-    });
-  });
-</script>
-      
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      alert('Você não está autenticado. Redirecionando para o login...');
-      window.location.href = 'login.html';
-      return;
-    }
-
-    fetch(`${window.location.origin}/verify-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.valid) {
-        alert('Token inválido ou expirado. Redirecionando para o login...');
-        localStorage.removeItem('token');
-        window.location.href = 'login.html';
-      }
-    })
-    .catch(() => {
-      alert('Erro ao verificar autenticação. Redirecionando para o login...');
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
-    });
   });
 </script>
 <script>
