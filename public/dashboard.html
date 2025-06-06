@@ -9,6 +9,11 @@
   <!-- Font Awesome para ícones -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
   <style>
+    .service-card.restrito {
+      filter: blur(1.5px);
+      pointer-events: none;
+      opacity: 0.6;
+    }
     .service-card {
       transition: transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
@@ -89,11 +94,6 @@
       background-color: #007bff;
     }
 
-    .blurred {
-  filter: blur(2px);
-  pointer-events: none;
-  opacity: 0.5;
-    }
   </style>
 </head>
 <body class=".bg-dark">
