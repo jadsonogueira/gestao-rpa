@@ -310,6 +310,34 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
+    if (!token) return;
+
+    fetch(`${window.location.origin}/verify-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.valid) {
+        localStorage.removeItem('token');
+        return window.location.href = 'login.html';
+      }
+
+      // Se o usuário NÃO for admin, aplica blur
+      if (data.role !== 'admin') {
+        document.querySelectorAll('[data-role="admin"]').forEach(el => {
+          el.classList.add('restrito');
+          el.title = 'Acesso restrito a administradores';
+        });
+      }
+    });
+  });
+</script>
+  
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
 
     if (!token) {
       alert('Você não está autenticado. Redirecionando para o login...');
