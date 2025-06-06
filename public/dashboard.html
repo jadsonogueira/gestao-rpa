@@ -4,10 +4,15 @@
   <meta charset="UTF-8" />
   <title>AppDNIT - Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Bootstrap e FontAwesome -->
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
   <style>
+    .service-card.restrito {
+      filter: blur(1.5px);
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
     .service-card {
       transition: transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
@@ -19,16 +24,15 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
 
-    .service-card.restrito {
-      filter: blur(1.5px);
-      pointer-events: none;
-      opacity: 0.6;
-    }
-
     .service-icon {
       font-size: 2rem;
       margin-bottom: 1rem;
       color: #007bff;
+    }
+
+    .navbar-brand img {
+      height: 30px;
+      margin-right: 10px;
     }
 
     .navbar {
@@ -42,67 +46,96 @@
       z-index: 1050;
       max-width: 350px;
     }
+
+    .service-description {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
-  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <a class="navbar-brand" href="/"><i class="fas fa-road"></i> AppDNIT</a>
+      <a class="navbar-brand" href="/">
+        <i class="fas fa-road"></i> AppDNIT
+      </a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
+
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ml-auto">
-          <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a></li>
-          <li class="nav-item"><a href="/login.html" class="nav-link"><i class="fas fa-sign-in-alt"></i> Login</a></li>
-          <li class="nav-item"><a href="/" class="nav-link"><i class="fas fa-user-plus"></i> Cadastro</a></li>
-          <li class="nav-item"><a href="/admin.html" class="nav-link"><i class="fas fa-tools"></i> Administração</a></li>
           <li class="nav-item">
-            <button class="btn btn-outline-light ml-lg-3" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            <a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a>
+          </li>
+          <li class="nav-item">
+            <a href="/login.html" class="nav-link"><i class="fas fa-sign-in-alt"></i> Login</a>
+          </li>
+          <li class="nav-item">
+            <a href="/signup.html" class="nav-link"><i class="fas fa-user-plus"></i> Cadastro</a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin.html" class="nav-link"><i class="fas fa-tools"></i> Administração</a>
+          </li>
+          <li class="nav-item">
+            <button class="btn btn-outline-light ml-lg-3" onclick="logout()">
+              <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
           </li>
         </ul>
       </div>
     </div>
   </nav>
 
-  <!-- Alerta -->
   <div class="alert-container" id="alertPlaceholder"></div>
 
-  <!-- Conteúdo Principal -->
   <div class="container py-5">
-    <h3 class="text-center mb-4">Serviços Disponíveis</h3>
-    <p class="text-center text-muted">Selecione um dos serviços abaixo para iniciar uma solicitação</p>
+    <div class="row mb-4">
+      <div class="col">
+        <h3 class="text-center mb-4">Serviços Disponíveis</h3>
+        <p class="text-center text-muted">Selecione um dos serviços abaixo para iniciar uma solicitação</p>
+      </div>
+    </div>
 
-    <div class="row">
-      <!-- Exemplo de Card -->
+    <div class="row" id="cardsContainer">
+      <!-- Os cards serão inseridos pelo JavaScript ou mantidos estaticamente com onclick -->
       <div class="col-md-4 mb-4">
         <div class="card service-card" onclick="abrirFormulario('Consultar empenho')">
           <div class="card-body text-center">
             <i class="fas fa-search service-icon"></i>
-            <h5 class="card-title">Consultar Empenho</h5>
+            <h5 class="card-title">Consultar empenho</h5>
             <p class="service-description">Verifique informações sobre empenhos e contratos</p>
           </div>
         </div>
       </div>
 
-      <!-- Cards com acesso restrito -->
       <div class="col-md-4 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Criar Doc SEI Externo')">
+        <div class="card service-card" onclick="abrirFormulario('Liberar assinatura externa')">
           <div class="card-body text-center">
-            <i class="fas fa-file service-icon"></i>
-            <h5 class="card-title">Criar Doc SEI Externo</h5>
-            <p class="service-description">Crie um documento SEI do tipo EXTERNO</p>
+            <i class="fas fa-signature service-icon"></i>
+            <h5 class="card-title">Liberar assinatura externa</h5>
+            <p class="service-description">Solicite liberação para assinatura externa de documentos</p>
           </div>
         </div>
       </div>
 
       <div class="col-md-4 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Assinatura em doc SEI')">
+        <div class="card service-card" onclick="abrirFormulario('Liberar acesso externo')">
           <div class="card-body text-center">
-            <i class="fas fa-signature service-icon"></i>
-            <h5 class="card-title">Assinatura em doc SEI</h5>
-            <p class="service-description">Assine documentos diretamente</p>
+            <i class="fas fa-key service-icon"></i>
+            <h5 class="card-title">Liberar acesso externo</h5>
+            <p class="service-description">Solicite acesso externo para processos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Serviços com acesso restrito conforme role -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card" onclick="abrirFormulario('Criar Doc SEI Editável')">
+          <div class="card-body text-center">
+            <i class="fas fa-file-alt service-icon"></i>
+            <h5 class="card-title">Criar Doc SEI Editável</h5>
+            <p class="service-description">Crie documentos do tipo Editável</p>
           </div>
         </div>
       </div>
@@ -112,64 +145,8 @@
   <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  <script>
-    function logout() {
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Você não está autenticado. Redirecionando...');
-        return window.location.href = 'login.html';
-      }
-
-      try {
-        const res = await fetch(`${window.location.origin}/verify-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token })
-        });
-
-        const data = await res.json();
-        if (!data.valid) {
-          localStorage.removeItem('token');
-          return window.location.href = 'login.html';
-        }
-
-        const userRole = data.userRole || data.role || 'classe_a';
-
-        const restricoes = {
-          'classe_a': ['Criar Doc SEI Externo', 'Criar Doc SEI Editável', 'Assinatura em doc SEI'],
-          'classe_b': ['Criar Doc SEI Editável', 'Assinatura em doc SEI'],
-          'classe_c': ['Assinatura em doc SEI'],
-          'classe_d': [],
-          'classe_e': [],
-          'admin': []
-        };
-
-        const fluxosRestritos = restricoes[userRole] || [];
-
-        document.querySelectorAll('.card.service-card').forEach(card => {
-          const titulo = card.querySelector('.card-title')?.textContent.trim();
-          if (fluxosRestritos.includes(titulo)) {
-            card.classList.add('restrito');
-            card.removeAttribute('onclick');
-            card.setAttribute('title', 'Acesso restrito: serviço disponível apenas para níveis superiores');
-          }
-        });
-
-        // Ativa tooltip Bootstrap
-        $('[title]').tooltip();
-
-      } catch (err) {
-        alert('Erro ao verificar sessão. Redirecionando...');
-        localStorage.removeItem('token');
-        window.location.href = 'login.html';
-      }
-    });
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="script.js"></script>
+  <script src="permissoes.js"></script> <!-- Importação do novo script -->
 </body>
 </html>
