@@ -4,22 +4,25 @@
   <meta charset="UTF-8" />
   <title>AppDNIT - Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- CSS do Bootstrap -->
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Font Awesome para ícones -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
   <style>
     .service-card.restrito {
       filter: blur(1.5px);
-      pointer-events: none;
       opacity: 0.6;
+      position: relative;
     }
+
+    .service-card.restrito .card-body {
+      pointer-events: auto;
+    }
+
     .service-card {
       transition: transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
       height: 100%;
     }
-    
+
     .service-card:hover {
       transform: translateY(-5px);
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -40,23 +43,6 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
-    .user-profile {
-      display: flex;
-      align-items: center;
-      margin-right: 1rem;
-    }
-
-    .user-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      margin-right: 0.5rem;
-      background-color: #e9ecef;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
     .alert-container {
       position: fixed;
       top: 20px;
@@ -68,7 +54,6 @@
     .modal-header,
     .modal-footer {
       background-color: #f8f9fa;
-      border-color: #dee2e6;
     }
 
     .form-group label {
@@ -85,71 +70,53 @@
       color: #6c757d;
       font-size: 0.9rem;
     }
-
-    .progress {
-      height: 20px;
-    }
-
-    .progress-bar {
-      background-color: #007bff;
-    }
-
   </style>
 </head>
-<body class=".bg-dark">
+<body>
+  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="/">
-      <i class="fas fa-road"></i> AppDNIT
-    </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ml-auto">
-        <li class="nav-item">
-          <a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a>
-        </li>
-        <li class="nav-item">
-          <a href="/login.html" class="nav-link"><i class="fas fa-sign-in-alt"></i> Login</a>
-        </li>
-        <li class="nav-item">
-          <a href="/" class="nav-link"><i class="fas fa-user-plus"></i> Cadastro</a>
-        </li>
-        <li class="nav-item">
-          <a href="/admin.html" class="nav-link"><i class="fas fa-tools"></i> Administração</a>
-        </li>
-        <li class="nav-item">
-          <button class="btn btn-outline-light ml-lg-3" onclick="logout()">
-            <i class="fas fa-sign-out-alt"></i> Sair
-          </button>
-        </li>
-      </ul>
+    <div class="container">
+      <a class="navbar-brand" href="/"><i class="fas fa-road"></i> AppDNIT</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a></li>
+          <li class="nav-item"><a href="/login.html" class="nav-link"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+          <li class="nav-item"><a href="/" class="nav-link"><i class="fas fa-user-plus"></i> Cadastro</a></li>
+          <li class="nav-item"><a href="/admin.html" class="nav-link"><i class="fas fa-tools"></i> Administração</a></li>
+          <li class="nav-item"><button class="btn btn-outline-light ml-lg-3" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</button></li>
+        </ul>
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<script>
-  function logout() {
-    window.location.href = "/";
-  }
-</script>
-
-  <!-- Alert Container -->
+  <!-- Alert -->
   <div class="alert-container" id="alertPlaceholder"></div>
 
-  <!-- Conteúdo Principal -->
+  <!-- Conteúdo -->
   <div class="container py-5">
-    <div class="row mb-4">
+    <div class="row mb-4 text-center">
       <div class="col">
-        <h3 class="text-center mb-4">Serviços Disponíveis</h3>
-        <p class="text-center text-muted">Selecione um dos serviços abaixo para iniciar uma solicitação</p>
+        <h3>Serviços Disponíveis</h3>
+        <p class="text-muted">Selecione um dos serviços abaixo para iniciar uma solicitação</p>
       </div>
     </div>
 
     <div class="row">
-      <!-- Consultar Empenho -->
+      <!-- Exemplo de card com data-role -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card" data-role="admin" onclick="abrirFormulario('Criar Doc SEI Externo')">
+          <div class="card-body text-center">
+            <i class="fas fa-file service-icon"></i>
+            <h5 class="card-title">Criar Doc SEI Externo</h5>
+            <p class="service-description">Crie um documento SEI do tipo EXTERNO</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exemplo de card SEM restrição -->
       <div class="col-md-4 mb-4">
         <div class="card service-card" onclick="abrirFormulario('Consultar empenho')">
           <div class="card-body text-center">
@@ -159,190 +126,24 @@
           </div>
         </div>
       </div>
-
-      <!-- Liberar Assinatura Externa -->
-      <div class="col-md-4 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Liberar assinatura externa')">
-          <div class="card-body text-center">
-            <i class="fas fa-signature service-icon"></i>
-            <h5 class="card-title">Liberar Assinatura Externa</h5>
-            <p class="service-description">Solicite liberação para assinatura externa de documentos</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Liberar Acesso Externo -->
-      <div class="col-md-4 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Liberar acesso externo')">
-          <div class="card-body text-center">
-            <i class="fas fa-key service-icon"></i>
-            <h5 class="card-title">Liberar Acesso Externo</h5>
-            <p class="service-description">Solicite acesso externo para processos</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Alterar Ordem de Documentos -->
-      <div class="col-md-6 mb-4">
-        <div class="card service-card"  data-role="admin" onclick="abrirFormulario('Alterar ordem de documentos')">
-          <div class="card-body text-center">
-            <i class="fas fa-sort service-icon"></i>
-            <h5 class="card-title">Alterar Ordem de Documentos</h5>
-            <p class="service-description">Modifique a ordem dos documentos em um processo</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Inserir Anexo em Doc SEI -->
-      <div class="col-md-6 mb-4">
-        <div class="card service-card"  data-role="admin" onclick="abrirFormulario('Inserir anexo em doc SEI')">
-          <div class="card-body text-center">
-            <i class="fas fa-paperclip service-icon"></i>
-            <h5 class="card-title">Inserir Anexo em Doc SEI</h5>
-            <p class="service-description">Adicione anexos a documentos existentes</p>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Inserir Imagem em Doc SEI (inclui novo método de upload) -->
-      <div class="col-md-6 mb-4">
-         <div class="card service-card"  data-role="admin" onclick="abrirFormulario('Inserir imagem em doc SEI')">
-          <div class="card-body text-center">
-            <i class="fas fa-camera service-icon"></i>
-            <h5 class="card-title">Inserir Imagem em Doc SEI</h5>
-            <p class="service-description">Adicione imagens ou envie um PDF para conversão em JPG</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Assinatura em Doc SEI -->
-      <div class="col-md-6 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Assinatura em doc SEI')">
-          <div class="card-body text-center">
-            <i class="fas fa-signature service-icon"></i>
-            <h5 class="card-title">Assinatura em Doc SEI</h5>
-            <p class="service-description">Assinar Doc SEI</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Criar Doc SEI Externo -->
-      <div class="col-md-6 mb-4">
-        <div class="card service-card"  data-role="admin" onclick="abrirFormulario('Criar Doc SEI Externo')">
-          <div class="card-body text-center">
-            <i class="fas fa-file service-icon"></i>
-            <h5 class="card-title">Criar Doc SEI Externo</h5>
-            <p class="service-description">Crie um documento SEI do tipo EXTERNO</p>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Criar Doc SEI Editável -->
-      <div class="col-md-6 mb-4">
-         <div class="card service-card"  data-role="admin" onclick="abrirFormulario('Criar Doc SEI Editável')">
-          <div class="card-body text-center">
-            <i class="fas fa-file service-icon"></i>
-            <h5 class="card-title">Criar Doc SEI Editável</h5>
-            <p class="service-description">Crie um documento SEI do tipo Editável</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Analise de processo -->
-      <div class="col-md-4 mb-4">
-        <div class="card service-card"  data-role="admin" onclick="abrirFormulario('Analise de processo')">
-          <div class="card-body text-center">
-            <i class="fas fa-key service-icon"></i>
-            <h5 class="card-title">Analise de processo</h5>
-            <p class="service-description">Analise de processo SEI</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal do Formulário -->
-  <div class="modal fade" id="fluxoModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <!-- Cabeçalho do Modal -->
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalTitle"></h5>
-          <button type="button" class="close" data-dismiss="modal">
-            <span>&times;</span>
-          </button>
-        </div>
-        <!-- Corpo do Modal -->
-        <div class="modal-body">
-          <form id="fluxoForm" enctype="multipart/form-data">
-            <!-- Campos serão adicionados dinamicamente -->
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Overlay de Carregamento -->
-  <div id="loadingOverlay" 
-       style="display: none; 
-              position: fixed; 
-              top: 0; left: 0; 
-              width: 100%; height: 100%; 
-              background-color: rgba(0,0,0,0.5);
-              z-index: 9999; 
-              align-items: center; 
-              justify-content: center;">
-    <div style="color: #fff; font-size: 1.5rem;">
-      <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
-        <span class="sr-only">Carregando...</span>
-      </div>
-      <p class="mt-3">Processando, por favor aguarde...</p>
+      <!-- Adicione os demais cards aqui -->
     </div>
   </div>
 
   <!-- Scripts -->
- <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="script.js"></script>
-</body>
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+  <script>
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    }
 
-    fetch(`${window.location.origin}/verify-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.valid) {
-        localStorage.removeItem('token');
-        return window.location.href = 'login.html';
-      }
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return window.location.href = 'login.html';
 
-      // Se o usuário NÃO for admin, aplica blur
-      if (data.role !== 'admin') {
-        document.querySelectorAll('[data-role="admin"]').forEach(el => {
-          el.classList.add('restrito');
-          el.title = 'Acesso restrito a administradores';
-        });
-      }
-    });
-  });
-</script>
-
-<script>
-  let userRole = '';
-
-  async function obterNivelDoUsuario() {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    try {
       const res = await fetch(`${window.location.origin}/verify-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -350,72 +151,32 @@
       });
 
       const data = await res.json();
-      if (data.valid && data.userRole) {
-        userRole = data.userRole; // armazena o nível do usuário
+      if (!data.valid) {
+        localStorage.removeItem('token');
+        return window.location.href = 'login.html';
       }
-    } catch (err) {
-      console.error('Erro ao verificar token:', err);
 
-</script>
+      const role = data.userRole || data.role;
+      const restricoes = {
+        'classe_a': ['Criar Doc SEI Externo'],
+        'classe_b': [],
+        'admin': []
+      };
 
-<script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    const token = localStorage.getItem('token');
+      const fluxosRestritos = restricoes[role] || [];
 
-    if (!token) {
-      alert('Você não está autenticado. Redirecionando para o login...');
-      window.location.href = 'login.html';
-      return;
-    }
+      document.querySelectorAll('.card.service-card').forEach(card => {
+        const titulo = card.querySelector('.card-title')?.textContent.trim();
+        if (fluxosRestritos.includes(titulo)) {
+          card.classList.add('restrito');
+          card.removeAttribute('onclick');
+          card.setAttribute('data-toggle', 'tooltip');
+          card.setAttribute('title', 'Acesso restrito: serviço disponível apenas para níveis superiores');
+        }
+      });
 
-    const res = await fetch(`${window.location.origin}/verify-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
+      $('[data-toggle="tooltip"]').tooltip(); // Inicializa tooltips
     });
-
-    const data = await res.json();
-    if (!data.valid) {
-      alert('Token inválido ou expirado. Redirecionando para o login...');
-      localStorage.removeItem('token');
-      return window.location.href = 'login.html';
-    }
-
-    const userRole = data.userRole || data.role;
-
-    const restricoes = {
-      'classe_a': ['Assinatura em doc SEI', 'Criar Doc SEI Editável', 'Criar Doc SEI Externo'],
-      'classe_b': ['Criar Doc SEI Editável', 'Criar Doc SEI Externo'],
-      'classe_c': ['Criar Doc SEI Externo'],
-      'classe_d': [],
-      'classe_e': [],
-      'admin': [] // acesso total
-    };
-
-    const fluxosRestritos = restricoes[userRole] || [];
-
-    document.querySelectorAll('.card.service-card').forEach(card => {
-      const titulo = card.querySelector('.card-title')?.textContent.trim();
-      if (fluxosRestritos.includes(titulo)) {
-        card.classList.add('restrito');
-        card.removeAttribute('onclick');
-        card.setAttribute('data-toggle', 'tooltip');
-        card.setAttribute('title', 'Acesso restrito: serviço disponível apenas para níveis superiores');
-      }
-    });
-
-    // Inicializar tooltips Bootstrap (deve ser após inserir os atributos)
-    $('[data-toggle="tooltip"]').tooltip();
-  });
-</script>
-<script>
-  const logoutBtn = document.getElementById('logoutButton');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('token');
-      window.location.href = 'login.html';
-    });
-  }
-</script>
-  
+  </script>
+</body>
 </html>
