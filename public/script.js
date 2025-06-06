@@ -33,20 +33,6 @@ function hideLoadingOverlay() {
   }
 }
 
-// Listas para seleção
-//const listaUsuarios = [
- // 'Antônio Sílvio Rabelo Neto',
- // 'Bruno Moreira de Medeiros',
- // 'Bruno Zafalon Martins Ferreira',
- // 'Francisco Jailson Nascimento dos Santos',
- // 'José Joaquim da Silva Júnior',
- // 'Lucas Veloso Facury Lasmar',
- // 'Natália Maria do Carmo Lopes Guimarães Battaglini',
- // 'Rodrigo Emanuel Tahan',
- // 'Wagner Ferreira da Cunha'
-// ];
-//
-
 async function buscarUsuariosExternos() {
   try {
     const response = await fetch(`${apiUrl}/usuarios-externos`);
@@ -57,18 +43,6 @@ async function buscarUsuariosExternos() {
     return []; // retorna lista vazia em caso de erro
   }
 }
-
-////const listacontratos = [
-  //'00 00121',
-  //'12 00121',
-  //'12 00088',
-  //'12 00101',
-  //'12 00212',
-  //'12 00426',
-  //'12 00449',
-  //'12 00458',
-  //'12 00594'
-//];
 
 async function buscarContratos() {
   try {
