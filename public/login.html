@@ -129,6 +129,7 @@
         if (res.ok) {
           // Armazena o token JWT no localStorage e redireciona para a página protegida
           localStorage.setItem('token', data.token);
+          localStorage.setItem('role', data.role); // <-- armazena o nível de acesso
           showAlert('Login bem-sucedido! Redirecionando...', 'success');
           setTimeout(() => {
             window.location.href = '/protected.html'; // Redireciona para a página protegida
