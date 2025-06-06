@@ -80,7 +80,10 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role:     { type: String, default: 'user' }, // <--- aqui
+  role: {
+  type: String,
+  enum: ['classe_a', 'classe_b', 'classe_c', 'classe_d', 'classe_e', 'admin'],
+  default: 'classe_a'}
 });
 const User = mongoose.model('User', userSchema);
 
