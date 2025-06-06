@@ -178,7 +178,7 @@ app.post('/login', express.json(), async (req, res) => {
     expiresIn: '1h',
   });
 
-    res.send({ token });
+    res.send({ token, role: user.role });
   } catch (err) {
     console.error('Erro no login:', err);
     res.status(500).send('Erro no servidor');
