@@ -331,11 +331,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
     }
 
 
-    catch (err) {
-    console.error('Erro ao processar o envio de e-mail:', err);
-    res.status(500).send('Erro no servidor');
-  }
-});
     
     // Configura o transporte de e-mail
     const transporter = nodemailer.createTransport({
