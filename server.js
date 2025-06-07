@@ -345,9 +345,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
       text: mailContent,
     };
 
-    // Array para anexos
-    const attachments = [];
-
     // Verifica se há arquivos enviados
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
@@ -475,6 +472,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     console.error('Erro ao processar o envio de e-mail:', err);
     res.status(500).send('Erro no servidor');
   }
+
 });
 
 // Rota para a página principal
