@@ -282,8 +282,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
   mailContent += `Usuário: ${dados.user || ''}\n`;
   mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
     } 
-    
-    } else if (fluxo === 'Analise de processo') {
+     else if (fluxo === 'Analise de processo') {
   mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
   const arquivosEsperados = ['memoriaCalculo', 'diarioObra', 'relatorioFotografico'];
@@ -313,7 +312,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     console.error('Erro ao processar anexos da análise:', error);
     return res.status(500).send('Erro ao processar anexos da análise.');
   }
-  }else if (fluxo === 'Alterar ordem de documentos') {
+  } else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
     } else if (fluxo === 'Inserir anexo em doc SEI') {
