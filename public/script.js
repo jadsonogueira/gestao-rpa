@@ -136,9 +136,9 @@ async function abrirFormulario(fluxo) {
     { id: 'requerente', placeholder: 'Requerente', type: 'text' },
     { id: 'email', placeholder: 'Email', type: 'email' },
     { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
-    { id: 'arquivo', placeholder: 'Selecione o arquivo: Memória de Cálculo (PDF)', type: 'file', accept: '.pdf' },
-    { id: 'arquivo', placeholder: 'Selecione o arquivo: Diário de Obra (PDF)', type: 'file', accept: '.pdf' },
-    { id: 'arquivo', placeholder: 'Selecione o arquivo: Relatório Fotográfico (PDF)', type: 'file', accept: '.pdf' },
+    { id: 'memoriaCalculo', placeholder: 'Selecione o arquivo: Memória de Cálculo (PDF)', type: 'file', accept: '.pdf' },
+    { id: 'diarioObra', placeholder: 'Selecione o arquivo: Diário de Obra (PDF)', type: 'file', accept: '.pdf' },
+    { id: 'relatorioFotografico', placeholder: 'Selecione o arquivo: Relatório Fotográfico (PDF)', type: 'file', accept: '.pdf' },
   ];
   } else if (fluxo === 'Inserir anexo em doc SEI') {
     campos = [
