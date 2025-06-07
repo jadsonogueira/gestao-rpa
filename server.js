@@ -282,8 +282,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Liberar acesso externo') {
       mailContent += `Usuário: ${dados.user || ''}\n`;
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
-
-    } else if (fluxo === 'Analise de processo') {
+//***//
+        } else if (fluxo === 'Analise de processo') {
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
       for (const file of req.files) {
@@ -297,33 +297,13 @@ app.post('/send-email', upload.any(), async (req, res) => {
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         }
       }
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    });
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: 'jadson.pena@dnit.gov.br',
-      subject: `${fluxo}`,
-      text: mailContent,
-      attachments // <-- se não estiver vazio, será enviado
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error('Erro ao enviar o e-mail:', error);
-        return res.status(500).send('Erro ao enviar o e-mail');
-      }
-      res.send('E-mail enviado com sucesso');
-    });
-
-  } catch (err) {
+    }catch (err) {
     console.error('Erro ao processar o envio de e-mail:', err);
     res.status(500).send('Erro no servidor');
   }
 });
-
+//***//
 
   } else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
