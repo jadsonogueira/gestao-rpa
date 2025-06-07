@@ -94,6 +94,26 @@
       background-color: #007bff;
     }
 
+    .whatsapp-float {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #25d366;
+      color: white;
+      font-size: 28px;
+      padding: 14px;
+      border-radius: 50%;
+      z-index: 1000;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      transition: transform 0.3s;
+    }
+    
+    .whatsapp-float:hover {
+      transform: scale(1.1);
+      text-decoration: none;
+      color: white;
+    }
+    
   </style>
 </head>
 <body class=".bg-dark">
@@ -300,6 +320,15 @@
     </div>
   </div>
 
+<!-- Botão flutuante de suporte via WhatsApp -->
+<a href="https://wa.me/5561996686541" 
+   class="whatsapp-float" 
+   target="_blank" 
+   title="Fale conosco no WhatsApp">
+  <i class="fab fa-whatsapp"></i>
+</a>
+
+  
   <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
