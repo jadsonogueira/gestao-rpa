@@ -302,8 +302,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
       }
       attachments.push({ filename: safeOriginalName, content: file.buffer });
     }
-  }
-} else if (fluxo === 'Alterar ordem de documentos') {
+  } else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
     } else if (fluxo === 'Inserir anexo em doc SEI') {
