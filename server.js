@@ -281,28 +281,44 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Liberar acesso externo') {
   mailContent += `Usuário: ${dados.user || ''}\n`;
   mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
-    } else if (fluxo === 'Analise de processo') {
+    } 
+    
+    else if (fluxo === 'Analise de processo') {
   mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
-  // Adiciona arquivos se existirem
-  for (const file of req.files) {
-    const safeOriginalName = sanitizeFilename(file.originalname);
+  console.log('Arquivos recebidos para análise:', req.files.map(f => f.fieldname));
 
-    if (
-      file.fieldname === 'memoriaCalculo' ||
-      file.fieldname === 'diarioObra' ||
-      file.fieldname === 'relatorioFotografico'
-    ) {
-      // Valida tipo e tamanho (PDF)
-      if (file.mimetype !== 'application/pdf') {
-        return res.status(400).send(`Tipo inválido: ${file.originalname}`);
+  try {
+    for (const file of req.files) {
+      console.log(`Analisando arquivo: ${file.originalname} (${file.fieldname})`);
+      const safeOriginalName = sanitizeFilename(file.originalname);
+
+      if (
+        file.fieldname === 'memoriaCalculo' ||
+        file.fieldname === 'diarioObra' ||
+        file.fieldname === 'relatorioFotografico'
+      ) {
+        if (file.mimetype !== 'application/pdf') {
+          console.warn(`Tipo inválido detectado: ${file.mimetype}`);
+          return res.status(400).send(`Tipo inválido: ${file.originalname}`);
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+          console.warn(`Arquivo muito grande: ${file.originalname} (${file.size})`);
+          return res.status(400).send(`Arquivo muito grande: ${file.originalname}`);
+        }
+
+        attachments.push({ filename: safeOriginalName, content: file.buffer });
+        console.log(`✔ Anexado: ${safeOriginalName}`);
       }
-      if (file.size > 10 * 1024 * 1024) {
-        return res.status(400).send(`Arquivo muito grande: ${file.originalname}`);
-      }
-      attachments.push({ filename: safeOriginalName, content: file.buffer });
     }
-  } else if (fluxo === 'Alterar ordem de documentos') {
+  } catch (error) {
+    console.error('❌ Erro ao processar anexos da análise:', error);
+    return res.status(500).send('Erro ao processar anexos da análise.');
+  }
+} 
+    
+    else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
     } else if (fluxo === 'Inserir anexo em doc SEI') {
