@@ -298,11 +298,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
         }
       }
 
-    }catch (err) {
-    console.error('Erro ao processar o envio de e-mail:', err);
-    res.status(500).send('Erro no servidor');
-  }
-});
 //***//
 
   } else if (fluxo === 'Alterar ordem de documentos') {
@@ -335,6 +330,13 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
 
+
+    catch (err) {
+    console.error('Erro ao processar o envio de e-mail:', err);
+    res.status(500).send('Erro no servidor');
+  }
+});
+    
     // Configura o transporte de e-mail
     const transporter = nodemailer.createTransport({
       service: 'gmail',
