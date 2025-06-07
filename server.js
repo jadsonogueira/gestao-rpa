@@ -297,13 +297,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         }
       }
-
-    } else if (fluxo === 'Alterar ordem de documentos') {
-      mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
-      mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
-
-    }
-
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
