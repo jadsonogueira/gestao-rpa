@@ -131,13 +131,16 @@ async function abrirFormulario(fluxo) {
       { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
-  } else if (fluxo === 'Alterar ordem de documentos') {
-    campos = [
-      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
-      { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
-    ];
+  } else if (fluxo === 'Analise de processo') {
+  campos = [
+    { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+    { id: 'email', placeholder: 'Email', type: 'email' },
+    { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
+    { id: 'memoriaCalculo', placeholder: 'Memória de Cálculo (PDF)', type: 'file', accept: '.pdf' },
+    { id: 'diarioObra', placeholder: 'Diário de Obra (PDF)', type: 'file', accept: '.pdf' },
+    { id: 'relatorioFotografico', placeholder: 'Relatório Fotográfico (PDF)', type: 'file', accept: '.pdf' }
+  ];
+}
   } else if (fluxo === 'Inserir anexo em doc SEI') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
