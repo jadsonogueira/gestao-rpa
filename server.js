@@ -257,7 +257,6 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 },
 });
 
-// Rota principal de envio de e-mail
 app.post('/send-email', upload.any(), async (req, res) => {
   console.log('Dados recebidos no formulário:', req.body);
   try {
@@ -267,40 +266,72 @@ app.post('/send-email', upload.any(), async (req, res) => {
       return res.status(400).send('O campo de e-mail é obrigatório.');
     }
 
-    // Monta conteúdo do e-mail
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
     mailContent += `Requerente: ${dados.requerente || ''}\n`;
     mailContent += `Email: ${dados.email || ''}\n`;
-    // Ajusta campos conforme o fluxo
+
+    const attachments = []; // <-- precisa estar aqui no começo do try
+
     if (fluxo === 'Liberar assinatura externa') {
-  mailContent += `Assinante: ${dados.assinante || ''}\n`;
-  mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+      mailContent += `Assinante: ${dados.assinante || ''}\n`;
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
 
     } else if (fluxo === 'Consultar empenho') {
       mailContent += `Contrato SEI: ${dados.contratoSei || ''}\n`;
+
     } else if (fluxo === 'Liberar acesso externo') {
-  mailContent += `Usuário: ${dados.user || ''}\n`;
-  mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
-    } 
-    
-    
-    else if (fluxo === 'Analise de processo') {
-  mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+      mailContent += `Usuário: ${dados.user || ''}\n`;
+      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
-  for (const file of req.files) {
-    const safeOriginalName = sanitizeFilename(file.originalname);
-    if (
-      ['memoriaCalculo', 'diarioObra', 'relatorioFotografico'].includes(file.fieldname)
-    ) {
-      if (file.mimetype !== 'application/pdf') {
-        return res.status(400).send(`Tipo inválido: ${file.originalname}`);
+    } else if (fluxo === 'Analise de processo') {
+      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+
+      for (const file of req.files) {
+        const safeOriginalName = sanitizeFilename(file.originalname);
+        if (
+          ['memoriaCalculo', 'diarioObra', 'relatorioFotografico'].includes(file.fieldname)
+        ) {
+          if (file.mimetype !== 'application/pdf') {
+            return res.status(400).send(`Tipo inválido: ${file.originalname}`);
+          }
+          attachments.push({ filename: safeOriginalName, content: file.buffer });
+        }
       }
-      attachments.push({ filename: safeOriginalName, content: file.buffer });
+
+    } else if (fluxo === 'Alterar ordem de documentos') {
+      mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
+      mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
+
     }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: 'jadson.pena@dnit.gov.br',
+      subject: `${fluxo}`,
+      text: mailContent,
+      attachments // <-- se não estiver vazio, será enviado
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Erro ao enviar o e-mail:', error);
+        return res.status(500).send('Erro ao enviar o e-mail');
+      }
+      res.send('E-mail enviado com sucesso');
+    });
+
+  } catch (err) {
+    console.error('Erro ao processar o envio de e-mail:', err);
+    res.status(500).send('Erro no servidor');
   }
+});
 
 
-      
   } else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
