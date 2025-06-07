@@ -283,9 +283,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
   mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
     } else if (fluxo === 'Analise de processo') {
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
-      mailContent += `Memória de Cálculo em PDF: ${dados.memoriaCalculo || ''}\n`;
-      mailContent += `Diário de Obra em PDF: ${dados.diarioObra || ''}\n`;
-      mailContent += `Relatório Fotográfico em PDF: ${dados.relatorioFotografico || ''}\n`;
     } else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
