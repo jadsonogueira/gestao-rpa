@@ -140,7 +140,6 @@ async function abrirFormulario(fluxo) {
     { id: 'diarioObra', placeholder: 'Diário de Obra (PDF)', type: 'file', accept: '.pdf' },
     { id: 'relatorioFotografico', placeholder: 'Relatório Fotográfico (PDF)', type: 'file', accept: '.pdf' }
   ];
-}
   } else if (fluxo === 'Inserir anexo em doc SEI') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
