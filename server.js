@@ -282,36 +282,25 @@ app.post('/send-email', upload.any(), async (req, res) => {
   mailContent += `Usuário: ${dados.user || ''}\n`;
   mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
     } 
-     else if (fluxo === 'Analise de processo') {
+    
+    
+    else if (fluxo === 'Analise de processo') {
   mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
-  const arquivosEsperados = ['memoriaCalculo', 'diarioObra', 'relatorioFotografico'];
-  console.log('📎 Arquivos recebidos:', req.files.map(f => f.fieldname));
-
-  try {
-    for (const nomeCampo of arquivosEsperados) {
-      const arquivo = req.files.find(f => f.fieldname === nomeCampo);
-
-      if (arquivo) {
-        if (arquivo.mimetype !== 'application/pdf') {
-          return res.status(400).send(`Tipo inválido: ${arquivo.originalname}`);
-        }
-        if (arquivo.size > 10 * 1024 * 1024) {
-          return res.status(400).send(`Arquivo muito grande: ${arquivo.originalname}`);
-        }
-
-        attachments.push({
-          filename: sanitizeFilename(arquivo.originalname),
-          content: arquivo.buffer
-        });
-      } else {
-        console.warn(`⚠️ Arquivo opcional '${nomeCampo}' não enviado.`);
+  for (const file of req.files) {
+    const safeOriginalName = sanitizeFilename(file.originalname);
+    if (
+      ['memoriaCalculo', 'diarioObra', 'relatorioFotografico'].includes(file.fieldname)
+    ) {
+      if (file.mimetype !== 'application/pdf') {
+        return res.status(400).send(`Tipo inválido: ${file.originalname}`);
       }
+      attachments.push({ filename: safeOriginalName, content: file.buffer });
     }
-  } catch (error) {
-    console.error('Erro ao processar anexos da análise:', error);
-    return res.status(500).send('Erro ao processar anexos da análise.');
   }
+
+
+      
   } else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
