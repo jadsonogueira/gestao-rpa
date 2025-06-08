@@ -283,7 +283,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Usuário: ${dados.user || ''}\n`;
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 //***//
-        } else if (fluxo === 'Analise de medicao') {
+        } else if (fluxo === 'Analise de processo') {
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
       for (const file of req.files) {
