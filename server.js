@@ -49,12 +49,18 @@ async function compressPDFIfNeeded(file) {
   const tmpOut = `/tmp/compressed_${Date.now()}_${file.originalname}`;
   fs.writeFileSync(tmpIn, file.buffer);
   const cmd = [
-    'gs -sDEVICE=pdfwrite',
-    '-dCompatibilityLevel=1.4',
-    '-dPDFSETTINGS=/ebook',
-    '-dNOPAUSE -dQUIET -dBATCH',
-    `-sOutputFile=${tmpOut}`,
-    tmpIn
+  'gs -sDEVICE=pdfwrite',
+  '-dCompatibilityLevel=1.4',
+  '-dPDFSETTINGS=/screen',
+  '-dDownsampleColorImages=true',
+  '-dColorImageResolution=72',
+  '-dDownsampleGrayImages=true',
+  '-dGrayImageResolution=72',
+  '-dDownsampleMonoImages=true',
+  '-dMonoImageResolution=72',
+  '-dNOPAUSE -dQUIET -dBATCH',
+  `-sOutputFile=${tmpOut}`,
+  tmpIn
   ].join(' ');
   await new Promise((resolve, reject) =>
     execShell(cmd, err => err ? reject(err) : resolve())
