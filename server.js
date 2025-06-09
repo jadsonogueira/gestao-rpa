@@ -329,7 +329,12 @@ app.post('/send-email', upload.any(), async (req, res) => {
           if (file.mimetype !== 'application/pdf') {
             return res.status(400).send(`Tipo inválido: ${file.originalname}`);
           }
-          attachments.push({ filename: safeOriginalName, content: file.buffer });
+          -     const pdf = file.buffer;
+          -     attachments.push({ filename: safeOriginalName, content: pdf });
+          +     // comprime somente se >20 MB
+          +     const pdfContent = await compressPDFIfNeeded(file);
+          +     attachments.push({ filename: safeOriginalName, content: pdfContent });
+
         }
       }
 
@@ -425,8 +430,14 @@ app.post('/send-email', upload.any(), async (req, res) => {
           }
 
         } else if (file.fieldname === 'arquivo') {
-          // Apenas anexa o arquivo diretamente, com nome sanitizado
-          attachments.push({ filename: safeOriginalName, content: file.buffer });
+          -   attachments.push({ filename: safeOriginalName, content: file.buffer });
+          +   // se for PDF, aplica compressão; senão, usa buffer original
+          +   let content = file.buffer;
+          +   if (file.mimetype === 'application/pdf') {
+          +     content = await compressPDFIfNeeded(file);
+          +   }
+          +   attachments.push({ filename: safeOriginalName, content });
+
 
         } else if (file.fieldname === 'arquivoPdf') {
           // Conversão de PDF em JPG
