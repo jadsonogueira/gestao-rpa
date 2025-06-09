@@ -435,7 +435,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
             return res.status(400).send('Erro ao processar o arquivo ZIP.');
           }
 
-           else if (file.fieldname === 'arquivo') {
+        }else if (file.fieldname === 'arquivo') {
           // Anexa o PDF (ou qualquer arquivo) sem compressão
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
