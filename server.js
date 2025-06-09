@@ -37,11 +37,11 @@ const os = require("os");
 const { exec: execShell } = require('child_process');
 
 /**
- * Se o PDF for maior que 5 MB, comprime via Ghostscript.
+ * Se o PDF for maior que 4 MB, comprime via Ghostscript.
  * Caso contrário, retorna o buffer original.
  */
 async function compressPDFIfNeeded(file) {
-  const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+  const MAX_SIZE = 4 * 1024 * 1024; // 4 MB
   if (file.buffer.length <= MAX_SIZE) {
     return file.buffer;
   }
