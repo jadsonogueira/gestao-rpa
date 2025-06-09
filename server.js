@@ -331,8 +331,10 @@ app.post('/send-email', upload.any(), async (req, res) => {
           }
            const pdf = file.buffer;
           attachments.push({ filename: safeOriginalName, content: pdf });
+          console.log(`${safeOriginalName} – original: ${file.buffer.length} bytes`);
           // comprime somente se >20 MB
           const pdfContent = await compressPDFIfNeeded(file);
+          console.log(`${safeOriginalName} – comprimido: ${pdfContent.length} bytes`);
           attachments.push({ filename: safeOriginalName, content: pdfContent });
 
         }
