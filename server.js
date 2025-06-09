@@ -512,6 +512,14 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailOptions.attachments = attachments;
     }
 
+    // Imediatamente antes de transporter.sendMail(...)
+    const totalBytes = attachments
+      .map(a => a.content.length)
+      .reduce((sum, n) => sum + n, 0);
+    console.log(`Total de bytes nos attachments (raw): ${totalBytes}`);
+    console.log(`Total estimado com Base64 (~4/3): ${Math.round(totalBytes * 4/3)}`);
+
+    
     // Envia o e-mail
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
