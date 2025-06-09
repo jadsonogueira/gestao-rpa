@@ -41,6 +41,8 @@ const { exec: execShell } = require('child_process');
  * Caso contrário, retorna o buffer original.
  */
 async function compressPDFIfNeeded(file) {
+  
+
   const MAX_SIZE = 4 * 1024 * 1024; // 4 MB
   if (file.buffer.length <= MAX_SIZE) {
     return file.buffer;
@@ -51,6 +53,8 @@ async function compressPDFIfNeeded(file) {
   const tmpIn  = `/tmp/${timestamp}_${safeName}`;
   const tmpOut = `/tmp/compressed_${timestamp}_${safeName}`;
   fs.writeFileSync(tmpIn, file.buffer);
+
+ 
 
   // 2) monte o comando envolvendo os paths entre aspas
   const cmd = [
@@ -68,6 +72,9 @@ async function compressPDFIfNeeded(file) {
     `"${tmpIn}"`
   ].join(' ');
 
+console.log('Ghostscript command:', cmd);
+
+  
   // 3) execute o Ghostscript
   await new Promise((resolve, reject) =>
     execShell(cmd, err => err ? reject(err) : resolve())
