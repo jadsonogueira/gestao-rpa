@@ -32,6 +32,41 @@ const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const os = require("os");
 
+
+// === PASSO: Helper de compressão de PDF ===
+const { exec: execShell } = require('child_process');
+
+/**
+ * Se o PDF for maior que 20 MB, comprime via Ghostscript.
+ * Caso contrário, retorna o buffer original.
+ */
+async function compressPDFIfNeeded(file) {
+  const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
+  if (file.buffer.length <= MAX_SIZE) {
+    return file.buffer;
+  }
+  const tmpIn  = `/tmp/${Date.now()}_${file.originalname}`;
+  const tmpOut = `/tmp/compressed_${Date.now()}_${file.originalname}`;
+  fs.writeFileSync(tmpIn, file.buffer);
+  const cmd = [
+    'gs -sDEVICE=pdfwrite',
+    '-dCompatibilityLevel=1.4',
+    '-dPDFSETTINGS=/ebook',
+    '-dNOPAUSE -dQUIET -dBATCH',
+    `-sOutputFile=${tmpOut}`,
+    tmpIn
+  ].join(' ');
+  await new Promise((resolve, reject) =>
+    execShell(cmd, err => err ? reject(err) : resolve())
+  );
+  const compressed = fs.readFileSync(tmpOut);
+  fs.unlinkSync(tmpIn);
+  fs.unlinkSync(tmpOut);
+  return compressed;
+}
+// === FIM do helper ===
+
+
 // Importa a classe PDFImage do pdf-image
 const PDFImage = require("pdf-image").PDFImage;
 
