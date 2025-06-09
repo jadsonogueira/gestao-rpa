@@ -45,32 +45,41 @@ async function compressPDFIfNeeded(file) {
   if (file.buffer.length <= MAX_SIZE) {
     return file.buffer;
   }
-  const tmpIn  = `/tmp/${Date.now()}_${file.originalname}`;
-  const tmpOut = `/tmp/compressed_${Date.now()}_${file.originalname}`;
+  // 1) sanitize o originalname para gerar nomes de arquivo seguros
+  const safeName = sanitizeFilename(file.originalname);
+  const timestamp = Date.now();
+  const tmpIn  = `/tmp/${timestamp}_${safeName}`;
+  const tmpOut = `/tmp/compressed_${timestamp}_${safeName}`;
   fs.writeFileSync(tmpIn, file.buffer);
+
+  // 2) monte o comando envolvendo os paths entre aspas
   const cmd = [
-  'gs -sDEVICE=pdfwrite',
-  '-dCompatibilityLevel=1.4',
-  '-dPDFSETTINGS=/screen',
-  '-dDownsampleColorImages=true',
-  '-dColorImageResolution=72',
-  '-dDownsampleGrayImages=true',
-  '-dGrayImageResolution=72',
-  '-dDownsampleMonoImages=true',
-  '-dMonoImageResolution=72',
-  '-dNOPAUSE -dQUIET -dBATCH',
-  `-sOutputFile=${tmpOut}`,
-  tmpIn
+    'gs -sDEVICE=pdfwrite',
+    '-dCompatibilityLevel=1.4',
+    '-dPDFSETTINGS=/screen',
+    '-dDownsampleColorImages=true',
+    '-dColorImageResolution=72',
+    '-dDownsampleGrayImages=true',
+    '-dGrayImageResolution=72',
+    '-dDownsampleMonoImages=true',
+    '-dMonoImageResolution=72',
+    '-dNOPAUSE -dQUIET -dBATCH',
+    `-sOutputFile="${tmpOut}"`,
+    `"${tmpIn}"`
   ].join(' ');
+
+  // 3) execute o Ghostscript
   await new Promise((resolve, reject) =>
     execShell(cmd, err => err ? reject(err) : resolve())
   );
+
+  // 4) leia o resultado, limpe os temporários e retorne o buffer
   const compressed = fs.readFileSync(tmpOut);
   fs.unlinkSync(tmpIn);
   fs.unlinkSync(tmpOut);
   return compressed;
 }
-// === FIM do helper ===
+
 
 
 // Importa a classe PDFImage do pdf-image
