@@ -329,11 +329,11 @@ app.post('/send-email', upload.any(), async (req, res) => {
           if (file.mimetype !== 'application/pdf') {
             return res.status(400).send(`Tipo inválido: ${file.originalname}`);
           }
-          -     const pdf = file.buffer;
-          -     attachments.push({ filename: safeOriginalName, content: pdf });
-          +     // comprime somente se >20 MB
-          +     const pdfContent = await compressPDFIfNeeded(file);
-          +     attachments.push({ filename: safeOriginalName, content: pdfContent });
+           const pdf = file.buffer;
+          attachments.push({ filename: safeOriginalName, content: pdf });
+          // comprime somente se >20 MB
+          const pdfContent = await compressPDFIfNeeded(file);
+          attachments.push({ filename: safeOriginalName, content: pdfContent });
 
         }
       }
