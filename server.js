@@ -429,15 +429,19 @@ app.post('/send-email', upload.any(), async (req, res) => {
             return res.status(400).send('Erro ao processar o arquivo ZIP.');
           }
 
-        } else if (file.fieldname === 'arquivo') {
-          -   attachments.push({ filename: safeOriginalName, content: file.buffer });
-          +   // se for PDF, aplica compressão; senão, usa buffer original
-          +   let content = file.buffer;
-          +   if (file.mimetype === 'application/pdf') {
-          +     content = await compressPDFIfNeeded(file);
-          +   }
-          +   attachments.push({ filename: safeOriginalName, content });
-
+        }  else if (file.fieldname === 'arquivo') {
+          // 1) log do tamanho original
+          console.log(`${safeOriginalName} – original: ${file.buffer.length} bytes`);
+        
+          // 2) compressão condicional de PDF
+          let content = file.buffer;
+          if (file.mimetype === 'application/pdf') {
+            content = await compressPDFIfNeeded(file);
+            // 3) log do tamanho após compressão
+            console.log(`${safeOriginalName} – comprimido: ${content.length} bytes`);
+          }
+        
+          attachments.push({ filename: safeOriginalName, content });
 
         } else if (file.fieldname === 'arquivoPdf') {
           // Conversão de PDF em JPG
