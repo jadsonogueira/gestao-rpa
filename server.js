@@ -1,6 +1,33 @@
 require('dotenv').config();
 const { exec } = require('child_process');
 
+
+// Google Drive API client
+const { google } = require('googleapis');
+
+// 1) Autenticação via Service Account
+const driveAuth = new google.auth.GoogleAuth({
+  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,      // './appdnit-drive-sa.json'
+  scopes:    ['https://www.googleapis.com/auth/drive']
+});
+
+// 2) Cliente da API Drive v3
+const drive = google.drive({ version: 'v3', auth: driveAuth });
+
+/**
+ * Sobrescreve um arquivo no Drive (mantém o mesmo fileId)
+ * @param {string} fileId    ID do arquivo no Drive (driveItem ID)
+ * @param {Buffer} buffer    Conteúdo do PDF
+ * @param {string} mimeType  Tipo MIME (ex.: 'application/pdf')
+ */
+async function overwriteDriveFile(fileId, buffer, mimeType) {
+  await drive.files.update({
+    fileId,
+    media: { mimeType, body: buffer }
+  });
+}
+
+
 // Verifica se o ImageMagick está instalado
 exec('convert -version', (error, stdout, stderr) => {
   if (error) {
