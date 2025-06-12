@@ -367,25 +367,31 @@ app.post('/send-email', upload.any(), async (req, res) => {
       mailContent += `Usuário: ${dados.user || ''}\n`;
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 //***//
-        } else if (fluxo === 'Analise de processo') {
-      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+      
+       } else if (fluxo === 'Analise de processo') {
+  mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
-      for (const file of req.files) {
-        const safeOriginalName = sanitizeFilename(file.originalname);
-        if (
-          ['memoriaCalculo', 'diarioObra', 'relatorioFotografico'].includes(file.fieldname)
-        ) {
-          if (file.mimetype !== 'application/pdf') {
-            return res.status(400).send(`Tipo inválido: ${file.originalname}`);
-          }
-          console.log(`${safeOriginalName} – original: ${file.buffer.length} bytes`);
-          // comprime somente se >20 MB
-          const pdfContent = await compressPDFIfNeeded(file);
-          console.log(`${safeOriginalName} – comprimido: ${pdfContent.length} bytes`);
-          attachments.push({ filename: safeOriginalName, content: pdfContent });
+  // Mapeia fieldname → fileId
+  const idMap = {
+    memoriaCalculo: process.env.MEMORIA_FILE_ID,
+    diarioObra:     process.env.DIARIO_FILE_ID,
+    relatorioFotografico: process.env.RELATORIO_FILE_ID
+  };
 
-        }
-      }
+  for (const file of req.files) {
+    const fileId = idMap[file.fieldname];
+    if (!fileId) continue;              // ignora outros campos
+    if (file.mimetype !== 'application/pdf') {
+      return res.status(400).send(`Tipo inválido: ${file.originalname}`);
+    }
+    // sobrescreve no Drive
+    await overwriteDriveFile(fileId, file.buffer, file.mimetype);
+    console.log(`Atualizado no Drive: ${file.fieldname} (fileId=${fileId})`);
+  }
+
+  // **Não** adicionamos nenhum attachments.push aqui
+}
+
 
 //***//
 
