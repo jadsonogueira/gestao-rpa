@@ -389,10 +389,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
     console.log(`Atualizado no Drive: ${file.fieldname} (fileId=${fileId})`);
   }
 
-  // **Não** adicionamos nenhum attachments.push aqui
-}
-
-
 //***//
 
   } else if (fluxo === 'Alterar ordem de documentos') {
