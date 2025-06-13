@@ -1,15 +1,17 @@
 require('dotenv').config();
 const { exec } = require('child_process');
 
-
-// Google Drive API client
+// importe o google:
 const { google } = require('googleapis');
 
-// 1) Autenticação via Service Account
+// ...
+
+// agora use JSON.parse na variável de ambiente:
 const driveAuth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,      // './appdnit-drive-sa.json'
-  scopes:    ['https://www.googleapis.com/auth/drive']
+  credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON),
+  scopes: ['https://www.googleapis.com/auth/drive']
 });
+
 
 // 2) Cliente da API Drive v3
 const drive = google.drive({ version: 'v3', auth: driveAuth });
