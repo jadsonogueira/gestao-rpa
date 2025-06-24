@@ -125,57 +125,113 @@ function abrirFormulario(fluxo) {
   $('#fluxoModal').modal('show');
 }
 
-function enviarFormularioAxios(e) {
-  e.preventDefault();
-  showLoadingOverlay();
+function abrirFormulario(fluxo) {
+  const modalTitle = document.getElementById('modalTitle');
+  const form = document.getElementById('fluxoForm');
+  if (!modalTitle || !form) return;
 
-  const fluxo = document.getElementById('modalTitle').innerText;
-  const formData = new FormData();
-  formData.append('fluxo', fluxo);
+  modalTitle.innerText = fluxo;
+  form.innerHTML = '';
 
-  const inputs = e.target.querySelectorAll('input, textarea, select');
-  inputs.forEach(input => {
-    if (input.type === 'file' && input.files.length > 0) {
-      for (let i = 0; i < input.files.length; i++) {
-        formData.append(input.name, input.files[i]);
-      }
-    } else if (input.type !== 'file' && input.type !== 'radio') {
-      formData.append(input.name, input.value.trim());
-    } else if (input.type === 'radio' && input.checked) {
-      formData.append(input.name, input.value);
-    }
-  });
+  const instrucao = fluxoInstrucoes[fluxo] || '';
+  if (instrucao) {
+    const divInstrucao = document.createElement('div');
+    divInstrucao.classList.add('mb-3');
+    divInstrucao.innerHTML = `<p class="text-muted">${instrucao}</p>`;
+    form.appendChild(divInstrucao);
+  }
 
-  let url = `${apiUrl}/send-email`;
-  if (fluxo === 'Unir PDFs') url = `${apiUrl}/merge-pdf`;
+  const campos = {
+    'Consultar empenho': `
+      <div class="form-group">
+        <label for="email">Seu e-mail</label>
+        <input type="email" class="form-control" name="email" required>
+      </div>
+      <div class="form-group">
+        <label for="contratoSei">Número do Contrato SEI</label>
+        <input type="text" class="form-control" name="contratoSei" required>
+      </div>
+    `,
+    'Liberar assinatura externa': `
+      <div class="form-group">
+        <label for="email">Seu e-mail</label>
+        <input type="email" class="form-control" name="email" required>
+      </div>
+      <div class="form-group">
+        <label for="assinante">Assinante</label>
+        <input type="text" class="form-control" name="assinante" required>
+      </div>
+      <div class="form-group">
+        <label for="numeroDocSei">Número do DOC_SEI</label>
+        <input type="text" class="form-control" name="numeroDocSei" required>
+      </div>
+    `,
+    'Liberar acesso externo': `
+      <div class="form-group">
+        <label for="email">Seu e-mail</label>
+        <input type="email" class="form-control" name="email" required>
+      </div>
+      <div class="form-group">
+        <label for="user">Usuário Externo</label>
+        <input type="text" class="form-control" name="user" required>
+      </div>
+      <div class="form-group">
+        <label for="processo_sei">Número do Processo SEI</label>
+        <input type="text" class="form-control" name="processo_sei" required>
+      </div>
+    `,
+    'Analise de processo': `
+      <div class="form-group">
+        <label for="email">Seu e-mail</label>
+        <input type="email" class="form-control" name="email" required>
+      </div>
+      <div class="form-group">
+        <label for="processo_sei">Número do Processo SEI</label>
+        <input type="text" class="form-control" name="processo_sei" required>
+      </div>
+      <div class="form-group">
+        <label>Memória de Cálculo (PDF)</label>
+        <input type="file" name="memoriaCalculo" accept=".pdf" required class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Diário de Obra (PDF)</label>
+        <input type="file" name="diarioObra" accept=".pdf" required class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Relatório Fotográfico (PDF)</label>
+        <input type="file" name="relatorioFotografico" accept=".pdf" required class="form-control">
+      </div>
+    `,
+    'Unir PDFs': `
+      <div class="form-group">
+        <label>Selecionar arquivos PDF</label>
+        <input type="file" class="form-control" name="pdfs" multiple required accept=".pdf">
+      </div>
+    `
+  };
 
-  axios.post(url, formData, { responseType: fluxo === 'Unir PDFs' ? 'blob' : 'json' })
-    .then(response => {
-      hideLoadingOverlay();
+  // Campos comuns
+  if (campos[fluxo]) {
+    form.innerHTML += campos[fluxo];
+  } else {
+    form.innerHTML += `
+      <div class="form-group">
+        <label for="email">Seu e-mail</label>
+        <input type="email" class="form-control" name="email" required>
+      </div>
+    `;
+  }
 
-      if (fluxo === 'Unir PDFs') {
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = 'pdf_unido.pdf';
-        link.click();
-        showAlert('PDF unido gerado com sucesso!', 'success');
-      } else {
-        showAlert('Solicitação enviada com sucesso.', 'success');
-      }
+  const botao = document.createElement('button');
+  botao.type = 'submit';
+  botao.classList.add('btn', 'btn-primary', 'btn-block');
+  botao.innerText = 'Enviar';
+  form.appendChild(botao);
 
-      $('#fluxoModal').modal('hide');
-    })
-    .catch(error => {
-      hideLoadingOverlay();
-      if (error.response) {
-        showAlert(`Erro ao enviar: ${error.response.data}`, 'danger');
-      } else {
-        showAlert(`Erro ao enviar o formulário: ${error.message}`, 'danger');
-      }
-      $('#fluxoModal').modal('hide');
-    });
+  form.onsubmit = enviarFormularioAxios;
+  $('#fluxoModal').modal('show');
 }
+
 
 // Expõe globalmente
 window.abrirFormulario = abrirFormulario;
