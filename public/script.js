@@ -120,7 +120,6 @@ function enviarFormularioAxios(e) {
       $('#fluxoModal').modal('hide');
     });
 }
-
 function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
   const form = document.getElementById('fluxoForm');
@@ -138,14 +137,39 @@ function abrirFormulario(fluxo) {
     form.appendChild(divInstrucao);
   }
 
-  // Campos padrão para upload de arquivos (ajuste conforme necessário)
-  const campoArquivo = document.createElement('div');
-  campoArquivo.classList.add('form-group');
-  campoArquivo.innerHTML = `
-    <label for="arquivos">Selecionar arquivos</label>
-    <input type="file" class="form-control" name="arquivos" id="arquivos" multiple required accept=".pdf">
-  `;
-  form.appendChild(campoArquivo);
+  // Campos personalizados por fluxo
+  if (fluxo === 'Unir PDFs') {
+    const campoArquivo = document.createElement('div');
+    campoArquivo.classList.add('form-group');
+    campoArquivo.innerHTML = `
+      <label for="arquivos">Selecionar arquivos PDF</label>
+      <input type="file" class="form-control" name="arquivos" id="arquivos" multiple required accept=".pdf">
+    `;
+    form.appendChild(campoArquivo);
+  } else if (fluxo === 'Criar Doc SEI Externo' || fluxo === 'Criar Doc SEI Editável') {
+    form.innerHTML += `
+      <div class="form-group">
+        <label for="titulo">Título do Documento</label>
+        <input type="text" class="form-control" name="titulo" required>
+      </div>
+      <div class="form-group">
+        <label for="conteudo">Conteúdo</label>
+        <textarea class="form-control" name="conteudo" rows="4" required></textarea>
+      </div>
+    `;
+  } else {
+    // Campos genéricos para demais fluxos
+    form.innerHTML += `
+      <div class="form-group">
+        <label for="mensagem">Mensagem</label>
+        <textarea class="form-control" name="mensagem" rows="3" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="anexo">Anexar Arquivo (opcional)</label>
+        <input type="file" class="form-control" name="anexo">
+      </div>
+    `;
+  }
 
   // Botão de envio
   const botao = document.createElement('button');
