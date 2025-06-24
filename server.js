@@ -116,6 +116,7 @@ console.log('Ghostscript command:', cmd);
   return compressed;
 }
 
+const PDFMerger = require('pdf-merger-js');
 
 
 // Importa a classe PDFImage do pdf-image
@@ -325,6 +326,29 @@ app.get('/usuarios-externos', async (req, res) => {
     }
   }
 });
+
+// Rota - funcionalidade de merge de arquivos PDF
+app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
+  try {
+    const pdfBuffers = req.files.map(file => file.buffer);
+    const merger = new PDFMerger();
+
+    for (let buffer of pdfBuffers) {
+      await merger.add(buffer);
+    }
+
+    const mergedPdf = await merger.saveAsBuffer();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=merged.pdf');
+    res.send(mergedPdf);
+  } catch (err) {
+    console.error('Erro ao unir PDFs:', err);
+    res.status(500).send('Erro ao unir PDFs');
+  }
+});
+
+
 
 // Rota para listar contratos (GET)
 app.get('/contratos', async (req, res) => {
