@@ -29,6 +29,7 @@
     "mysql2": "^3.11.3",
     "nodemailer": "^6.9.15",
     "pdf-image": "1.1.0",
+    "pdf-merger-js": "^5.1.2",
     "pdf-parse": "^1.1.1",
     "pdf-poppler": "^0.2.1",
     "pdf2pic": "^3.1.4",

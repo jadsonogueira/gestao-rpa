@@ -1,5 +1,5 @@
 // Define a URL da API com base no ambiente
-const apiUrl = window.location.origin;
+const apiUrl = 'https://gestao-rpa.onrender.com';
 
 // Função para exibir alertas
 function showAlert(message, type = 'success') {
@@ -33,30 +33,27 @@ function hideLoadingOverlay() {
   }
 }
 
-// Listas para seleção
-const listaUsuarios = [
-  'Antônio Sílvio Rabelo Neto',
-  'Bruno Moreira de Medeiros',
-  'Bruno Zafalon Martins Ferreira',
-  'Francisco Jailson Nascimento dos Santos',
-  'José Joaquim da Silva Júnior',
-  'Lucas Veloso Facury Lasmar',
-  'Natália Maria do Carmo Lopes Guimarães Battaglini',
-  'Rodrigo Emanuel Tahan',
-  'Wagner Ferreira da Cunha'
-];
+async function buscarUsuariosExternos() {
+  try {
+    const response = await fetch(`${apiUrl}/usuarios-externos`);
+    const usuarios = await response.json();
+    return usuarios.map(u => u.nome); // retorna só os nomes
+  } catch (error) {
+    console.error('Erro ao buscar usuários externos:', error);
+    return []; // retorna lista vazia em caso de erro
+  }
+}
 
-const listacontratos = [
-  '00 00121',
-  '12 00121',
-  '12 00088',
-  '12 00101',
-  '12 00212',
-  '12 00426',
-  '12 00449',
-  '12 00458',
-  '12 00594'
-];
+async function buscarContratos() {
+  try {
+    const response = await fetch(`${apiUrl}/contratos`);
+    const contratos = await response.json();
+    return contratos.map(c => c.numero);
+  } catch (error) {
+    console.error('Erro ao buscar contratos:', error);
+    return [];
+  }
+}
 
 // Instruções específicas para cada fluxo
 const fluxoInstrucoes = {
@@ -73,7 +70,7 @@ const fluxoInstrucoes = {
 };
 
 // Função para abrir o modal e gerar o formulário
-function abrirFormulario(fluxo) {
+async function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
   const modalBody = document.querySelector('.modal-body');
   if (!modalTitle || !modalBody) {
@@ -82,6 +79,17 @@ function abrirFormulario(fluxo) {
   }
   modalTitle.innerText = fluxo;
 
+  // Busca usuários externos se necessário
+  let listaUsuarios = [];
+  if (fluxo === 'Liberar assinatura externa' || fluxo === 'Liberar acesso externo') {
+    listaUsuarios = await buscarUsuariosExternos();
+  }
+
+  let listaContratos = [];
+  if (fluxo === 'Consultar empenho') {
+    listaContratos = await buscarContratos();
+  }
+  
   // Instruções
   const instrucaoText = document.createElement('p');
   instrucaoText.textContent = fluxoInstrucoes[fluxo] || 'Preencha todos os campos.';
@@ -97,20 +105,20 @@ function abrirFormulario(fluxo) {
 
   // Define os campos de acordo com o fluxo
   let campos = [];
-  if (fluxo === 'Consultar empenho') {
+  if (fluxo === 'Liberar assinatura externa') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listacontratos },
-    ];
-  } else if (fluxo === 'Liberar assinatura externa') {
-    campos = [
-      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
+      { id: 'email', placeholder: 'Email', type: 'email' }, // vírgula corrigida aqui ✅
       { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
     ];
-  } else if (fluxo === 'Liberar acesso externo') {
+    } else if (fluxo === 'Consultar empenho') {
+  campos = [
+    { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+    { id: 'email', placeholder: 'Email', type: 'email' },
+    { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listaContratos },
+  ];
+   } else if (fluxo === 'Liberar acesso externo') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
       { id: 'email', placeholder: 'Email', type: 'email' },
@@ -118,18 +126,14 @@ function abrirFormulario(fluxo) {
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
   } else if (fluxo === 'Analise de processo') {
-    campos = [
-      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
-    ];
-  } else if (fluxo === 'Alterar ordem de documentos') {
-    campos = [
-      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
-      { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
-      { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
-    ];
+  campos = [
+    { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+    { id: 'email', placeholder: 'Email', type: 'email' },
+    { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
+    { id: 'memoriaCalculo', placeholder: 'Memória de Cálculo (PDF)', type: 'file', accept: '.pdf' },
+    { id: 'diarioObra', placeholder: 'Diário de Obra (PDF)', type: 'file', accept: '.pdf' },
+    { id: 'relatorioFotografico', placeholder: 'Relatório Fotográfico (PDF)', type: 'file', accept: '.pdf' },
+  ];
   } else if (fluxo === 'Inserir anexo em doc SEI') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
@@ -492,3 +496,36 @@ function enviarFormularioAxios(e) {
 
 // Expõe a função abrirFormulario no escopo global (para o HTML)
 window.abrirFormulario = abrirFormulario;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('signupForm');
+  if (form) {
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      try {
+        const response = await fetch(`${apiUrl}/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+
+        const msg = await response.text();
+
+        if (response.ok) {
+          showAlert('✅ Usuário cadastrado com sucesso!', 'success');
+          form.reset();
+        } else {
+          showAlert('❌ Erro no cadastro: ' + msg, 'danger');
+        }
+      } catch (err) {
+        showAlert('❌ Erro na conexão com o servidor.', 'danger');
+        console.error(err);
+      }
+    });
+  }
+});
