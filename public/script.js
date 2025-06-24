@@ -67,6 +67,7 @@ const fluxoInstrucoes = {
   'Criar Doc SEI Externo': 'Crie um documento SEI do tipo EXTERNO.',
   'Criar Doc SEI Editável': 'Crie um documento SEI do tipo Editável.',
   'Analise de processo': 'Preencha os campos para análise do processo SEI.'
+  'Unir PDFs': 'Selecione dois ou mais arquivos PDF para unir em um único documento.',
 };
 
 // Função para abrir o modal e gerar o formulário
@@ -182,6 +183,13 @@ async function abrirFormulario(fluxo) {
       { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
       { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] },
     ];
+
+    } else if (fluxo === 'Unir PDFs') {
+  campos = [
+    { id: 'pdfs', placeholder: 'Selecione os arquivos PDF', type: 'file', accept: '.pdf', multiple: true }
+  ];
+
+    
   } else {
     console.warn("Fluxo não reconhecido:", fluxo);
     return;
@@ -444,18 +452,15 @@ async function abrirFormulario(fluxo) {
   $('#fluxoModal').modal('show');
 }
 
-// Envia o formulário usando Axios, com overlay "Aguarde"
 function enviarFormularioAxios(e) {
   e.preventDefault();
-
-  // Exibe overlay de "Processando, aguarde..."
   showLoadingOverlay();
 
   const fluxo = document.getElementById('modalTitle').innerText;
+
   const formData = new FormData();
   formData.append('fluxo', fluxo);
 
-  // Coleta inputs do form
   const inputs = e.target.querySelectorAll('input, textarea, select');
   inputs.forEach((input) => {
     if (input.type === 'file' && input.files.length > 0) {
@@ -469,12 +474,37 @@ function enviarFormularioAxios(e) {
     }
   });
 
-  // Faz requisição via Axios
+  // 🚨 Se for o fluxo de Unir PDFs, envia para /merge-pdf
+  if (fluxo === 'Unir PDFs') {
+    axios.post(`${apiUrl}/merge-pdf`, formData, { responseType: 'blob' })
+      .then(response => {
+        hideLoadingOverlay();
+
+        const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'merged.pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        showAlert('PDFs unidos com sucesso!', 'success');
+        $('#fluxoModal').modal('hide');
+      })
+      .catch(error => {
+        hideLoadingOverlay();
+        const msg = error.response?.data || error.message;
+        showAlert(`Erro ao unir PDFs: ${msg}`, 'danger');
+        $('#fluxoModal').modal('hide');
+      });
+
+    return; // impede que outros fluxos sejam executados
+  }
+
+  // Todos os outros fluxos seguem normalmente para /send-email
   axios.post(`${apiUrl}/send-email`, formData)
     .then(response => {
-      // Oculta overlay
       hideLoadingOverlay();
-
       if (response.status === 200) {
         showAlert('Solicitação enviada com sucesso.', 'success');
       } else {
@@ -484,12 +514,8 @@ function enviarFormularioAxios(e) {
     })
     .catch(error => {
       hideLoadingOverlay();
-
-      if (error.response) {
-        showAlert(`Erro ao enviar: ${error.response.data}`, 'danger');
-      } else {
-        showAlert(`Erro ao enviar o formulário: ${error.message}`, 'danger');
-      }
+      const msg = error.response?.data || error.message;
+      showAlert(`Erro ao enviar: ${msg}`, 'danger');
       $('#fluxoModal').modal('hide');
     });
 }
