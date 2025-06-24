@@ -1,7 +1,6 @@
 // Define a URL da API com base no ambiente
 const apiUrl = 'https://gestao-rpa.onrender.com';
 
-// Função para exibir alertas
 function showAlert(message, type = 'success') {
   const alertPlaceholder = document.getElementById('alertPlaceholder');
   if (alertPlaceholder) {
@@ -18,7 +17,6 @@ function showAlert(message, type = 'success') {
   }
 }
 
-// Funções para mostrar/esconder o overlay "Aguarde"
 function showLoadingOverlay() {
   const overlay = document.getElementById('loadingOverlay');
   if (overlay) overlay.style.display = 'flex';
@@ -29,7 +27,6 @@ function hideLoadingOverlay() {
   if (overlay) overlay.style.display = 'none';
 }
 
-// Busca de dados externos
 async function buscarUsuariosExternos() {
   try {
     const response = await fetch(`${apiUrl}/usuarios-externos`);
@@ -52,7 +49,6 @@ async function buscarContratos() {
   }
 }
 
-// Instruções por fluxo
 const fluxoInstrucoes = {
   'Consultar empenho': 'Preencha os campos e selecione o contrato SEI correto. Você receberá um email com o resultado.',
   'Liberar assinatura externa': 'Informe os dados e o número do DOC_SEI no formato numérico (ex.: 12345678).',
@@ -83,143 +79,54 @@ function abrirFormulario(fluxo) {
     form.appendChild(divInstrucao);
   }
 
-  if (fluxo === 'Unir PDFs') {
-    const campoArquivo = document.createElement('div');
-    campoArquivo.classList.add('form-group');
-    campoArquivo.innerHTML = `
-      <label for="arquivos">Selecionar arquivos PDF</label>
-      <input type="file" class="form-control" name="arquivos" id="arquivos" multiple required accept=".pdf">
-    `;
-    form.appendChild(campoArquivo);
-  } else if (fluxo === 'Criar Doc SEI Externo' || fluxo === 'Criar Doc SEI Editável') {
-    form.innerHTML += `
-      <div class="form-group">
-        <label for="titulo">Título do Documento</label>
-        <input type="text" class="form-control" name="titulo" required>
-      </div>
-      <div class="form-group">
-        <label for="conteudo">Conteúdo</label>
-        <textarea class="form-control" name="conteudo" rows="4" required></textarea>
-      </div>
-    `;
-  } else {
-    form.innerHTML += `
-      <div class="form-group">
-        <label for="mensagem">Mensagem</label>
-        <textarea class="form-control" name="mensagem" rows="3" required></textarea>
-      </div>
-      <div class="form-group">
-        <label for="anexo">Anexar Arquivo (opcional)</label>
-        <input type="file" class="form-control" name="anexo">
-      </div>
-    `;
-  }
+  switch (fluxo) {
+    case 'Consultar empenho':
+      form.innerHTML += `
+        <div class="form-group">
+          <label for="contratoSei">Contrato SEI</label>
+          <input type="text" class="form-control" name="contratoSei" required>
+        </div>
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input type="email" class="form-control" name="email" required>
+        </div>`;
+      break;
 
-  const botao = document.createElement('button');
-  botao.type = 'submit';
-  botao.classList.add('btn', 'btn-primary', 'btn-block');
-  botao.innerText = 'Enviar';
+    case 'Liberar assinatura externa':
+      form.innerHTML += `
+        <div class="form-group">
+          <label for="assinante">Assinante</label>
+          <input type="text" class="form-control" name="assinante" required>
+        </div>
+        <div class="form-group">
+          <label for="numeroDocSei">Número do DOC_SEI</label>
+          <input type="text" class="form-control" name="numeroDocSei" required>
+        </div>
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input type="email" class="form-control" name="email" required>
+        </div>`;
+      break;
 
-  form.appendChild(botao);
-  form.onsubmit = enviarFormularioAxios;
-  $('#fluxoModal').modal('show');
-}
+    case 'Unir PDFs':
+      form.innerHTML += `
+        <div class="form-group">
+          <label for="arquivos">Selecionar arquivos PDF</label>
+          <input type="file" class="form-control" name="pdfs" multiple required accept=".pdf">
+        </div>`;
+      break;
 
-function abrirFormulario(fluxo) {
-  const modalTitle = document.getElementById('modalTitle');
-  const form = document.getElementById('fluxoForm');
-  if (!modalTitle || !form) return;
-
-  modalTitle.innerText = fluxo;
-  form.innerHTML = '';
-
-  const instrucao = fluxoInstrucoes[fluxo] || '';
-  if (instrucao) {
-    const divInstrucao = document.createElement('div');
-    divInstrucao.classList.add('mb-3');
-    divInstrucao.innerHTML = `<p class="text-muted">${instrucao}</p>`;
-    form.appendChild(divInstrucao);
-  }
-
-  const campos = {
-    'Consultar empenho': `
-      <div class="form-group">
-        <label for="email">Seu e-mail</label>
-        <input type="email" class="form-control" name="email" required>
-      </div>
-      <div class="form-group">
-        <label for="contratoSei">Número do Contrato SEI</label>
-        <input type="text" class="form-control" name="contratoSei" required>
-      </div>
-    `,
-    'Liberar assinatura externa': `
-      <div class="form-group">
-        <label for="email">Seu e-mail</label>
-        <input type="email" class="form-control" name="email" required>
-      </div>
-      <div class="form-group">
-        <label for="assinante">Assinante</label>
-        <input type="text" class="form-control" name="assinante" required>
-      </div>
-      <div class="form-group">
-        <label for="numeroDocSei">Número do DOC_SEI</label>
-        <input type="text" class="form-control" name="numeroDocSei" required>
-      </div>
-    `,
-    'Liberar acesso externo': `
-      <div class="form-group">
-        <label for="email">Seu e-mail</label>
-        <input type="email" class="form-control" name="email" required>
-      </div>
-      <div class="form-group">
-        <label for="user">Usuário Externo</label>
-        <input type="text" class="form-control" name="user" required>
-      </div>
-      <div class="form-group">
-        <label for="processo_sei">Número do Processo SEI</label>
-        <input type="text" class="form-control" name="processo_sei" required>
-      </div>
-    `,
-    'Analise de processo': `
-      <div class="form-group">
-        <label for="email">Seu e-mail</label>
-        <input type="email" class="form-control" name="email" required>
-      </div>
-      <div class="form-group">
-        <label for="processo_sei">Número do Processo SEI</label>
-        <input type="text" class="form-control" name="processo_sei" required>
-      </div>
-      <div class="form-group">
-        <label>Memória de Cálculo (PDF)</label>
-        <input type="file" name="memoriaCalculo" accept=".pdf" required class="form-control">
-      </div>
-      <div class="form-group">
-        <label>Diário de Obra (PDF)</label>
-        <input type="file" name="diarioObra" accept=".pdf" required class="form-control">
-      </div>
-      <div class="form-group">
-        <label>Relatório Fotográfico (PDF)</label>
-        <input type="file" name="relatorioFotografico" accept=".pdf" required class="form-control">
-      </div>
-    `,
-    'Unir PDFs': `
-      <div class="form-group">
-        <label>Selecionar arquivos PDF</label>
-        <input type="file" class="form-control" name="pdfs" multiple required accept=".pdf">
-      </div>
-    `
-  };
-
-  // Campos comuns
-  if (campos[fluxo]) {
-    form.innerHTML += campos[fluxo];
-  } else {
-    form.innerHTML += `
-      <div class="form-group">
-        <label for="email">Seu e-mail</label>
-        <input type="email" class="form-control" name="email" required>
-      </div>
-    `;
+    default:
+      form.innerHTML += `
+        <div class="form-group">
+          <label for="mensagem">Mensagem</label>
+          <textarea class="form-control" name="mensagem" rows="3" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="anexo">Anexar Arquivo (opcional)</label>
+          <input type="file" class="form-control" name="anexo">
+        </div>`;
+      break;
   }
 
   const botao = document.createElement('button');
@@ -232,6 +139,56 @@ function abrirFormulario(fluxo) {
   $('#fluxoModal').modal('show');
 }
 
+function enviarFormularioAxios(e) {
+  e.preventDefault();
+  showLoadingOverlay();
 
-// Expõe globalmente
+  const fluxo = document.getElementById('modalTitle').innerText;
+  const formData = new FormData();
+  formData.append('fluxo', fluxo);
+
+  const inputs = e.target.querySelectorAll('input, textarea, select');
+  inputs.forEach(input => {
+    if (input.type === 'file' && input.files.length > 0) {
+      for (let i = 0; i < input.files.length; i++) {
+        formData.append(input.name, input.files[i]);
+      }
+    } else if (input.type !== 'file' && input.type !== 'radio') {
+      formData.append(input.name, input.value.trim());
+    } else if (input.type === 'radio' && input.checked) {
+      formData.append(input.name, input.value);
+    }
+  });
+
+  let url = `${apiUrl}/send-email`;
+  if (fluxo === 'Unir PDFs') url = `${apiUrl}/merge-pdf`;
+
+  axios.post(url, formData, { responseType: fluxo === 'Unir PDFs' ? 'blob' : 'json' })
+    .then(response => {
+      hideLoadingOverlay();
+
+      if (fluxo === 'Unir PDFs') {
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'pdf_unido.pdf';
+        link.click();
+        showAlert('PDF unido gerado com sucesso!', 'success');
+      } else {
+        showAlert('Solicitação enviada com sucesso.', 'success');
+      }
+
+      $('#fluxoModal').modal('hide');
+    })
+    .catch(error => {
+      hideLoadingOverlay();
+      if (error.response) {
+        showAlert(`Erro ao enviar: ${error.response.data}`, 'danger');
+      } else {
+        showAlert(`Erro ao enviar o formulário: ${error.message}`, 'danger');
+      }
+      $('#fluxoModal').modal('hide');
+    });
+}
+
 window.abrirFormulario = abrirFormulario;
