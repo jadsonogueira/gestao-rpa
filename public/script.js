@@ -121,5 +121,48 @@ function enviarFormularioAxios(e) {
     });
 }
 
+function abrirFormulario(fluxo) {
+  const modalTitle = document.getElementById('modalTitle');
+  const form = document.getElementById('fluxoForm');
+  if (!modalTitle || !form) return;
+
+  modalTitle.innerText = fluxo;
+  form.innerHTML = ''; // Limpa os campos anteriores
+
+  // Instruções
+  const instrucao = fluxoInstrucoes[fluxo] || '';
+  if (instrucao) {
+    const divInstrucao = document.createElement('div');
+    divInstrucao.classList.add('mb-3');
+    divInstrucao.innerHTML = `<p class="text-muted">${instrucao}</p>`;
+    form.appendChild(divInstrucao);
+  }
+
+  // Campos padrão para upload de arquivos (ajuste conforme necessário)
+  const campoArquivo = document.createElement('div');
+  campoArquivo.classList.add('form-group');
+  campoArquivo.innerHTML = `
+    <label for="arquivos">Selecionar arquivos</label>
+    <input type="file" class="form-control" name="arquivos" id="arquivos" multiple required accept=".pdf">
+  `;
+  form.appendChild(campoArquivo);
+
+  // Botão de envio
+  const botao = document.createElement('button');
+  botao.type = 'submit';
+  botao.classList.add('btn', 'btn-primary', 'btn-block');
+  botao.innerText = 'Enviar';
+
+  form.appendChild(botao);
+
+  // Vincula o submit à função de envio
+  form.onsubmit = enviarFormularioAxios;
+
+  // Abre o modal
+  $('#fluxoModal').modal('show');
+}
+
+
+
 // Expõe a função globalmente
 window.abrirFormulario = abrirFormulario;
