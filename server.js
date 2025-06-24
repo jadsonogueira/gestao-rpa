@@ -327,6 +327,12 @@ app.get('/usuarios-externos', async (req, res) => {
   }
 });
 
+// Configuração do multer
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+});
+
 // Rota - funcionalidade de merge de arquivos PDF
 app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
   try {
@@ -361,11 +367,7 @@ app.get('/contratos', async (req, res) => {
   }
 });
 
-// Configuração do multer
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 },
-});
+
 
 app.post('/send-email', upload.any(), async (req, res) => {
   console.log('Dados recebidos no formulário:', req.body);
