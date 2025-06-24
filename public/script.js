@@ -67,7 +67,64 @@ const fluxoInstrucoes = {
   'Unir PDFs': 'Selecione dois ou mais arquivos PDF para juntá-los em um único documento.'
 };
 
-// ENVIO DOS DADOS
+function abrirFormulario(fluxo) {
+  const modalTitle = document.getElementById('modalTitle');
+  const form = document.getElementById('fluxoForm');
+  if (!modalTitle || !form) return;
+
+  modalTitle.innerText = fluxo;
+  form.innerHTML = '';
+
+  const instrucao = fluxoInstrucoes[fluxo] || '';
+  if (instrucao) {
+    const divInstrucao = document.createElement('div');
+    divInstrucao.classList.add('mb-3');
+    divInstrucao.innerHTML = `<p class="text-muted">${instrucao}</p>`;
+    form.appendChild(divInstrucao);
+  }
+
+  if (fluxo === 'Unir PDFs') {
+    const campoArquivo = document.createElement('div');
+    campoArquivo.classList.add('form-group');
+    campoArquivo.innerHTML = `
+      <label for="arquivos">Selecionar arquivos PDF</label>
+      <input type="file" class="form-control" name="arquivos" id="arquivos" multiple required accept=".pdf">
+    `;
+    form.appendChild(campoArquivo);
+  } else if (fluxo === 'Criar Doc SEI Externo' || fluxo === 'Criar Doc SEI Editável') {
+    form.innerHTML += `
+      <div class="form-group">
+        <label for="titulo">Título do Documento</label>
+        <input type="text" class="form-control" name="titulo" required>
+      </div>
+      <div class="form-group">
+        <label for="conteudo">Conteúdo</label>
+        <textarea class="form-control" name="conteudo" rows="4" required></textarea>
+      </div>
+    `;
+  } else {
+    form.innerHTML += `
+      <div class="form-group">
+        <label for="mensagem">Mensagem</label>
+        <textarea class="form-control" name="mensagem" rows="3" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="anexo">Anexar Arquivo (opcional)</label>
+        <input type="file" class="form-control" name="anexo">
+      </div>
+    `;
+  }
+
+  const botao = document.createElement('button');
+  botao.type = 'submit';
+  botao.classList.add('btn', 'btn-primary', 'btn-block');
+  botao.innerText = 'Enviar';
+
+  form.appendChild(botao);
+  form.onsubmit = enviarFormularioAxios;
+  $('#fluxoModal').modal('show');
+}
+
 function enviarFormularioAxios(e) {
   e.preventDefault();
   showLoadingOverlay();
@@ -89,7 +146,6 @@ function enviarFormularioAxios(e) {
     }
   });
 
-  // Define o endpoint com base no fluxo
   let url = `${apiUrl}/send-email`;
   if (fluxo === 'Unir PDFs') url = `${apiUrl}/merge-pdf`;
 
@@ -120,73 +176,6 @@ function enviarFormularioAxios(e) {
       $('#fluxoModal').modal('hide');
     });
 }
-function abrirFormulario(fluxo) {
-  const modalTitle = document.getElementById('modalTitle');
-  const form = document.getElementById('fluxoForm');
-  if (!modalTitle || !form) return;
 
-  modalTitle.innerText = fluxo;
-  form.innerHTML = ''; // Limpa os campos anteriores
-
-  // Instruções
-  const instrucao = fluxoInstrucoes[fluxo] || '';
-  if (instrucao) {
-    const divInstrucao = document.createElement('div');
-    divInstrucao.classList.add('mb-3');
-    divInstrucao.innerHTML = `<p class="text-muted">${instrucao}</p>`;
-    form.appendChild(divInstrucao);
-  }
-
-  // Campos personalizados por fluxo
-  if (fluxo === 'Unir PDFs') {
-    const campoArquivo = document.createElement('div');
-    campoArquivo.classList.add('form-group');
-    campoArquivo.innerHTML = `
-      <label for="arquivos">Selecionar arquivos PDF</label>
-      <input type="file" class="form-control" name="arquivos" id="arquivos" multiple required accept=".pdf">
-    `;
-    form.appendChild(campoArquivo);
-  } else if (fluxo === 'Criar Doc SEI Externo' || fluxo === 'Criar Doc SEI Editável') {
-    form.innerHTML += `
-      <div class="form-group">
-        <label for="titulo">Título do Documento</label>
-        <input type="text" class="form-control" name="titulo" required>
-      </div>
-      <div class="form-group">
-        <label for="conteudo">Conteúdo</label>
-        <textarea class="form-control" name="conteudo" rows="4" required></textarea>
-      </div>
-    `;
-  } else {
-    // Campos genéricos para demais fluxos
-    form.innerHTML += `
-      <div class="form-group">
-        <label for="mensagem">Mensagem</label>
-        <textarea class="form-control" name="mensagem" rows="3" required></textarea>
-      </div>
-      <div class="form-group">
-        <label for="anexo">Anexar Arquivo (opcional)</label>
-        <input type="file" class="form-control" name="anexo">
-      </div>
-    `;
-  }
-
-  // Botão de envio
-  const botao = document.createElement('button');
-  botao.type = 'submit';
-  botao.classList.add('btn', 'btn-primary', 'btn-block');
-  botao.innerText = 'Enviar';
-
-  form.appendChild(botao);
-
-  // Vincula o submit à função de envio
-  form.onsubmit = enviarFormularioAxios;
-
-  // Abre o modal
-  $('#fluxoModal').modal('show');
-}
-
-
-
-// Expõe a função globalmente
+// Expõe globalmente
 window.abrirFormulario = abrirFormulario;
