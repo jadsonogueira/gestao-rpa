@@ -463,7 +463,7 @@ function enviarFormularioAxios(e) {
   inputs.forEach((input) => {
     if (input.type === 'file' && input.files.length > 0) {
       for (let i = 0; i < input.files.length; i++) {
-        const keyName = input.multiple ? `${input.name}[]` : input.name;
+        const keyName = input.name;
         formData.append(keyName, input.files[i]);
       }
     } else if (input.type !== 'file' && input.type !== 'radio') {
