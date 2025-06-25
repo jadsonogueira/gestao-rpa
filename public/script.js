@@ -478,7 +478,7 @@ const responseType = fluxo === 'Unir PDFs' ? 'blob' : 'json';
 axios.post(url, formData, { responseType })
   .then(response => {
     hideLoadingOverlay();
-
+    
     if (fluxo === 'Unir PDFs') {
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const link = document.createElement('a');
@@ -498,3 +498,6 @@ axios.post(url, formData, { responseType })
     showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
     $('#fluxoModal').modal('hide');
   });
+
+// Expõe a função abrirFormulario no escopo global (para o HTML)
+window.abrirFormulario = abrirFormulario;
