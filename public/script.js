@@ -159,6 +159,11 @@ function abrirFormulario(fluxo) {
       campos = [
         { id: 'pdfs', placeholder: 'Arquivos PDF para unir', type: 'file', accept: '.pdf', multiple: true }
       ];
+      
+      } else if (fluxo === 'PDF para JPG') {
+  campos = [
+    { id: 'arquivoPdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' }
+  ];
     
   } else if (fluxo === 'Criar Doc SEI Externo') {
     campos = [
@@ -474,9 +479,15 @@ function enviarFormularioAxios(e) {
     }
   });
 
-  const url = fluxo === 'Unir PDFs' ? `${apiUrl}/merge-pdf` : `${apiUrl}/send-email`;
-  const responseType = fluxo === 'Unir PDFs' ? 'blob' : 'json';
+  const url = fluxo === 'Unir PDFs'
+  ? `${apiUrl}/merge-pdf`
+  : fluxo === 'PDF para JPG'
+  ? `${apiUrl}/pdf-to-jpg`
+  : `${apiUrl}/send-email`;
 
+const responseType = fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG'
+  ? 'blob'
+  : 'json';
   axios.post(url, formData, { responseType })
     .then(response => {
       hideLoadingOverlay();
