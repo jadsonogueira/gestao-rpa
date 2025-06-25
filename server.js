@@ -640,6 +640,55 @@ app.get('/usuarios', async (req, res) => {
 });
 
 
+// Rota para converter PDF em JPG (e retornar como ZIP)
+app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
+  try {
+    if (!req.file || req.file.mimetype !== 'application/pdf') {
+      return res.status(400).send('Arquivo inválido ou ausente');
+    }
+
+    const tempDir = os.tmpdir();
+    const pdfPath = path.join(tempDir, `pdf_${Date.now()}.pdf`);
+    fs.writeFileSync(pdfPath, req.file.buffer);
+
+    const pdfImageOptions = {
+      convertFileType: "png",
+      convertOptions: {
+        "-density": "300",
+        "-background": "white",
+        "-flatten": null,
+        "-strip": null,
+        "-filter": "Lanczos",
+        "-resize": "1300",
+        "-sharpen": "0x1.0"
+      }
+    };
+
+    const pdfImage = new PDFImage(pdfPath, pdfImageOptions);
+    const parsedData = await pdfParse(req.file.buffer);
+    const numPages = parsedData.numpages;
+
+    const zip = new AdmZip();
+    for (let i = 0; i < numPages; i++) {
+      const imagePath = await pdfImage.convertPage(i);
+      const imageBuffer = fs.readFileSync(imagePath);
+      const imageName = `pagina_${i + 1}.png`;
+      zip.addFile(imageName, imageBuffer);
+      fs.unlinkSync(imagePath); // remove imagem temporária
+    }
+
+    fs.unlinkSync(pdfPath); // remove PDF temporário
+
+    const zipBuffer = zip.toBuffer();
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename=imagens.zip');
+    res.send(zipBuffer);
+  } catch (err) {
+    console.error('Erro na conversão de PDF para JPG:', err);
+    res.status(500).send('Erro ao converter PDF');
+  }
+});
+
 // Inicia o servidor
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
