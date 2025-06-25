@@ -70,7 +70,8 @@ const fluxoInstrucoes = {
   'Criar Doc SEI Externo': 'Crie um documento SEI do tipo EXTERNO.',
   'Criar Doc SEI Editável': 'Crie um documento SEI do tipo Editável.',
   'Analise de processo': 'Preencha os campos para análise do processo SEI.',
-'Unir PDFs': 'Selecione dois ou mais arquivos PDF para juntá-los em um único documento.'
+'Unir PDFs': 'Selecione dois ou mais arquivos PDF para juntá-los em um único documento.',
+'PDF para JPG': 'Selecione um PDF. Cada página será convertida em uma imagem JPG.'
 };
 
 // Função para abrir o modal e gerar o formulário
