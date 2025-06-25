@@ -463,7 +463,8 @@ function enviarFormularioAxios(e) {
   inputs.forEach((input) => {
     if (input.type === 'file' && input.files.length > 0) {
       for (let i = 0; i < input.files.length; i++) {
-        formData.append(input.name, input.files[i]);
+        const keyName = input.multiple ? `${input.name}[]` : input.name;
+        formData.append(keyName, input.files[i]);
       }
     } else if (input.type !== 'file' && input.type !== 'radio') {
       formData.append(input.name, input.value.trim());
@@ -472,32 +473,33 @@ function enviarFormularioAxios(e) {
     }
   });
 
- const url = fluxo === 'Unir PDFs' ? `${apiUrl}/merge-pdf` : `${apiUrl}/send-email`;
-const responseType = fluxo === 'Unir PDFs' ? 'blob' : 'json';
+  const url = fluxo === 'Unir PDFs' ? `${apiUrl}/merge-pdf` : `${apiUrl}/send-email`;
+  const responseType = fluxo === 'Unir PDFs' ? 'blob' : 'json';
 
-axios.post(url, formData, { responseType })
-  .then(response => {
-    hideLoadingOverlay();
-    
-    if (fluxo === 'Unir PDFs') {
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = 'pdf_unido.pdf';
-      link.click();
-      showAlert('✅ PDF unido com sucesso!', 'success');
-    } else {
-      showAlert('✅ Solicitação enviada com sucesso.', 'success');
-    }
+  axios.post(url, formData, { responseType })
+    .then(response => {
+      hideLoadingOverlay();
 
-    $('#fluxoModal').modal('hide');
-  })
-  .catch(error => {
-    hideLoadingOverlay();
-    console.error('Erro ao enviar:', error);
-    showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
-    $('#fluxoModal').modal('hide');
-  });
+      if (fluxo === 'Unir PDFs') {
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'pdf_unido.pdf';
+        link.click();
+        showAlert('✅ PDF unido com sucesso!', 'success');
+      } else {
+        showAlert('✅ Solicitação enviada com sucesso.', 'success');
+      }
+
+      $('#fluxoModal').modal('hide');
+    })
+    .catch(error => {
+      hideLoadingOverlay();
+      console.error('Erro ao enviar:', error);
+      showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
+      $('#fluxoModal').modal('hide');
+    });
+}
 
 // Expõe a função abrirFormulario no escopo global (para o HTML)
 window.abrirFormulario = abrirFormulario;
