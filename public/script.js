@@ -69,7 +69,7 @@ const fluxoInstrucoes = {
   'Assinatura em doc SEI': 'Preencha os dados para assinar o Doc SEI.',
   'Criar Doc SEI Externo': 'Crie um documento SEI do tipo EXTERNO.',
   'Criar Doc SEI Editável': 'Crie um documento SEI do tipo Editável.',
-  'Analise de processo': 'Preencha os campos para análise do processo SEI.'
+  'Analise de processo': 'Preencha os campos para análise do processo SEI.',
   'Unir PDFs': 'Selecione dois ou mais arquivos PDF para juntá-los em um único documento.'
 };
 
