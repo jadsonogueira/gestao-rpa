@@ -70,6 +70,7 @@ const fluxoInstrucoes = {
   'Criar Doc SEI Externo': 'Crie um documento SEI do tipo EXTERNO.',
   'Criar Doc SEI Editável': 'Crie um documento SEI do tipo Editável.',
   'Analise de processo': 'Preencha os campos para análise do processo SEI.'
+  'Unir PDFs': 'Selecione dois ou mais arquivos PDF para juntá-los em um único documento.'
 };
 
 // Função para abrir o modal e gerar o formulário
@@ -152,6 +153,12 @@ function abrirFormulario(fluxo) {
       { id: 'user', placeholder: 'Usuário', type: 'text' },
       { id: 'key', placeholder: 'Senha', type: 'text' },
     ];
+
+    } else if (fluxo === 'Unir PDFs') {
+      campos = [
+        { id: 'pdfs', placeholder: 'Arquivos PDF para unir', type: 'file', accept: '.pdf', multiple: true }
+      ];
+    
   } else if (fluxo === 'Criar Doc SEI Externo') {
     campos = [
       { id: 'requerente', placeholder: 'Requerente', type: 'text' },
@@ -465,30 +472,27 @@ function enviarFormularioAxios(e) {
     }
   });
 
-  // Faz requisição via Axios
-  axios.post(`${apiUrl}/send-email`, formData)
-    .then(response => {
-      // Oculta overlay
-      hideLoadingOverlay();
+ const url = fluxo === 'Unir PDFs' ? `${apiUrl}/merge-pdf` : `${apiUrl}/send-email`;
+const responseType = fluxo === 'Unir PDFs' ? 'blob' : 'json';
 
-      if (response.status === 200) {
-        showAlert('Solicitação enviada com sucesso.', 'success');
-      } else {
-        showAlert(`Erro ao enviar a solicitação: ${response.data}`, 'danger');
-      }
-      $('#fluxoModal').modal('hide');
-    })
-    .catch(error => {
-      hideLoadingOverlay();
+axios.post(url, formData, { responseType })
+  .then(response => {
+    hideLoadingOverlay();
+    
+    if (fluxo === 'Unir PDFs') {
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = 'pdf_unido.pdf';
+      link.click();
+      showAlert('✅ PDF unido com sucesso!', 'success');
+    } else {
+      showAlert('✅ Solicitação enviada com sucesso.', 'success');
+    }
 
-      if (error.response) {
-        showAlert(`Erro ao enviar: ${error.response.data}`, 'danger');
-      } else {
-        showAlert(`Erro ao enviar o formulário: ${error.message}`, 'danger');
-      }
-      $('#fluxoModal').modal('hide');
-    });
-}
+    $('#fluxoModal').modal('hide');
+  })
+
 
 // Expõe a função abrirFormulario no escopo global (para o HTML)
 window.abrirFormulario = abrirFormulario;
