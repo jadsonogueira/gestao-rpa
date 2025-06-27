@@ -525,10 +525,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
               "-density": "300",
               "-background": "white",
               "-flatten": null,
-              "-strip": null,
               "-filter": "Lanczos",
-              "-resize": "1300",
-              "-sharpen": "0x1.0"
+              "-resize": "1000",
+              "-sharpen": "0x1.5"
             }
           };
                
