@@ -519,19 +519,16 @@ app.post('/send-email', upload.any(), async (req, res) => {
             const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
             fs.writeFileSync(tempFilePath, file.buffer);
 
-            const pdfImageOptions = {
-            convertFileType: "png",
-            convertOptions: {
-              "-density": "350",
-              "-background": "white",
-              "-flatten": null,
-              "-strip": null,
-              "-filter": "Lanczos",
-              "-resize": "1300",
-              "-sharpen": "0x1.0"
-            }
-          };
-
+              const pdfImageOptions = {
+              convertFileType: "jpg",
+              convertOptions: {
+                "-density": "150",
+                "-background": "white",
+                "-flatten": null,
+                "-resize": "900",
+                "-strip": null
+              }
+            };
 
             const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
 
