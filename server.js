@@ -522,10 +522,10 @@ app.post('/send-email', upload.any(), async (req, res) => {
               const pdfImageOptions = {
               convertFileType: "jpg",
               convertOptions: {
-                "-density": "150",
+                "-density": "300",
                 "-background": "white",
                 "-flatten": null,
-                "-resize": "900",
+                "-resize": "1200",
                 "-strip": null
               }
             };
