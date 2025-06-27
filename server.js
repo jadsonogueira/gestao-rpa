@@ -526,10 +526,11 @@ app.post('/send-email', upload.any(), async (req, res) => {
               "-background": "white",
               "-flatten": null,
               "-filter": "Lanczos",
-              "-resize": "1000",
-              "-sharpen": "0x1.5"
-            }
-          };
+              "-resize": "1200",
+              "-sharpen": "0x1.2",
+              "-strip": null
+  }
+};
                
             const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
 
