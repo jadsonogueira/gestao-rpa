@@ -492,16 +492,19 @@ const responseType = fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG'
     .then(response => {
       hideLoadingOverlay();
 
-      if (fluxo === 'Unir PDFs') {
-        const blob = new Blob([response.data], { type: 'application/pdf' });
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = 'pdf_unido.pdf';
-        link.click();
-        showAlert('✅ PDF unido com sucesso!', 'success');
-      } else {
-        showAlert('✅ Solicitação enviada com sucesso.', 'success');
-      }
+    if (fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG') {
+      const contentType = response.headers['content-type'];
+      const extension = contentType.includes('zip') ? 'zip' : 'jpg';
+      const blob = new Blob([response.data], { type: contentType });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `resultado.${extension}`;
+      link.click();
+      showAlert(`✅ Conversão concluída com sucesso! Arquivo: resultado.${extension}`, 'success');
+    } else {
+      showAlert('✅ Solicitação enviada com sucesso.', 'success');
+    }
+
 
       $('#fluxoModal').modal('hide');
     })
