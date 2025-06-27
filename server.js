@@ -520,18 +520,19 @@ app.post('/send-email', upload.any(), async (req, res) => {
             fs.writeFileSync(tempFilePath, file.buffer);
 
             const pdfImageOptions = {
-            convertFileType: "png",
+            convertFileType: "jpg",
             convertOptions: {
-              "-density": "350",             // aumenta a resolução de entrada (300 → 350)
+              "-density": "350",
               "-background": "white",
               "-flatten": null,
               "-filter": "Lanczos",
-              "-resize": "1100",             // reduz um pouco o tamanho final
-              "-sharpen": "0x1.5",           // aumenta nitidez
-              "-strip": null,
-              "-quality": "95"               // qualidade alta (mesmo para PNG afeta compressão)
+              "-resize": "1100",
+              "-sharpen": "0x1.5",
+              "-quality": "90",
+              "-strip": null
             }
           };
+
 
                
             const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
