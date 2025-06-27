@@ -520,21 +520,20 @@ app.post('/send-email', upload.any(), async (req, res) => {
             fs.writeFileSync(tempFilePath, file.buffer);
 
             const pdfImageOptions = {
-            convertFileType: "jpg",
+            convertFileType: "png",
             convertOptions: {
               "-density": "350",
               "-background": "white",
               "-flatten": null,
               "-filter": "Lanczos",
               "-resize": "1100",
-              "-sharpen": "0x1.5",
-              "-quality": "90",
+              "-sharpen": "0x1.0",
+              "-quality": "100",
               "-strip": null
             }
           };
 
 
-               
             const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
 
             // Conta as páginas usando pdf-parse
