@@ -651,7 +651,7 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
     fs.writeFileSync(pdfPath, req.file.buffer);
 
     const pdfImageOptions = {
-      convertFileType: "png",
+      convertFileType: "jpg",
       convertOptions: {
         "-density": "300",
         "-background": "white",
@@ -671,7 +671,7 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
     for (let i = 0; i < numPages; i++) {
       const imagePath = await pdfImage.convertPage(i);
       const imageBuffer = fs.readFileSync(imagePath);
-      const imageName = `pagina_${i + 1}.png`;
+      const imageName = `pagina_${i + 1}.jpg`;
       zip.addFile(imageName, imageBuffer);
       fs.unlinkSync(imagePath); // remove imagem temporária
     }
