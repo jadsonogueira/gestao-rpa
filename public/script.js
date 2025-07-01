@@ -107,8 +107,6 @@ function abrirFormulario(fluxo) {
     ];
   } else if (fluxo === 'Liberar assinatura externa') {
     campos = [
-      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
     ];
