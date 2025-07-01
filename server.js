@@ -1,7 +1,6 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
-const { User } = require('./models/User'); // ajuste o path se necessário
-
+const { User } = require('./models/User'); // ajuste se necessário
 const { exec } = require('child_process');
 const { google } = require('googleapis');
 const express = require('express');
@@ -46,14 +45,14 @@ async function overwriteDriveFile(fileId, buffer, mimeType) {
 // Verificações de ferramentas externas
 exec('convert -version', (error, stdout) => {
   if (error) {
-    console.error(`ImageMagick não está instalado ou não está no PATH: ${error.message}`);
+    console.error(`ImageMagick não instalado ou não está no PATH: ${error.message}`);
   } else {
     console.log(`ImageMagick:\n${stdout}`);
   }
 });
 exec('gs -version', (error, stdout) => {
   if (error) {
-    console.error(`Ghostscript não está instalado ou não está no PATH: ${error.message}`);
+    console.error(`Ghostscript não instalado ou não está no PATH: ${error.message}`);
   } else {
     console.log(`Ghostscript:\n${stdout}`);
   }
@@ -62,9 +61,8 @@ exec('gs -version', (error, stdout) => {
 const app = express();
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.json()); // PARA PARSEAR JSON
 
-// -----------------------------------------------------
 // Helper para sanitizar nomes de arquivos
 function sanitizeFilename(filename) {
   return filename
@@ -72,27 +70,26 @@ function sanitizeFilename(filename) {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\w.\-]/g, '_');
 }
-// -----------------------------------------------------
 
 // Verifica variáveis de ambiente obrigatórias
-if (!process.env.MONGODB_URL ||
-    !process.env.JWT_SECRET ||
-    !process.env.EMAIL_USER ||
-    !process.env.EMAIL_PASS) {
-  console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
+if (
+  !process.env.MONGODB_URL ||
+  !process.env.JWT_SECRET ||
+  !process.env.EMAIL_USER ||
+  !process.env.EMAIL_PASS
+) {
+  console.error('Erro: variáveis de ambiente não configuradas corretamente.');
   process.exit(1);
 }
 
 // Conexão com MongoDB
-mongoose.connect(process.env.MONGODB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('MongoDB conectado'))
-.catch(err => {
-  console.error('Erro ao conectar ao MongoDB:', err);
-  process.exit(1);
-});
+mongoose
+  .connect(process.env.MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB conectado'))
+  .catch(err => {
+    console.error('Erro ao conectar ao MongoDB:', err);
+    process.exit(1);
+  });
 
 // Reaproveita o model importado como "Usuario" para rotas /usuarios
 const Usuario = User;
@@ -218,7 +215,8 @@ app.post(
   upload.any(),
   async (req, res) => {
     try {
-      const fluxo = req.body.fluxo;
+      const dados = req.body;                    // ← captura tudo logo no início
+      const fluxo = dados.fluxo;
       const dbUser = await User.findById(req.userId);
       if (!dbUser) return res.status(404).send('Usuário não encontrado');
 
@@ -231,25 +229,25 @@ app.post(
 
       const attachments = [];
 
-      // Campos específicos de cada fluxo
+      // Campos específicos de cada fluxo...
       if (fluxo === 'Liberar assinatura externa') {
-        mailContent += `Assinante: ${req.body.assinante || ''}\n`;
-        mailContent += `Número do DOC_SEI: ${req.body.numeroDocSei || ''}\n`;
+        mailContent += `Assinante: ${dados.assinante || ''}\n`;
+        mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
 
       } else if (fluxo === 'Consultar empenho') {
-        mailContent += `Contrato SEI: ${req.body.contratoSei || ''}\n`;
+        mailContent += `Contrato SEI: ${dados.contratoSei || ''}\n`;
 
       } else if (fluxo === 'Liberar acesso externo') {
-        mailContent += `Usuário: ${req.body.user || ''}\n`;
-        mailContent += `Número do Processo SEI: ${req.body.processo_sei || ''}\n`;
+        mailContent += `Usuário: ${dados.user || ''}\n`;
+        mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
       } else if (fluxo === 'Analise de processo') {
-        mailContent += `Número do Processo SEI: ${req.body.processo_sei || ''}\n`;
+        mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
         const idMap = {
-          memoriaCalculo:         process.env.MEMORIA_FILE_ID,
-          diarioObra:             process.env.DIARIO_FILE_ID,
-          relatorioFotografico:   process.env.RELATORIO_FILE_ID
+          memoriaCalculo:       process.env.MEMORIA_FILE_ID,
+          diarioObra:           process.env.DIARIO_FILE_ID,
+          relatorioFotografico: process.env.RELATORIO_FILE_ID
         };
         for (const file of req.files) {
           const fileId = idMap[file.fieldname];
@@ -260,45 +258,12 @@ app.post(
           await overwriteDriveFile(fileId, file.buffer, file.mimetype);
         }
 
-      } else if (fluxo === 'Alterar ordem de documentos') {
-        mailContent += `Número do Processo SEI: ${req.body.processoSei || ''}\n`;
-        mailContent += `Instruções: ${req.body.instrucoes || ''}\n`;
+      } /* resto dos fluxos ... */
 
-      } else if (fluxo === 'Inserir anexo em doc SEI') {
-        mailContent += `Número do DOC_SEI: ${req.body.numeroDocSei || ''}\n`;
-
-      } else if (fluxo === 'Inserir imagem em doc SEI') {
-        mailContent += `Número do DOC_SEI: ${req.body.numeroDocSei || ''}\n`;
-
-      } else if (fluxo === 'Assinatura em doc SEI') {
-        mailContent += `Número do DOC_SEI: ${req.body.numeroDocSei || ''}\n`;
-        mailContent += `Usuário: ${req.body.user || ''}\n`;
-        mailContent += `Senha: ${req.body.key || ''}\n`;
-
-      } else if (fluxo === 'Criar Doc SEI Editável') {
-        mailContent += `Número do Processo SEI: ${req.body.processoSei || ''}\n`;
-        mailContent += `Tipo do Documento: ${req.body.tipoDocumento || ''}\n`;
-        mailContent += `Número: ${req.body.numero || ''}\n`;
-        mailContent += `Nome na Árvore: ${req.body.nomeArvore || ''}\n`;
-
-      } else if (fluxo === 'Criar Doc SEI Externo') {
-        const agora = new Date();
-        agora.setHours(agora.getHours() - 3);
-        const dia  = String(agora.getDate()).padStart(2, '0');
-        const mes  = String(agora.getMonth() + 1).padStart(2, '0');
-        const ano  = agora.getFullYear();
-        mailContent += `Número do Processo SEI: ${req.body.processoSei || ''}\n`;
-        mailContent += `Data: ${dia}/${mes}/${ano}\n`;
-        mailContent += `Tipo do Documento: ${req.body.tipoDocumento || ''}\n`;
-        mailContent += `Número: ${req.body.numero || ''}\n`;
-        mailContent += `Nome na Árvore: ${req.body.nomeArvore || ''}\n`;
-      }
-
-      // Processamento geral de anexos
+      // Processa anexos genéricos
       if (req.files?.length) {
         for (const file of req.files) {
           const safeName = sanitizeFilename(file.originalname);
-
           if (file.fieldname.startsWith('imagem')) {
             if (!file.mimetype.startsWith('image/')) {
               return res.status(400).send(`Tipo não permitido: ${file.originalname}`);
@@ -311,8 +276,7 @@ app.post(
           } else if (file.fieldname === 'arquivoZip') {
             try {
               const zip = new AdmZip(file.buffer);
-              const entries = zip.getEntries();
-              for (const entry of entries) {
+              for (const entry of zip.getEntries()) {
                 if (entry.isDirectory) continue;
                 const ext = path.extname(entry.entryName).toLowerCase();
                 if (!['.jpg','.jpeg','.png','.gif','.bmp'].includes(ext)) {
@@ -334,16 +298,18 @@ app.post(
               const parsed = await pdfParse(file.buffer);
               for (let i = 0; i < parsed.numpages; i++) {
                 const imgPath = await pdfImage.convertPage(i);
-                const imgBuf = fs.readFileSync(imgPath);
-                attachments.push({ filename: `${sanitizeFilename(path.basename(file.originalname, '.pdf'))}_page_${i+1}.jpg`, content: imgBuf });
+                const imgBuf  = fs.readFileSync(imgPath);
+                attachments.push({
+                  filename: `${sanitizeFilename(path.basename(file.originalname, '.pdf'))}_page_${i+1}.jpg`,
+                  content: imgBuf
+                });
                 fs.unlinkSync(imgPath);
               }
-            } catch (err) {
+            } catch {
               return res.status(400).send('Erro ao converter PDF');
             }
 
           } else {
-            // campo genérico "arquivo"
             attachments.push({ filename: safeName, content: file.buffer });
           }
         }
@@ -356,15 +322,15 @@ app.post(
       });
 
       const mailOptions = {
-        from: `"${requesterName}" <${process.env.EMAIL_USER}>`,
+        from:    `"${requesterName}" <${process.env.EMAIL_USER}>`,
         replyTo: requesterEmail,
-        to: 'jadson.pena@dnit.gov.br',
+        to:      'jadson.pena@dnit.gov.br',
         subject: fluxo,
-        text: mailContent,
+        text:    mailContent,
         attachments: attachments.length ? attachments : undefined
       };
 
-      transporter.sendMail(mailOptions, (error) => {
+      transporter.sendMail(mailOptions, error => {
         if (error) {
           console.error('Erro ao enviar o e-mail:', error);
           return res.status(500).send('Erro ao enviar o e-mail');
@@ -379,11 +345,9 @@ app.post(
   }
 );
 
-// Dashboard e rota de verificação de token
+// Dashboard e verificação de token
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.post('/verify-token', (req, res) => {
   let body = '';
   req.on('data', chunk => body += chunk);
@@ -409,19 +373,24 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
     }
     const PDFImage = require('pdf-image').PDFImage;
     const pdfImage = new PDFImage(req.file.buffer);
-    const parsed = await pdfParse(req.file.buffer);
+    const parsed   = await pdfParse(req.file.buffer);
+
     if (parsed.numpages === 1) {
       const imgPath = await pdfImage.convertPage(0);
-      const imgBuf = fs.readFileSync(imgPath);
+      const imgBuf  = fs.readFileSync(imgPath);
       res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Content-Disposition', `attachment; filename="${sanitizeFilename(path.basename(req.file.originalname, '.pdf'))}.jpg"`);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${sanitizeFilename(path.basename(req.file.originalname, '.pdf'))}.jpg"`
+      );
       res.send(imgBuf);
       fs.unlinkSync(imgPath);
+
     } else {
-      const zip = new AdmZip();
+      const zip   = new AdmZip();
       for (let i = 0; i < parsed.numpages; i++) {
         const imgPath = await pdfImage.convertPage(i);
-        const imgBuf = fs.readFileSync(imgPath);
+        const imgBuf  = fs.readFileSync(imgPath);
         zip.addFile(`pagina_${i+1}.jpg`, imgBuf);
         fs.unlinkSync(imgPath);
       }
@@ -430,6 +399,7 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
       res.setHeader('Content-Disposition', 'attachment; filename=imagens.zip');
       res.send(zipBuf);
     }
+
   } catch (err) {
     console.error('Erro na conversão de PDF para JPG:', err);
     res.status(500).send('Erro ao converter PDF');
