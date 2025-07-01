@@ -1,19 +1,3 @@
-const jwt = require('jsonwebtoken');
-const { User } = require('./models/User'); // ou ajuste o path para onde está seu modelo User
-
-// Middleware para extrair userId do token
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Token não fornecido' });
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ message: 'Token inválido ou expirado' });
-    req.userId = decoded.id;
-    next();
-  });
-}
-
 require('dotenv').config();
 const { exec } = require('child_process');
 
@@ -385,102 +369,86 @@ app.get('/contratos', async (req, res) => {
 
 
 
-// Rota de envio de e-mail atualizada para usar dados do usuário logado
-app.post(
-  '/send-email',
-  authenticateToken,    // garante que req.userId esteja disponível
-  upload.any(),
-  async (req, res) => {
-    console.log('Dados recebidos no formulário:', req.body);
-    try {
-      const fluxo = req.body.fluxo;
+app.post('/send-email', upload.any(), async (req, res) => {
+  console.log('Dados recebidos no formulário:', req.body);
+  try {
+    const fluxo = req.body.fluxo;
+    const dados = req.body;
+    if (!dados.email) {
+      return res.status(400).send('O campo de e-mail é obrigatório.');
+    }
 
-      // 1) Busca os dados do usuário logado no BD
-      const dbUser = await User.findById(req.userId);
-      if (!dbUser) {
-        return res.status(404).send('Usuário não encontrado');
-      }
-      const requesterName  = dbUser.username;
-      const requesterEmail = dbUser.email;
+    let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
+    mailContent += `Requerente: ${dados.requerente || ''}\n`;
+    mailContent += `Email: ${dados.email || ''}\n`;
 
-      // 2) Monta o conteúdo do e-mail
-      let mailContent = `Fluxo: ${fluxo}\n\n`;
-      mailContent += `Usuário solicitante: ${requesterName}\n`;
-      mailContent += `E-mail solicitante:   ${requesterEmail}\n\n`;
+    const attachments = []; // <-- precisa estar aqui no começo do try
 
-      const attachments = [];
+    if (fluxo === 'Liberar assinatura externa') {
+      mailContent += `Assinante: ${dados.assinante || ''}\n`;
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
 
-      // 3) Adiciona os campos específicos de cada fluxo
-      if (fluxo === 'Liberar assinatura externa') {
-        mailContent += `Assinante: ${req.body.assinante || ''}\n`;
-        mailContent += `Número do DOC_SEI: ${req.body.numeroDocSei || ''}\n`;
+    } else if (fluxo === 'Consultar empenho') {
+      mailContent += `Contrato SEI: ${dados.contratoSei || ''}\n`;
 
-      } else if (fluxo === 'Consultar empenho') {
-        mailContent += `Contrato SEI: ${req.body.contratoSei || ''}\n`;
+    } else if (fluxo === 'Liberar acesso externo') {
+      mailContent += `Usuário: ${dados.user || ''}\n`;
+      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+//***//
+      
+       } else if (fluxo === 'Analise de processo') {
+  mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
-      } else if (fluxo === 'Liberar acesso externo') {
-        mailContent += `Usuário: ${req.body.user || ''}\n`;
-        mailContent += `Número do Processo SEI: ${req.body.processo_sei || ''}\n`;
+  // Mapeia fieldname → fileId
+  const idMap = {
+    memoriaCalculo: process.env.MEMORIA_FILE_ID,
+    diarioObra:     process.env.DIARIO_FILE_ID,
+    relatorioFotografico: process.env.RELATORIO_FILE_ID
+  };
 
-      } else if (fluxo === 'Analise de processo') {
-        mailContent += `Número do Processo SEI: ${req.body.processo_sei || ''}\n`;
+  for (const file of req.files) {
+    const fileId = idMap[file.fieldname];
+    if (!fileId) continue;              // ignora outros campos
+    if (file.mimetype !== 'application/pdf') {
+      return res.status(400).send(`Tipo inválido: ${file.originalname}`);
+    }
+    // sobrescreve no Drive
+    await overwriteDriveFile(fileId, file.buffer, file.mimetype);
+    console.log(`Atualizado no Drive: ${file.fieldname} (fileId=${fileId})`);
+  }
 
-        // Mapeia fieldname → fileId para sobrescrever no Drive
-        const idMap = {
-          memoriaCalculo:         process.env.MEMORIA_FILE_ID,
-          diarioObra:             process.env.DIARIO_FILE_ID,
-          relatorioFotografico:   process.env.RELATORIO_FILE_ID
-        };
+//***//
 
-        for (const file of req.files) {
-          const fileId = idMap[file.fieldname];
-          if (!fileId) continue;
-          if (file.mimetype !== 'application/pdf') {
-            return res
-              .status(400)
-              .send(`Tipo inválido: ${file.originalname}`);
-          }
-          await overwriteDriveFile(fileId, file.buffer, file.mimetype);
-          console.log(
-            `Atualizado no Drive: ${file.fieldname} (fileId=${fileId})`
-          );
-        }
+  } else if (fluxo === 'Alterar ordem de documentos') {
+      mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
+      mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
+    } else if (fluxo === 'Inserir anexo em doc SEI') {
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+    } else if (fluxo === 'Inserir imagem em doc SEI') {
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+    } else if (fluxo === 'Assinatura em doc SEI') {
+      mailContent += `Número do DOC_SEI: ${dados.numeroDocSei || ''}\n`;
+      mailContent += `Usuário: ${dados.user || ''}\n`;
+      mailContent += `Senha: ${dados.key || ''}\n`;
+    } else if (fluxo === 'Criar Doc SEI Editável') {
+      mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
+      mailContent += `Tipo do Documento: ${dados.tipoDocumento || ''}\n`;
+      mailContent += `Número: ${dados.numero || ''}\n`;
+      mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
+    } else if (fluxo === 'Criar Doc SEI Externo') {
+      const agora = new Date();
+      agora.setHours(agora.getHours() - 3);
+      const dia = String(agora.getDate()).padStart(2, '0');
+      const mes = String(agora.getMonth() + 1).padStart(2, '0');
+      const ano = agora.getFullYear();
+      const dataFormatada = `${dia}/${mes}/${ano}`;
+      mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
+      mailContent += `Data: ${dataFormatada}\n`;
+      mailContent += `Tipo do Documento: ${dados.tipoDocumento || ''}\n`;
+      mailContent += `Número: ${dados.numero || ''}\n`;
+      mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
+    }
 
-      } else if (fluxo === 'Alterar ordem de documentos') {
-        mailContent += `Número do Processo SEI: ${req.body.processoSei || ''}\n`;
-        mailContent += `Instruções: ${req.body.instrucoes || ''}\n`;
-
-      } else if (fluxo === 'Inserir anexo em doc SEI') {
-        mailContent += `Número do DOC_SEI: ${req.body.numeroDocSei || ''}\n`;
-
-      } else if (fluxo === 'Inserir imagem em doc SEI') {
-        mailContent += `Número do DOC_SEI: ${req.body.numeroDocSei || ''}\n`;
-
-      } else if (fluxo === 'Assinatura em doc SEI') {
-        mailContent += `Número do DOC_SEI: ${req.body.numeroDocSei || ''}\n`;
-        mailContent += `Usuário: ${req.body.user || ''}\n`;
-        mailContent += `Senha: ${req.body.key || ''}\n`;
-
-      } else if (fluxo === 'Criar Doc SEI Editável') {
-        mailContent += `Número do Processo SEI: ${req.body.processoSei || ''}\n`;
-        mailContent += `Tipo do Documento: ${req.body.tipoDocumento || ''}\n`;
-        mailContent += `Número: ${req.body.numero || ''}\n`;
-        mailContent += `Nome na Árvore: ${req.body.nomeArvore || ''}\n`;
-
-      } else if (fluxo === 'Criar Doc SEI Externo') {
-        const agora = new Date();
-        agora.setHours(agora.getHours() - 3);
-        const dia  = String(agora.getDate()).padStart(2, '0');
-        const mes  = String(agora.getMonth() + 1).padStart(2, '0');
-        const ano  = agora.getFullYear();
-        const data = `${dia}/${mes}/${ano}`;
-
-        mailContent += `Número do Processo SEI: ${req.body.processoSei || ''}\n`;
-        mailContent += `Data: ${data}\n`;
-        mailContent += `Tipo do Documento: ${req.body.tipoDocumento || ''}\n`;
-        mailContent += `Número: ${req.body.numero || ''}\n`;
-        mailContent += `Nome na Árvore: ${req.body.nomeArvore || ''}\n`;
-      }
 
     
     // Configura o transporte de e-mail
@@ -489,15 +457,12 @@ app.post(
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
 
-      const mailOptions = {
-        from: `"${requesterName}" <${process.env.EMAIL_USER}>`,
-        replyTo: requesterEmail,              // <— novo
-        to: 'jadson.pena@dnit.gov.br',
-        subject: fluxo,
-        text: mailContent,
-        attachments: attachments.length ? attachments : undefined
-      };
-
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: 'jadson.pena@dnit.gov.br',
+      subject: `${fluxo}`,
+      text: mailContent,
+    };
 
     // Verifica se há arquivos enviados
     if (req.files && req.files.length > 0) {
