@@ -101,6 +101,8 @@ function abrirFormulario(fluxo) {
   let campos = [];
   if (fluxo === 'Consultar empenho') {
     campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listacontratos },
     ];
   } else if (fluxo === 'Liberar assinatura externa') {
@@ -110,30 +112,42 @@ function abrirFormulario(fluxo) {
     ];
   } else if (fluxo === 'Liberar acesso externo') {
     campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'user', placeholder: 'Usuário', type: 'select', options: listaUsuarios },
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
   } else if (fluxo === 'Analise de processo') {
     campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
   } else if (fluxo === 'Alterar ordem de documentos') {
     campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
       { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
     ];
   } else if (fluxo === 'Inserir anexo em doc SEI') {
     campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
       { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
     ];
   } else if (fluxo === 'Inserir imagem em doc SEI') {
     campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
       { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] },
     ];
   } else if (fluxo === 'Assinatura em doc SEI') {
     campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
       { id: 'user', placeholder: 'Usuário', type: 'text' },
       { id: 'key', placeholder: 'Senha', type: 'text' },
@@ -151,6 +165,8 @@ function abrirFormulario(fluxo) {
     
   } else if (fluxo === 'Criar Doc SEI Externo') {
     campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
       { id: 'tipoDocumento', placeholder: 'Tipo do Documento', type: 'text' },
       { id: 'dataFormatada', placeholder: 'Data', type: 'date' },
@@ -160,6 +176,8 @@ function abrirFormulario(fluxo) {
     ];
   } else if (fluxo === 'Criar Doc SEI Editável') {
     campos = [
+      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
+      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
       { 
         id: 'tipoDocumento', 
