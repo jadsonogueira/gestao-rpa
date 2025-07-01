@@ -101,8 +101,6 @@ function abrirFormulario(fluxo) {
   let campos = [];
   if (fluxo === 'Consultar empenho') {
     campos = [
-      { id: 'requerente', placeholder: 'Requerente', type: 'text' },
-      { id: 'email', placeholder: 'Email', type: 'email' },
       { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listacontratos },
     ];
   } else if (fluxo === 'Liberar assinatura externa') {
