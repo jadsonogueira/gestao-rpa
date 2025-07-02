@@ -390,6 +390,25 @@ app.post('/send-email', upload.any(), async (req, res) => {
       return res.status(400).send('O campo de e-mail é obrigatório.');
     }
 
+      const token = req.headers.authorization?.split(" ")[1];
+      if (!token) return res.status(401).send("Token não fornecido.");
+
+      let userId;
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      } catch (err) {
+        return res.status(401).send("Token inválido.");
+      }
+
+      const usuario = await Usuario.findById(userId);
+
+    if (!usuario) {
+      return res.status(404).send("Usuário não encontrado.");
+    }
+
+
+
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
     mailContent += `Requerente: ${usuario?.nome || 'Desconhecido'}\n`;
     mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
