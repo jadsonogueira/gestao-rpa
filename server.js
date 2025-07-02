@@ -407,10 +407,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
       return res.status(404).send("Usuário não encontrado.");
     }
 
-
-
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
-    mailContent += `Requerente: ${usuario?.nome || 'Desconhecido'}\n`;
+    mailContent += `Requerente: ${usuario?.username || 'Desconhecido'}\n`;
     mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
 
     const attachments = []; // <-- precisa estar aqui no começo do try
