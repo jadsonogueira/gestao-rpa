@@ -114,9 +114,13 @@ function abrirFormulario(fluxo) {
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
   } else if (fluxo === 'Analise de processo') {
-    campos = [
-      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
-    ];
+  campos = [
+    { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
+    { id: 'memoriaCalculo', placeholder: 'Memória de Cálculo (PDF)', type: 'file', accept: 'application/pdf' },
+    { id: 'diarioObra', placeholder: 'Diário de Obra (PDF)', type: 'file', accept: 'application/pdf' },
+    { id: 'relatorioFotografico', placeholder: 'Relatório Fotográfico (PDF)', type: 'file', accept: 'application/pdf' }
+  ];
+
   } else if (fluxo === 'Alterar ordem de documentos') {
     campos = [
       { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
