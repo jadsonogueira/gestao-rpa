@@ -486,7 +486,16 @@ function enviarFormularioAxios(e) {
 const responseType = fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG'
   ? 'blob'
   : 'json';
-  axios.post(url, formData, { responseType })
+  
+const token = localStorage.getItem('token');
+
+axios.post(url, formData, {
+  responseType,
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+})
+
     .then(response => {
       hideLoadingOverlay();
 
