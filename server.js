@@ -250,30 +250,42 @@ app.post('/signup', express.json(), async (req, res) => {
   }
 });
 
-// Rota de login
 app.post('/login', express.json(), async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).send('Todos os campos são obrigatórios');
     }
+
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(400).send('Usuário não encontrado');
     }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).send('Senha incorreta');
 
-  const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-    expiresIn: '1h',
-  });
+    // Gera o token JWT com o ID e o nível de acesso (role)
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
-    res.send({ token, role: user.role });
+    // Envia o token e a role; se quiser pode incluir também nome e email
+    res.send({
+      token,
+      role: user.role,
+      nome: user.nome,
+      email: user.email
+    });
+
   } catch (err) {
     console.error('Erro no login:', err);
     res.status(500).send('Erro no servidor');
   }
 });
+
 
 // Rota para inserir usuários externos
 app.post('/usuarios-externos', express.json(), async (req, res) => {
@@ -379,8 +391,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
     }
 
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
-    mailContent += `Requerente: ${dados.requerente || ''}\n`;
-    mailContent += `Email: ${dados.email || ''}\n`;
+    mailContent += `Requerente: ${usuario?.nome || 'Desconhecido'}\n`;
+    mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
 
     const attachments = []; // <-- precisa estar aqui no começo do try
 
