@@ -386,9 +386,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
   try {
     const fluxo = req.body.fluxo;
     const dados = req.body;
-    if (!dados.email) {
-      return res.status(400).send('O campo de e-mail é obrigatório.');
-    }
+   // if (!dados.email) {
+   //   return res.status(400).send('O campo de e-mail é obrigatório.');
+   // }
 
       const token = req.headers.authorization?.split(" ")[1];
       if (!token) return res.status(401).send("Token não fornecido.");
