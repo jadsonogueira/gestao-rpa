@@ -670,60 +670,86 @@ app.get('/usuarios', async (req, res) => {
 
 app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
   try {
+    // 1) Valida entrada
     if (!req.file || req.file.mimetype !== 'application/pdf') {
       return res.status(400).send('Arquivo inválido ou ausente');
     }
 
-    const tempDir = os.tmpdir();
-    const pdfPath = path.join(tempDir, `pdf_${Date.now()}.pdf`);
-    fs.writeFileSync(pdfPath, req.file.buffer);
+    // 2) Grava PDF em arquivo temporário
+    const tempDir   = os.tmpdir();
+    const inputPath = path.join(tempDir, `pdf_${Date.now()}.pdf`);
+    fs.writeFileSync(inputPath, req.file.buffer);
 
-    const pdfImageOptions = {
-      convertFileType: "jpg",
-      convertOptions: {
-        "-density": "300",
-        "-background": "white",
-        "-flatten": null,
-        "-strip": null,
-        "-filter": "Lanczos",
-        "-resize": "1300",
-        "-sharpen": "0x1.0"
-      }
-    };
-
-    const pdfImage = new PDFImage(pdfPath, pdfImageOptions);
-    const parsedData = await pdfParse(req.file.buffer);
-    const numPages = parsedData.numpages;
-
+    // 3) Conta páginas
+    const parsed   = await pdfParse(req.file.buffer);
+    const numPages = parsed.numpages;
     const baseName = path.basename(req.file.originalname, '.pdf');
 
+    // 4) Converte cada página via Ghostscript
     if (numPages === 1) {
-      const imagePath = await pdfImage.convertPage(0);
-      const imageBuffer = fs.readFileSync(imagePath);
-      const imageName = `${sanitizeFilename(baseName)}.jpg`;
+      const outputPath = path.join(tempDir, `page_1.jpg`);
+      const gsCmd = [
+        'gs -sDEVICE=jpeg',
+        '-dJPEGQ=100',
+        '-r300',
+        '-dFirstPage=1',
+        '-dLastPage=1',
+        '-dNOPAUSE',
+        '-dBATCH',
+        '-dSAFER',
+        `-sOutputFile="${outputPath}"`,
+        `"${inputPath}"`
+      ].join(' ');
+      await new Promise((resolve, reject) =>
+        exec(gsCmd, err => err ? reject(err) : resolve())
+      );
+
+      const imageBuffer = fs.readFileSync(outputPath);
+      fs.unlinkSync(outputPath);
+      fs.unlinkSync(inputPath);
 
       res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Content-Disposition', `attachment; filename="${imageName}"`);
-      res.send(imageBuffer);
-
-      fs.unlinkSync(imagePath);
-    } else {
-      const zip = new AdmZip();
-      for (let i = 0; i < numPages; i++) {
-        const imagePath = await pdfImage.convertPage(i);
-        const imageBuffer = fs.readFileSync(imagePath);
-        const imageName = `pagina_${i + 1}.jpg`;
-        zip.addFile(imageName, imageBuffer);
-        fs.unlinkSync(imagePath);
-      }
-
-      const zipBuffer = zip.toBuffer();
-      res.setHeader('Content-Type', 'application/zip');
-      res.setHeader('Content-Disposition', 'attachment; filename=imagens.zip');
-      res.send(zipBuffer);
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${sanitizeFilename(baseName)}.jpg"`
+      );
+      return res.send(imageBuffer);
     }
 
-    fs.unlinkSync(pdfPath); // remove PDF temporário
+    // 5) Se mais de uma página, gera ZIP
+    const zip = new AdmZip();
+    for (let i = 1; i <= numPages; i++) {
+      const outputPath = path.join(tempDir, `page_${i}.jpg`);
+      const gsCmd = [
+        'gs -sDEVICE=jpeg',
+        '-dJPEGQ=100',
+        '-r300',
+        `-dFirstPage=${i}`,
+        `-dLastPage=${i}`,
+        '-dNOPAUSE',
+        '-dBATCH',
+        '-dSAFER',
+        `-sOutputFile="${outputPath}"`,
+        `"${inputPath}"`
+      ].join(' ');
+      await new Promise((resolve, reject) =>
+        exec(gsCmd, err => err ? reject(err) : resolve())
+      );
+
+      const imageBuffer = fs.readFileSync(outputPath);
+      zip.addFile(`pagina_${i}.jpg`, imageBuffer);
+      fs.unlinkSync(outputPath);
+    }
+    fs.unlinkSync(inputPath);
+
+    const zipBuffer = zip.toBuffer();
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=imagens.zip'
+    );
+    return res.send(zipBuffer);
+
   } catch (err) {
     console.error('Erro na conversão de PDF para JPG:', err);
     res.status(500).send('Erro ao converter PDF');
