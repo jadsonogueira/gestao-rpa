@@ -60,6 +60,7 @@ const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const os = require("os");
+const { exec } = require('child_process');
 
 
 // === PASSO: Helper de compressão de PDF ===
