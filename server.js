@@ -6,6 +6,42 @@ const { google } = require('googleapis');
 
 // ...
 
+async function convertPdfToJpegs(buffer, originalName) {
+  // gera nomes seguros
+  const safeBase = sanitizeFilename(originalName.replace(/\.pdf$/i, ''));
+  const tempDir  = os.tmpdir();
+  const input    = path.join(tempDir, `${Date.now()}_${safeBase}.pdf`);
+  fs.writeFileSync(input, buffer);
+
+  // conta páginas
+  const { numpages } = await pdfParse(buffer);
+  const images = [];
+
+  for (let i = 1; i <= numpages; i++) {
+    const out = path.join(tempDir, `${safeBase}_page_${i}.jpg`);
+    const gsCmd = [
+      'gs -sDEVICE=jpeg',
+      '-dJPEGQ=75',
+      '-r150',
+      `-dFirstPage=${i}`,
+      `-dLastPage=${i}`,
+      '-dNOPAUSE',
+      '-dBATCH',
+      '-dSAFER',
+      `-sOutputFile="${out}"`,
+      `"${input}"`
+    ].join(' ');
+    await new Promise((res, rej) => execShell(gsCmd, err => err ? rej(err) : res()));
+    const imgBuf = fs.readFileSync(out);
+    images.push({ filename: `${safeBase}_page_${i}.jpg`, content: imgBuf });
+    fs.unlinkSync(out);
+  }
+
+  fs.unlinkSync(input);
+  return images;
+}
+
+
 // agora use JSON.parse na variável de ambiente:
 const driveAuth = new google.auth.GoogleAuth({
   credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON),
