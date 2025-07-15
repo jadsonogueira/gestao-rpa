@@ -222,7 +222,7 @@ app.get('/contratos', async (req,res) => {
 app.post('/merge-pdf', upload.array('pdfs'), async (req,res) => {
   try {
     const merger = new PDFMerger();
-    for (const f of req.files) merger.add(f.buffer);
+    req.files.forEach(f => merger.add(f.buffer));
     const buf = await merger.saveAsBuffer();
     res.type('application/pdf')
        .set('Content-Disposition','attachment; filename=merged.pdf')
@@ -236,29 +236,51 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req,res) => {
 app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req,res) => {
   try {
     const file = req.file;
-    if (!file || file.mimetype!=='application/pdf') return res.status(400).send('Invalid PDF');
+    if (!file || file.mimetype !== 'application/pdf')
+      return res.status(400).send('Invalid PDF');
 
+    // Save buffer as temp PDF
     const pdfPath = path.join(os.tmpdir(), `pdf_${Date.now()}.pdf`);
     fs.writeFileSync(pdfPath, file.buffer);
-    const pdfImg = new PDFImage(pdfPath,{ convertFileType:'jpg', convertOptions:{ '-density':'300','-background':'white','-flatten':null,'-strip':null,'-resize':'1300'} });
+
+    // Set conversion options
+    const pdfImg = new PDFImage(pdfPath, {
+      convertFileType: 'jpg',
+      convertOptions: {
+        '-density': '300',
+        '-background': 'white',
+        '-flatten': null,
+        '-strip': null,
+        '-resize': '1300',
+        '-sharpen': '0x1.0'
+      }
+    });
+
     const { numpages } = await pdfParse(file.buffer);
 
-    if (numpages===1) {
+    if (numpages === 1) {
+      // Single page: return JPEG
       const imgPath = await pdfImg.convertPage(0);
       const imgBuff = fs.readFileSync(imgPath);
       fs.unlinkSync(imgPath);
-      res.type('image/jpeg').set('Content-Disposition', `attachment; filename="${sanitizeFilename(path.basename(file.originalname, '.pdf'))}.jpg"`).send(imgBuff);
+      fs.unlinkSync(pdfPath);
+      res.type('image/jpeg')
+         .set('Content-Disposition', `attachment; filename="${sanitizeFilename(path.basename(file.originalname, '.pdf'))}.jpg"`)
+         .send(imgBuff);
     } else {
+      // Multiple pages: ZIP of JPEGs
       const zip = new AdmZip();
-      for (let i=0; i<numpages; i++) {
-        const p = await pdfImg.convertPage(i);
-        const b = fs.readFileSync(p);
-        zip.addFile(`page_${i+1}.jpg`, b);
-        fs.unlinkSync(p);
+      for (let i = 0; i < numpages; i++) {
+        const imgPath = await pdfImg.convertPage(i);
+        const imgBuff = fs.readFileSync(imgPath);
+        fs.unlinkSync(imgPath);
+        zip.addFile(`page_${i+1}.jpg`, imgBuff);
       }
       fs.unlinkSync(pdfPath);
       const zipBuff = zip.toBuffer();
-      res.type('application/zip').set('Content-Disposition','attachment; filename=images.zip').send(zipBuff);
+      res.type('application/zip')
+         .set('Content-Disposition','attachment; filename=images.zip')
+         .send(zipBuff);
     }
   } catch(e) {
     res.status(500).send('Conversion error');
@@ -275,18 +297,33 @@ app.post('/send-email', authMiddleware, upload.any(), async (req,res) => {
     let content = `Fluxo: ${fluxo}\nRequerente: ${user.username}\nEmail: ${user.email}\n`;
     const attachments = [];
 
-    // Handle specific fluxos...
-    if (fluxo==='Analise de processo') {
-      const idMap = { memoriaCalculo:process.env.MEMORIA_FILE_ID, diarioObra:process.env.DIARIO_FILE_ID, relatorioFotografico:process.env.RELATORIO_FILE_ID };
+    if (fluxo === 'Analise de processo') {
+      // Overwrite Drive files for analysis
+      const idMap = {
+        memoriaCalculo: process.env.MEMORIA_FILE_ID,
+        diarioObra:     process.env.DIARIO_FILE_ID,
+        relatorioFotografico: process.env.RELATORIO_FILE_ID
+      };
       for (const file of req.files) {
         const fid = idMap[file.fieldname];
-        if (fid && file.mimetype==='application/pdf') await overwriteDriveFile(fid, file.buffer, file.mimetype);
+        if (fid && file.mimetype === 'application/pdf') {
+          await overwriteDriveFile(fid, file.buffer, file.mimetype);
+        }
       }
     }
 
-    await transporter.sendMail({ from: process.env.EMAIL_USER, to:'jadson.pena@dnit.gov.br', subject: fluxo, text: content, attachments });
+    // Send mail
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: 'jadson.pena@dnit.gov.br',
+      subject: fluxo,
+      text: content,
+      attachments
+    });
+
     res.send('Mail sent');
   } catch(e) {
+    console.error('Email error:', e);
     res.status(500).send('Server error');
   }
 });
