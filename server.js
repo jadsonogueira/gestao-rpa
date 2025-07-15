@@ -294,7 +294,10 @@ app.post('/send-email', authMiddleware, upload.any(), async (req,res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).send('User not found');
 
-    let content = `Fluxo: ${fluxo}\nRequerente: ${user.username}\nEmail: ${user.email}\n`;
+    let content = `Fluxo: ${fluxo}
+Requerente: ${user.username}
+Email: ${user.email}
+`;
     const attachments = [];
 
     if (fluxo === 'Analise de processo') {
@@ -307,8 +310,21 @@ app.post('/send-email', authMiddleware, upload.any(), async (req,res) => {
       for (const file of req.files) {
         const fid = idMap[file.fieldname];
         if (fid && file.mimetype === 'application/pdf') {
+          // overwrite PDF in Drive without adding to attachments
           await overwriteDriveFile(fid, file.buffer, file.mimetype);
         }
+      }
+    } else {
+      // For other fluxos, attach files, compressing PDFs if needed
+      for (const file of req.files) {
+        const safeName = sanitizeFilename(file.originalname);
+        let contentBuffer;
+        if (file.mimetype === 'application/pdf') {
+          contentBuffer = await compressPDFIfNeeded(file);
+        } else {
+          contentBuffer = file.buffer;
+        }
+        attachments.push({ filename: safeName, content: contentBuffer });
       }
     }
 
@@ -329,6 +345,7 @@ app.post('/send-email', authMiddleware, upload.any(), async (req,res) => {
 });
 
 // Serve dashboard
+app.get('/', (req,res) => res.sendFile(path.join(__dirname,'public','dashboard.html')));
 app.get('/', (req,res) => res.sendFile(path.join(__dirname,'public','dashboard.html')));
 
 // Start server
