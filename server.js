@@ -691,7 +691,7 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
       const gsCmd = [
         'gs -sDEVICE=jpeg',
         '-dJPEGQ=75',
-        '-r200',
+        '-r150',
         '-dFirstPage=1',
         '-dLastPage=1',
         '-dNOPAUSE',
