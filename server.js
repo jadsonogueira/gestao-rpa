@@ -1,4 +1,4 @@
-```javascript
+
 require('dotenv').config();
 
 // -------------------------
@@ -94,8 +94,8 @@ async function compressPDFIfNeeded(file) {
 }
 
 // Verify ImageMagick & Ghostscript
-exec('convert -version', (e,s) => e ? console.error('ImageMagick not found') : console.log('ImageMagick ok'));
-exec('gs -version', (e,s) => e ? console.error('Ghostscript not found') : console.log('Ghostscript ok'));
+exec('convert -version', (e) => e ? console.error('ImageMagick not found') : console.log('ImageMagick ok'));
+exec('gs -version', (e) => e ? console.error('Ghostscript not found') : console.log('Ghostscript ok'));
 
 // -------------------------
 // MongoDB connection & models
@@ -108,11 +108,11 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['classe_a','classe_b','classe_c','classe_d','classe_e','admin'], default: 'classe_a' }
+  role:     { type: String, enum: ['classe_a','classe_b','classe_c','classe_d','classe_e','admin'], default: 'classe_a' }
 });
-const User             = mongoose.model('User', userSchema);
-const UsuarioExterno   = mongoose.model('UsuarioExterno', new mongoose.Schema({ idExterno:String, nome:String, empresa:String }));
-const Contrato         = mongoose.model('Contrato', new mongoose.Schema({ numero:String }));
+const User           = mongoose.model('User', userSchema);
+const UsuarioExterno = mongoose.model('UsuarioExterno', new mongoose.Schema({ idExterno:String, nome:String, empresa:String }));
+const Contrato       = mongoose.model('Contrato', new mongoose.Schema({ numero:String }));
 
 // -------------------------
 // Multer for uploads
@@ -236,8 +236,7 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req,res) => {
 app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req,res) => {
   try {
     const file = req.file;
-    if (!file || file.mimetype!=='application/pdf')
-      return res.status(400).send('Invalid PDF');
+    if (!file || file.mimetype!=='application/pdf') return res.status(400).send('Invalid PDF');
 
     const pdfPath = path.join(os.tmpdir(), `pdf_${Date.now()}.pdf`);
     fs.writeFileSync(pdfPath, file.buffer);
@@ -284,8 +283,6 @@ app.post('/send-email', authMiddleware, upload.any(), async (req,res) => {
         if (fid && file.mimetype==='application/pdf') await overwriteDriveFile(fid, file.buffer, file.mimetype);
       }
     }
-
-    // ... add other fluxo handling and attachments processing as needed
 
     await transporter.sendMail({ from: process.env.EMAIL_USER, to:'jadson.pena@dnit.gov.br', subject: fluxo, text: content, attachments });
     res.send('Mail sent');
