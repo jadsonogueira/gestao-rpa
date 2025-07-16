@@ -487,7 +487,6 @@ axios.post(url, formData, {
 
     if (fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG') {
       const contentType = response.headers['content-type'];
-      const extension = contentType.includes('zip') ? 'zip' : 'jpg';
       const blob = new Blob([response.data], { type: contentType });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
