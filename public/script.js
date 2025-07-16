@@ -463,57 +463,41 @@ function enviarFormularioAxios(e) {
     }
   });
 
-// Monta a URL de destino
-let url;
-if (fluxo === 'Unir PDFs') {
-  url = `${apiUrl}/merge-pdf`;
-} else if (fluxo === 'PDF para JPG') {
-  url = `${apiUrl}/pdf-to-jpg`;
-} else if (fluxo === 'Inserir Imagem em Doc SEI') {
-  const metodo = formData.get('metodoUpload');
-  url = metodo === 'PDF para JPG'
-    ? `${apiUrl}/pdf-to-jpg`
-    : `${apiUrl}/send-email`;
-} else {
-  url = `${apiUrl}/send-email`;
-}
+  const url = fluxo === 'Unir PDFs'
+  ? `${apiUrl}/merge-pdf`
+  : fluxo === 'PDF para JPG'
+  ? `${apiUrl}/pdf-to-jpg`
+  : `${apiUrl}/send-email`;
 
-// Define responseType conforme a URL
-const responseType = url.endsWith('/merge-pdf') || url.endsWith('/pdf-to-jpg')
+const responseType = fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG'
   ? 'blob'
   : 'json';
+  
+const token = localStorage.getItem('token');
 
-axios.post(url, formData, { responseType, headers: { Authorization: `Bearer ${token}` } })
-  .then(response => {
-    hideLoadingOverlay();
+axios.post(url, formData, {
+  responseType,
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+})
 
-    if (responseType === 'blob') {
+    .then(response => {
+      hideLoadingOverlay();
+
+    if (fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG') {
       const contentType = response.headers['content-type'];
-      const extension = contentType.includes('application/pdf')
-        ? 'pdf'
-        : contentType.includes('zip')
-          ? 'zip'
-          : 'jpg';
-
+      const extension = contentType.includes('zip') ? 'zip' : 'jpg';
       const blob = new Blob([response.data], { type: contentType });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
       link.download = `resultado.${extension}`;
       link.click();
-
       showAlert(`✅ Conversão concluída com sucesso! Arquivo: resultado.${extension}`, 'success');
     } else {
       showAlert('✅ Solicitação enviada com sucesso.', 'success');
     }
 
-    $('#fluxoModal').modal('hide');
-  })
-  .catch(error => {
-    hideLoadingOverlay();
-    console.error('Erro ao enviar:', error);
-    showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
-    $('#fluxoModal').modal('hide');
-  });
 
       $('#fluxoModal').modal('hide');
     })
