@@ -345,27 +345,31 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 },
 });
 
-// Rota - funcionalidade de merge de arquivos PDF
+// PDF merging
 app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
   try {
-    const pdfBuffers = req.files.map(file => file.buffer);
-    const merger = new PDFMerger();
-
-    for (let buffer of pdfBuffers) {
-      await merger.add(buffer);
+    // Validar envio de pelo menos dois PDFs
+    if (!req.files || req.files.length < 2) {
+      return res.status(400).send('É necessário enviar pelo menos dois arquivos PDF');
     }
-
-    const mergedPdf = await merger.saveAsBuffer();
-
+    const merger = new PDFMerger();
+    // Garantir que todos os arquivos sejam PDFs
+    for (const file of req.files) {
+      if (file.mimetype !== 'application/pdf') {
+        throw new Error(`Arquivo inválido: ${file.originalname}`);
+      }
+      merger.add(file.buffer);
+    }
+    const mergedBuffer = await merger.saveAsBuffer();
+    // Configurar headers corretos para PDF
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename=merged.pdf');
-    res.send(mergedPdf);
+    res.setHeader('Content-Disposition', 'attachment; filename="merged.pdf"');
+    res.send(mergedBuffer);
   } catch (err) {
-    console.error('Erro ao unir PDFs:', err);
-    res.status(500).send('Erro ao unir PDFs');
+    console.error('Erro no merge-pdf:', err);
+    res.status(500).send(`Erro ao unir PDFs: ${err.message}`);
   }
 });
-
 
 
 // Rota para listar contratos (GET)
