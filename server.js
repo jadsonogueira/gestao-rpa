@@ -339,32 +339,34 @@ app.get('/usuarios-externos', async (req, res) => {
   }
 });
 
-// Configuração do multer
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
 });
 
-// PDF merging
+const { PDFDocument } = require('pdf-lib');
+
 app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
   try {
-    // Validar envio de pelo menos dois PDFs
     if (!req.files || req.files.length < 2) {
       return res.status(400).send('É necessário enviar pelo menos dois arquivos PDF');
     }
-    const merger = new PDFMerger();
-    // Garantir que todos os arquivos sejam PDFs
+
+    const mergedPdf = await PDFDocument.create();
     for (const file of req.files) {
       if (file.mimetype !== 'application/pdf') {
         throw new Error(`Arquivo inválido: ${file.originalname}`);
       }
-      merger.add(file.buffer);
+      const pdf = await PDFDocument.load(file.buffer);
+      const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      pages.forEach(page => mergedPdf.addPage(page));
     }
-    const mergedBuffer = await merger.saveAsBuffer();
-    // Configurar headers corretos para PDF
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="merged.pdf"');
-    res.send(mergedBuffer);
+
+    const mergedBytes = await mergedPdf.save();
+    res
+      .setHeader('Content-Type', 'application/pdf')
+      .setHeader('Content-Disposition', 'attachment; filename="merged.pdf"')
+      .send(Buffer.from(mergedBytes));
   } catch (err) {
     console.error('Erro no merge-pdf:', err);
     res.status(500).send(`Erro ao unir PDFs: ${err.message}`);
