@@ -352,8 +352,13 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
       return res.status(400).send('É necessário enviar pelo menos dois arquivos PDF');
     }
 
+    // Ordena alfanumericamente pelos nomes dos arquivos antes de mesclar
+    const arquivosOrdenados = req.files.sort((a, b) =>
+      a.originalname.localeCompare(b.originalname, 'pt', { numeric: true, sensitivity: 'base' })
+    );
+
     const mergedPdf = await PDFDocument.create();
-    for (const file of req.files) {
+    for (const file of arquivosOrdenados) {
       if (file.mimetype !== 'application/pdf') {
         throw new Error(`Arquivo inválido: ${file.originalname}`);
       }
