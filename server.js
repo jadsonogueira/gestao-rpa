@@ -568,7 +568,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
 
     for (let i = 1; i <= numPages; i++) {
-      const command = `pdftoppm -jpeg -r 200 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+      const command = `pdftoppm -jpeg -scale-to 1024 -r 150 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
 
       await new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
