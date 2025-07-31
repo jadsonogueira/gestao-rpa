@@ -553,7 +553,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
         } else if (file.fieldname === 'arquivoPdf') {
-  // Conversão de PDF para JPG com pdftoppm
+  // Conversão sequencial de PDF para JPG com pdftoppm
   try {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
     const inputPath = path.join(tempDir, 'input.pdf');
@@ -561,37 +561,42 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     fs.writeFileSync(inputPath, file.buffer);
 
-    const command = `pdftoppm -jpeg -r 200 "${inputPath}" "${outputPrefix}"`;
+    // Conta as páginas do PDF
+    const parsed = await pdfParse(file.buffer);
+    const numPages = parsed.numpages;
 
-    await new Promise((resolve, reject) => {
-      exec(command, (error, stdout, stderr) => {
-        if (error) {
-          reject(new Error(`Erro ao executar pdftoppm: ${stderr}`));
-        } else {
-          resolve();
-        }
-      });
-    });
-
-    const files = fs.readdirSync(tempDir).filter(f => f.endsWith('.jpg'));
     const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
 
-    for (let i = 0; i < files.length; i++) {
-      const imgPath = path.join(tempDir, files[i]);
-      const imgBuffer = fs.readFileSync(imgPath);
+    for (let i = 1; i <= numPages; i++) {
+      const command = `pdftoppm -jpeg -r 200 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
 
-      attachments.push({
-        filename: `${safeBase}_page_${i + 1}.jpg`,
-        content: imgBuffer
+      await new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+          if (error) {
+            reject(new Error(`Erro ao converter página ${i}: ${stderr}`));
+          } else {
+            resolve();
+          }
+        });
       });
 
-      fs.unlinkSync(imgPath);
+      const imagePath = `${outputPrefix}-${i}.jpg`;
+      if (fs.existsSync(imagePath)) {
+        const imgBuffer = fs.readFileSync(imagePath);
+
+        attachments.push({
+          filename: `${safeBase}_page_${i}.jpg`,
+          content: imgBuffer,
+        });
+
+        fs.unlinkSync(imagePath); // remove imagem temporária
+      }
     }
 
     fs.unlinkSync(inputPath);
     fs.rmdirSync(tempDir);
   } catch (error) {
-    console.error("Erro na conversão de PDF para JPG com pdftoppm:", error.message);
+    console.error("Erro na conversão de PDF para JPG (sequencial):", error.message);
     return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
   }
 }
