@@ -552,65 +552,50 @@ app.post('/send-email', upload.any(), async (req, res) => {
           // Anexa o PDF (ou qualquer arquivo) sem compressão
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
-        } else if (file.fieldname === 'arquivoPdf') {
-          // Conversão de PDF em JPG
-          try {
-            const tempDir = os.tmpdir();
-            const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
-            fs.writeFileSync(tempFilePath, file.buffer);
+        }} else if (file.fieldname === 'arquivoPdf') {
+  // Conversão de PDF para JPG com pdftoppm
+  try {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
+    const inputPath = path.join(tempDir, 'input.pdf');
+    const outputPrefix = path.join(tempDir, 'page');
 
-              const pdfImageOptions = {
-              convertFileType: "jpg",
-              convertOptions: {
-                "-density": "200",
-                "-background": "white",
-                "-flatten": null,
-                "-resize": "800",
-                "-strip": null,
-                "-sharpen": "0x0.5"            // mais leve
-              }
-            };
+    fs.writeFileSync(inputPath, file.buffer);
 
-            const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
+    const command = `pdftoppm -jpeg -r 200 "${inputPath}" "${outputPrefix}"`;
 
-            // Conta as páginas usando pdf-parse
-            const parsedData = await pdfParse(file.buffer);
-            const numPages = parsedData.numpages;
-            console.log(`PDF possui ${numPages} páginas.`);
-
-            // Converte cada página de forma SEQUENCIAL
-            const imagePaths = [];
-            for (let i = 0; i < numPages; i++) {
-              console.log(`Convertendo página ${i + 1} de ${numPages}...`);
-              const convertedPath = await pdfImage.convertPage(i);
-              imagePaths.push(convertedPath);
-            }
-            console.log(`Conversão concluída para ${imagePaths.length} páginas.`);
-
-            // Lê cada imagem e anexa
-            // Gera um nome base sem ".pdf"
-            const baseName = file.originalname.replace(/\.pdf$/i, '');
-            const safeBase = sanitizeFilename(baseName);
-
-            for (let i = 0; i < imagePaths.length; i++) {
-              const imageBuffer = fs.readFileSync(imagePaths[i]);
-              // Nome final ex.: "Documento_page_1.jpg"
-              attachments.push({
-              filename: `${safeBase}_page_${i + 1}.jpg`, // antes estava .png
-              content: imageBuffer
-            });
-
-              // Remove o arquivo de imagem temporário
-              fs.unlinkSync(imagePaths[i]);
-            }
-            // Remove o PDF temporário
-            fs.unlinkSync(tempFilePath);
-
-          } catch (error) {
-            console.error("Erro na conversão de PDF para JPG usando pdf-image:", error.message);
-            return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
-          }
+    await new Promise((resolve, reject) => {
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          reject(new Error(`Erro ao executar pdftoppm: ${stderr}`));
+        } else {
+          resolve();
         }
+      });
+    });
+
+    const files = fs.readdirSync(tempDir).filter(f => f.endsWith('.jpg'));
+    const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
+
+    for (let i = 0; i < files.length; i++) {
+      const imgPath = path.join(tempDir, files[i]);
+      const imgBuffer = fs.readFileSync(imgPath);
+
+      attachments.push({
+        filename: `${safeBase}_page_${i + 1}.jpg`,
+        content: imgBuffer
+      });
+
+      fs.unlinkSync(imgPath);
+    }
+
+    fs.unlinkSync(inputPath);
+    fs.rmdirSync(tempDir);
+  } catch (error) {
+    console.error("Erro na conversão de PDF para JPG com pdftoppm:", error.message);
+    return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
+  }
+}
+
       }
     }
 
