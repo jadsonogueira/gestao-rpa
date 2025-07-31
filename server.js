@@ -594,7 +594,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
     }
 
     fs.unlinkSync(inputPath);
-    fs.rmdirSync(tempDir);
+   fs.readdirSync(tempDir).forEach(f => fs.unlinkSync(path.join(tempDir, f)));
+fs.rmdirSync(tempDir);
+
   } catch (error) {
     console.error("Erro na conversão de PDF para JPG (sequencial):", error.message);
     return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
