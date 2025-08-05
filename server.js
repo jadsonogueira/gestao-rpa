@@ -553,64 +553,56 @@ app.post('/send-email', upload.any(), async (req, res) => {
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
         } else if (file.fieldname === 'arquivoPdf') {
-          // Conversão de PDF em JPG
-          try {
-            const tempDir = os.tmpdir();
-            const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
-            fs.writeFileSync(tempFilePath, file.buffer);
+  // Conversão sequencial de PDF para JPG com pdftoppm
+  try {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
+    const inputPath = path.join(tempDir, 'input.pdf');
+    const outputPrefix = path.join(tempDir, 'page');
 
-              const pdfImageOptions = {
-              convertFileType: "jpg",
-              convertOptions: {
-                "-density": "200",
-                "-background": "white",
-                "-flatten": null,
-                "-resize": "800",
-                "-strip": null,
-                "-sharpen": "0x0.5"            // mais leve
-              }
-            };
+    fs.writeFileSync(inputPath, file.buffer);
 
-            const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
+    // Conta as páginas do PDF
+    const parsed = await pdfParse(file.buffer);
+    const numPages = parsed.numpages;
 
-            // Conta as páginas usando pdf-parse
-            const parsedData = await pdfParse(file.buffer);
-            const numPages = parsedData.numpages;
-            console.log(`PDF possui ${numPages} páginas.`);
+    const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
 
-            // Converte cada página de forma SEQUENCIAL
-            const imagePaths = [];
-            for (let i = 0; i < numPages; i++) {
-              console.log(`Convertendo página ${i + 1} de ${numPages}...`);
-              const convertedPath = await pdfImage.convertPage(i);
-              imagePaths.push(convertedPath);
-            }
-            console.log(`Conversão concluída para ${imagePaths.length} páginas.`);
+    for (let i = 1; i <= numPages; i++) {
+      const command = `pdftoppm -jpeg -scale-to 1024 -r 200 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
 
-            // Lê cada imagem e anexa
-            // Gera um nome base sem ".pdf"
-            const baseName = file.originalname.replace(/\.pdf$/i, '');
-            const safeBase = sanitizeFilename(baseName);
-
-            for (let i = 0; i < imagePaths.length; i++) {
-              const imageBuffer = fs.readFileSync(imagePaths[i]);
-              // Nome final ex.: "Documento_page_1.jpg"
-              attachments.push({
-              filename: `${safeBase}_page_${i + 1}.jpg`, // antes estava .png
-              content: imageBuffer
-            });
-
-              // Remove o arquivo de imagem temporário
-              fs.unlinkSync(imagePaths[i]);
-            }
-            // Remove o PDF temporário
-            fs.unlinkSync(tempFilePath);
-
-          } catch (error) {
-            console.error("Erro na conversão de PDF para JPG usando pdf-image:", error.message);
-            return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
+      await new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+          if (error) {
+            reject(new Error(`Erro ao converter página ${i}: ${stderr}`));
+          } else {
+            resolve();
           }
-        }
+        });
+      });
+
+      const imagePath = `${outputPrefix}-${i}.jpg`;
+      if (fs.existsSync(imagePath)) {
+        const imgBuffer = fs.readFileSync(imagePath);
+
+        attachments.push({
+          filename: `${safeBase}_page_${i}.jpg`,
+          content: imgBuffer,
+        });
+
+        fs.unlinkSync(imagePath); // remove imagem temporária
+      }
+    }
+
+    fs.unlinkSync(inputPath);
+   fs.readdirSync(tempDir).forEach(f => fs.unlinkSync(path.join(tempDir, f)));
+fs.rmdirSync(tempDir);
+
+  } catch (error) {
+    console.error("Erro na conversão de PDF para JPG (sequencial):", error.message);
+    return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
+  }
+}
+
       }
     }
 
