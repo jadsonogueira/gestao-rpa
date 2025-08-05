@@ -603,7 +603,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     attachments.push({ filename: sanitizeFilename(file.originalname), content: file.buffer });
   }
 }
-
+      }
 
 
           
