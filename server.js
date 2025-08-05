@@ -504,11 +504,13 @@ app.post('/send-email', upload.any(), async (req, res) => {
       text: mailContent,
     };
 
+   // Sanitiza o nome do arquivo enviado
+    const safeOriginalName = sanitizeFilename(file.originalname);
+    
     // Verifica se há arquivos enviados
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-        // Sanitiza o nome do arquivo enviado
-        const safeOriginalName = sanitizeFilename(file.originalname);
+     
 
         if (file.fieldname.startsWith('imagem')) {
           // Valida se é imagem
