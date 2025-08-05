@@ -174,9 +174,6 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
-// Modelo de dados para usuários (já existe, vamos reaproveitar)
-const Usuario = User; // para manter coerência com /usuarios
-
 // Schema e model para usuários externos autorizados
 const usuarioExternoSchema = new mongoose.Schema({
   idExterno: { type: String, required: true, unique: true },
@@ -191,10 +188,10 @@ const contratoSchema = new mongoose.Schema({
 });
 const Contrato = mongoose.model('Contrato', contratoSchema);
 
-// Rota para listar usuários (sem a senha)
+// Rota para listar usuários (sem a senha) - CORRIGIDA: removida duplicação
 app.get('/usuarios', async (req, res) => {
   try {
-    const usuarios = await Usuario.find({}, { password: 0 });
+    const usuarios = await User.find({}, { password: 0 }).sort({ username: 1 });
     res.json(usuarios);
   } catch (err) {
     console.error('Erro ao buscar usuários:', err);
@@ -394,6 +391,10 @@ app.get('/contratos', async (req, res) => {
 
 app.post('/send-email', upload.any(), async (req, res) => {
   console.log('Dados recebidos no formulário:', req.body);
+  
+  // CORRIGIDO: Inicializar attachments no início para evitar referência indefinida
+  const attachments = [];
+  
   try {
     const fluxo = req.body.fluxo;
     const dados = req.body;
@@ -412,7 +413,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
         return res.status(401).send("Token inválido.");
       }
 
-      const usuario = await Usuario.findById(userId);
+      // CORRIGIDO: Usar User em vez de Usuario para consistência
+      const usuario = await User.findById(userId);
 
     if (!usuario) {
       return res.status(404).send("Usuário não encontrado.");
@@ -421,8 +423,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
     mailContent += `Requerente: ${usuario?.username || 'Desconhecido'}\n`;
     mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
-
-    const attachments = []; // <-- precisa estar aqui no começo do try
 
     if (fluxo === 'Liberar assinatura externa') {
       mailContent += `Assinante: ${dados.assinante || ''}\n`;
@@ -434,32 +434,29 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Liberar acesso externo') {
       mailContent += `Usuário: ${dados.user || ''}\n`;
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
-//***//
-      
-       } else if (fluxo === 'Analise de processo') {
-  mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
-  // Mapeia fieldname → fileId
-  const idMap = {
-    memoriaCalculo: process.env.MEMORIA_FILE_ID,
-    diarioObra:     process.env.DIARIO_FILE_ID,
-    relatorioFotografico: process.env.RELATORIO_FILE_ID
-  };
+    } else if (fluxo === 'Analise de processo') {
+      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
-  for (const file of req.files) {
-    const fileId = idMap[file.fieldname];
-    if (!fileId) continue;              // ignora outros campos
-    if (file.mimetype !== 'application/pdf') {
-      return res.status(400).send(`Tipo inválido: ${file.originalname}`);
-    }
-    // sobrescreve no Drive
-    await overwriteDriveFile(fileId, file.buffer, file.mimetype);
-    console.log(`Atualizado no Drive: ${file.fieldname} (fileId=${fileId})`);
-  }
-    }
-//***//
+      // Mapeia fieldname → fileId
+      const idMap = {
+        memoriaCalculo: process.env.MEMORIA_FILE_ID,
+        diarioObra:     process.env.DIARIO_FILE_ID,
+        relatorioFotografico: process.env.RELATORIO_FILE_ID
+      };
 
-  } else if (fluxo === 'Alterar ordem de documentos') {
+      for (const file of req.files) {
+        const fileId = idMap[file.fieldname];
+        if (!fileId) continue;              // ignora outros campos
+        if (file.mimetype !== 'application/pdf') {
+          return res.status(400).send(`Tipo inválido: ${file.originalname}`);
+        }
+        // sobrescreve no Drive
+        await overwriteDriveFile(fileId, file.buffer, file.mimetype);
+        console.log(`Atualizado no Drive: ${file.fieldname} (fileId=${fileId})`);
+      }
+
+    } else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
     } else if (fluxo === 'Inserir anexo em doc SEI') {
@@ -492,7 +489,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     
     // Configura o transporte de e-mail
-    const transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransporter({
       service: 'gmail',
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
@@ -604,7 +601,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
   }
 }
       }
-
+    }
 
           
     // Se houver anexos, adiciona ao e-mail
@@ -660,16 +657,6 @@ app.post('/verify-token', (req, res) => {
       res.status(500).json({ valid: false, error: 'Erro interno no servidor' });
     }
   });
-});
-
-app.get('/usuarios', async (req, res) => {
-  try {
-    const usuarios = await User.find({}, { password: 0 }).sort({ username: 1 }); // exclui senha
-    res.json(usuarios);
-  } catch (err) {
-    console.error('Erro ao buscar usuários:', err);
-    res.status(500).send('Erro ao buscar usuários');
-  }
 });
 
 
