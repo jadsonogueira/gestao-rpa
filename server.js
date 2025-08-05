@@ -555,95 +555,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
        // Verifica se o fluxo exige conversão
 const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI'].includes(fluxo);
 
-// Dentro do loop for (const file of req.files) — ajuste correto
-for (const file of req.files) {
-  const safeOriginalName = sanitizeFilename(file.originalname);
-
-  if (file.fieldname.startsWith('imagem')) {
-    // valida imagem
-    if (!file.mimetype.startsWith('image/')) {
-      return res.status(400).send(`Tipo de arquivo não permitido: ${file.originalname}`);
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      return res.status(400).send(`Arquivo muito grande: ${file.originalname}`);
-    }
-    attachments.push({ filename: safeOriginalName, content: file.buffer });
-
-  } else if (file.fieldname === 'arquivoZip') {
-    // processamento ZIP
-    try {
-      const zip = new AdmZip(file.buffer);
-      const zipEntries = zip.getEntries();
-      if (attachments.length + zipEntries.length > 100) {
-        return res.status(400).send('O total de arquivos excede o limite de 100.');
-      }
-      for (const entry of zipEntries) {
-        if (entry.isDirectory) continue;
-        const extension = path.extname(entry.entryName).toLowerCase();
-        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
-        if (!allowedExtensions.includes(extension)) {
-          return res.status(400).send(`Tipo de arquivo não permitido no ZIP: ${entry.entryName}`);
-        }
-        const fileContent = entry.getData();
-        if (fileContent.length > 5 * 1024 * 1024) {
-          return res.status(400).send(`Arquivo muito grande no ZIP: ${entry.entryName}`);
-        }
-        attachments.push({ filename: sanitizeFilename(entry.entryName), content: fileContent });
-      }
-    } catch (error) {
-      console.error('Erro ao processar o arquivo ZIP:', error);
-      return res.status(400).send('Erro ao processar o arquivo ZIP.');
-    }
-
-  } else if (file.fieldname === 'arquivo') {
-    attachments.push({ filename: safeOriginalName, content: file.buffer });
-
-  } else if (file.fieldname === 'arquivoPdf') {
-    const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI'].includes(fluxo);
-
-    if (deveConverterPDF) {
-      try {
-        const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
-        const inputPath = path.join(tempDir, 'input.pdf');
-        const outputPrefix = path.join(tempDir, 'page');
-
-        fs.writeFileSync(inputPath, file.buffer);
-        const parsed = await pdfParse(file.buffer);
-        const numPages = parsed.numpages;
-        const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
-
-        for (let i = 1; i <= numPages; i++) {
-          const command = `pdftoppm -jpeg -scale-to 1024 -r 200 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
-          await new Promise((resolve, reject) => {
-            exec(command, (error, stdout, stderr) => {
-              if (error) reject(new Error(`Erro ao converter página ${i}: ${stderr}`));
-              else resolve();
-            });
-          });
-
-          const imagePath = `${outputPrefix}-${i}.jpg`;
-          if (fs.existsSync(imagePath)) {
-            const imgBuffer = fs.readFileSync(imagePath);
-            attachments.push({ filename: `${safeBase}_page_${i}.jpg`, content: imgBuffer });
-            fs.unlinkSync(imagePath);
-          }
-        }
-
-        fs.unlinkSync(inputPath);
-        fs.readdirSync(tempDir).forEach(f => fs.unlinkSync(path.join(tempDir, f)));
-        fs.rmdirSync(tempDir);
-
-      } catch (error) {
-        console.error("Erro na conversão de PDF para JPG (sequencial):", error.message);
-        return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
-      }
-    } else {
-      attachments.push({ filename: safeOriginalName, content: file.buffer });
-    }
-  }
-}
 
 
+          
     // Se houver anexos, adiciona ao e-mail
     if (attachments.length > 0) {
       mailOptions.attachments = attachments;
