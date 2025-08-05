@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>RPDNIT - Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Bootstrap CSS -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f7f9fc;
+    }
+    .service-card {
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      background-color: #fff;
+    }
+    .service-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .service-icon {
+      font-size: 2.5rem;
+      color: #007bff;
+    }
+    .service-description {
+      font-size: 0.9rem;
+      color: #6c757d;
+    }
+    .restrito {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <i class="fas fa-road"></i> RPDNIT
+    </a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a></li>
+        <li class="nav-item"><a href="/admin.html" class="nav-link"><i class="fas fa-tools"></i> Administração</a></li>
+        <li class="nav-item"><button class="btn btn-outline-light ml-3" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</button></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Container principal -->
+<div class="container py-5">
+  <h3 class="mb-4 text-center">Serviços Disponíveis</h3>
+  <div class="row" id="servicosContainer">
+    <!-- Serviços serão gerados dinamicamente -->
+  </div>
+</div>
+
+<!-- Overlay de carregamento -->
+<div id="loadingOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:1050;align-items:center;justify-content:center;color:#fff;">
+  <div class="spinner-border" style="width:3rem;height:3rem;"></div>
+  <span class="ml-2">Processando...</span>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="script.js"></script>
+
+<script>
+function logout() {
+  localStorage.removeItem('token');
+  window.location.href = '/login.html';
+}
+</script>
+
+</body>
+</html>
