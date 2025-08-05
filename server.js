@@ -553,6 +553,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
         } else if (file.fieldname === 'arquivoPdf') {
+   const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI'].includes(fluxo);
+
   // Conversão sequencial de PDF para JPG com pdftoppm
   try {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
