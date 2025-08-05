@@ -552,8 +552,55 @@ app.post('/send-email', upload.any(), async (req, res) => {
           // Anexa o PDF (ou qualquer arquivo) sem compressão
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
-       // Verifica se o fluxo exige conversão
-const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI'].includes(fluxo);
+       else if (file.fieldname === 'arquivoPdf') {
+  const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI'].includes(fluxo);
+
+  if (deveConverterPDF) {
+    try {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
+      const inputPath = path.join(tempDir, 'input.pdf');
+      const outputPrefix = path.join(tempDir, 'page');
+
+      fs.writeFileSync(inputPath, file.buffer);
+
+      const parsed = await pdfParse(file.buffer);
+      const numPages = parsed.numpages;
+      const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
+
+      for (let i = 1; i <= numPages; i++) {
+        const command = `pdftoppm -jpeg -scale-to 1024 -r 200 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+        await new Promise((resolve, reject) => {
+          exec(command, (error, stdout, stderr) => {
+            if (error) reject(new Error(`Erro ao converter página ${i}: ${stderr}`));
+            else resolve();
+          });
+        });
+
+        const imagePath = `${outputPrefix}-${i}.jpg`;
+        if (fs.existsSync(imagePath)) {
+          const imgBuffer = fs.readFileSync(imagePath);
+          attachments.push({
+            filename: `${safeBase}_page_${i}.jpg`,
+            content: imgBuffer,
+          });
+          fs.unlinkSync(imagePath);
+        }
+      }
+
+      fs.unlinkSync(inputPath);
+      fs.readdirSync(tempDir).forEach(f => fs.unlinkSync(path.join(tempDir, f)));
+      fs.rmdirSync(tempDir);
+
+    } catch (error) {
+      console.error("Erro na conversão de PDF para JPG (sequencial):", error.message);
+      return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
+    }
+
+  } else {
+    // Apenas anexa o PDF se não for um dos fluxos que exigem conversão
+    attachments.push({ filename: sanitizeFilename(file.originalname), content: file.buffer });
+  }
+}
 
 
 
