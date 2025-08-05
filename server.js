@@ -552,11 +552,11 @@ app.post('/send-email', upload.any(), async (req, res) => {
           // Anexa o PDF (ou qualquer arquivo) sem compressão
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
-       else if (file.fieldname === 'arquivoPdf') {
-  const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI'].includes(fluxo);
+        }else if (file.fieldname === 'arquivoPdf') {
+      const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI'].includes(fluxo);
 
-  if (deveConverterPDF) {
-    try {
+      if (deveConverterPDF) {
+        try {
       const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
       const inputPath = path.join(tempDir, 'input.pdf');
       const outputPrefix = path.join(tempDir, 'page');
