@@ -174,6 +174,9 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
+// Modelo de dados para usuários (já existe, vamos reaproveitar)
+const Usuario = User; // para manter coerência com /usuarios
+
 // Schema e model para usuários externos autorizados
 const usuarioExternoSchema = new mongoose.Schema({
   idExterno: { type: String, required: true, unique: true },
@@ -188,10 +191,10 @@ const contratoSchema = new mongoose.Schema({
 });
 const Contrato = mongoose.model('Contrato', contratoSchema);
 
-// Rota para listar usuários (sem a senha) - CORRIGIDA: removida duplicação
+// Rota para listar usuários (sem a senha)
 app.get('/usuarios', async (req, res) => {
   try {
-    const usuarios = await User.find({}, { password: 0 }).sort({ username: 1 });
+    const usuarios = await Usuario.find({}, { password: 0 });
     res.json(usuarios);
   } catch (err) {
     console.error('Erro ao buscar usuários:', err);
@@ -391,10 +394,6 @@ app.get('/contratos', async (req, res) => {
 
 app.post('/send-email', upload.any(), async (req, res) => {
   console.log('Dados recebidos no formulário:', req.body);
-  
-  // CORRIGIDO: Inicializar attachments no início para evitar referência indefinida
-  const attachments = [];
-  
   try {
     const fluxo = req.body.fluxo;
     const dados = req.body;
@@ -413,8 +412,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
         return res.status(401).send("Token inválido.");
       }
 
-      // CORRIGIDO: Usar User em vez de Usuario para consistência
-      const usuario = await User.findById(userId);
+      const usuario = await Usuario.findById(userId);
 
     if (!usuario) {
       return res.status(404).send("Usuário não encontrado.");
@@ -423,6 +421,8 @@ app.post('/send-email', upload.any(), async (req, res) => {
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
     mailContent += `Requerente: ${usuario?.username || 'Desconhecido'}\n`;
     mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
+
+    const attachments = []; // <-- precisa estar aqui no começo do try
 
     if (fluxo === 'Liberar assinatura externa') {
       mailContent += `Assinante: ${dados.assinante || ''}\n`;
@@ -434,29 +434,32 @@ app.post('/send-email', upload.any(), async (req, res) => {
     } else if (fluxo === 'Liberar acesso externo') {
       mailContent += `Usuário: ${dados.user || ''}\n`;
       mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+//***//
+      
+       } else if (fluxo === 'Analise de processo') {
+  mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
 
-    } else if (fluxo === 'Analise de processo') {
-      mailContent += `Número do Processo SEI: ${dados.processo_sei || ''}\n`;
+  // Mapeia fieldname → fileId
+  const idMap = {
+    memoriaCalculo: process.env.MEMORIA_FILE_ID,
+    diarioObra:     process.env.DIARIO_FILE_ID,
+    relatorioFotografico: process.env.RELATORIO_FILE_ID
+  };
 
-      // Mapeia fieldname → fileId
-      const idMap = {
-        memoriaCalculo: process.env.MEMORIA_FILE_ID,
-        diarioObra:     process.env.DIARIO_FILE_ID,
-        relatorioFotografico: process.env.RELATORIO_FILE_ID
-      };
+  for (const file of req.files) {
+    const fileId = idMap[file.fieldname];
+    if (!fileId) continue;              // ignora outros campos
+    if (file.mimetype !== 'application/pdf') {
+      return res.status(400).send(`Tipo inválido: ${file.originalname}`);
+    }
+    // sobrescreve no Drive
+    await overwriteDriveFile(fileId, file.buffer, file.mimetype);
+    console.log(`Atualizado no Drive: ${file.fieldname} (fileId=${fileId})`);
+  }
 
-      for (const file of req.files) {
-        const fileId = idMap[file.fieldname];
-        if (!fileId) continue;              // ignora outros campos
-        if (file.mimetype !== 'application/pdf') {
-          return res.status(400).send(`Tipo inválido: ${file.originalname}`);
-        }
-        // sobrescreve no Drive
-        await overwriteDriveFile(fileId, file.buffer, file.mimetype);
-        console.log(`Atualizado no Drive: ${file.fieldname} (fileId=${fileId})`);
-      }
+//***//
 
-    } else if (fluxo === 'Alterar ordem de documentos') {
+  } else if (fluxo === 'Alterar ordem de documentos') {
       mailContent += `Número do Processo SEI: ${dados.processoSei || ''}\n`;
       mailContent += `Instruções: ${dados.instrucoes || ''}\n`;
     } else if (fluxo === 'Inserir anexo em doc SEI') {
@@ -489,7 +492,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     
     // Configura o transporte de e-mail
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
@@ -501,13 +504,11 @@ app.post('/send-email', upload.any(), async (req, res) => {
       text: mailContent,
     };
 
-   
-    
     // Verifica se há arquivos enviados
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-     // Sanitiza o nome do arquivo enviado
-    const safeOriginalName = sanitizeFilename(file.originalname);
+        // Sanitiza o nome do arquivo enviado
+        const safeOriginalName = sanitizeFilename(file.originalname);
 
         if (file.fieldname.startsWith('imagem')) {
           // Valida se é imagem
@@ -551,59 +552,68 @@ app.post('/send-email', upload.any(), async (req, res) => {
           // Anexa o PDF (ou qualquer arquivo) sem compressão
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
-        }else if (file.fieldname === 'arquivoPdf') {
-      const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI'].includes(fluxo);
+        } else if (file.fieldname === 'arquivoPdf') {
+          // Conversão de PDF em JPG
+          try {
+            const tempDir = os.tmpdir();
+            const tempFilePath = path.join(tempDir, `temp_${Date.now()}.pdf`);
+            fs.writeFileSync(tempFilePath, file.buffer);
 
-      if (deveConverterPDF) {
-        try {
-      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
-      const inputPath = path.join(tempDir, 'input.pdf');
-      const outputPrefix = path.join(tempDir, 'page');
+              const pdfImageOptions = {
+              convertFileType: "jpg",
+              convertOptions: {
+                "-density": "200",
+                "-background": "white",
+                "-flatten": null,
+                "-resize": "800",
+                "-strip": null,
+                "-sharpen": "0x0.5"            // mais leve
+              }
+            };
 
-      fs.writeFileSync(inputPath, file.buffer);
+            const pdfImage = new PDFImage(tempFilePath, pdfImageOptions);
 
-      const parsed = await pdfParse(file.buffer);
-      const numPages = parsed.numpages;
-      const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
+            // Conta as páginas usando pdf-parse
+            const parsedData = await pdfParse(file.buffer);
+            const numPages = parsedData.numpages;
+            console.log(`PDF possui ${numPages} páginas.`);
 
-      for (let i = 1; i <= numPages; i++) {
-        const command = `pdftoppm -jpeg -scale-to 1024 -r 200 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
-        await new Promise((resolve, reject) => {
-          exec(command, (error, stdout, stderr) => {
-            if (error) reject(new Error(`Erro ao converter página ${i}: ${stderr}`));
-            else resolve();
-          });
-        });
+            // Converte cada página de forma SEQUENCIAL
+            const imagePaths = [];
+            for (let i = 0; i < numPages; i++) {
+              console.log(`Convertendo página ${i + 1} de ${numPages}...`);
+              const convertedPath = await pdfImage.convertPage(i);
+              imagePaths.push(convertedPath);
+            }
+            console.log(`Conversão concluída para ${imagePaths.length} páginas.`);
 
-        const imagePath = `${outputPrefix}-${i}.jpg`;
-        if (fs.existsSync(imagePath)) {
-          const imgBuffer = fs.readFileSync(imagePath);
-          attachments.push({
-            filename: `${safeBase}_page_${i}.jpg`,
-            content: imgBuffer,
-          });
-          fs.unlinkSync(imagePath);
+            // Lê cada imagem e anexa
+            // Gera um nome base sem ".pdf"
+            const baseName = file.originalname.replace(/\.pdf$/i, '');
+            const safeBase = sanitizeFilename(baseName);
+
+            for (let i = 0; i < imagePaths.length; i++) {
+              const imageBuffer = fs.readFileSync(imagePaths[i]);
+              // Nome final ex.: "Documento_page_1.jpg"
+              attachments.push({
+              filename: `${safeBase}_page_${i + 1}.jpg`, // antes estava .png
+              content: imageBuffer
+            });
+
+              // Remove o arquivo de imagem temporário
+              fs.unlinkSync(imagePaths[i]);
+            }
+            // Remove o PDF temporário
+            fs.unlinkSync(tempFilePath);
+
+          } catch (error) {
+            console.error("Erro na conversão de PDF para JPG usando pdf-image:", error.message);
+            return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
+          }
         }
       }
-
-      fs.unlinkSync(inputPath);
-      fs.readdirSync(tempDir).forEach(f => fs.unlinkSync(path.join(tempDir, f)));
-      fs.rmdirSync(tempDir);
-
-    } catch (error) {
-      console.error("Erro na conversão de PDF para JPG (sequencial):", error.message);
-      return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
     }
 
-  } else {
-    // Apenas anexa o PDF se não for um dos fluxos que exigem conversão
-    attachments.push({ filename: sanitizeFilename(file.originalname), content: file.buffer });
-  }
-}
-      }
-    }
-
-          
     // Se houver anexos, adiciona ao e-mail
     if (attachments.length > 0) {
       mailOptions.attachments = attachments;
@@ -657,6 +667,16 @@ app.post('/verify-token', (req, res) => {
       res.status(500).json({ valid: false, error: 'Erro interno no servidor' });
     }
   });
+});
+
+app.get('/usuarios', async (req, res) => {
+  try {
+    const usuarios = await User.find({}, { password: 0 }).sort({ username: 1 }); // exclui senha
+    res.json(usuarios);
+  } catch (err) {
+    console.error('Erro ao buscar usuários:', err);
+    res.status(500).send('Erro ao buscar usuários');
+  }
 });
 
 
