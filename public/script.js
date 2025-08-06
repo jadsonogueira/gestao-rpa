@@ -172,7 +172,7 @@ function abrirFormulario(fluxo) {
         type: 'select', 
         options: ['Planilha', 'Nota(s) Fiscal(is)', 'Curva S','Diário de Obras', 'Boletim de Desempenho Parcial - Medições']
       },
-      { id: 'numero', placeholder: 'Número', type: 'text' },
+      { id: 'numero', placeholder: 'Número', type: 'text', value: '12345' },
       { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
       { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] },
     ];
