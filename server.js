@@ -680,61 +680,67 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
       return res.status(400).send('Arquivo inválido ou ausente');
     }
 
-    const tempDir = os.tmpdir();
-    const pdfPath = path.join(tempDir, `pdf_${Date.now()}.pdf`);
-    fs.writeFileSync(pdfPath, req.file.buffer);
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
+    const inputPath = path.join(tempDir, 'input.pdf');
+    fs.writeFileSync(inputPath, req.file.buffer);
 
-    const pdfImageOptions = {
-      convertFileType: "jpg",
-      convertOptions: {
-        "-density": "300",
-        "-background": "white",
-        "-flatten": null,
-        "-strip": null,
-        "-filter": "Lanczos",
-        "-resize": "1300",
-        "-sharpen": "0x1.0"
-      }
-    };
-
-    const pdfImage = new PDFImage(pdfPath, pdfImageOptions);
-    const parsedData = await pdfParse(req.file.buffer);
-    const numPages = parsedData.numpages;
+    // Conta as páginas do PDF
+    const parsed = await pdfParse(req.file.buffer);
+    const numPages = parsed.numpages;
 
     const baseName = path.basename(req.file.originalname, '.pdf');
+    const safeBase = sanitizeFilename(baseName);
 
-    if (numPages === 1) {
-      const imagePath = await pdfImage.convertPage(0);
-      const imageBuffer = fs.readFileSync(imagePath);
-      const imageName = `${sanitizeFilename(baseName)}.jpg`;
+    const attachments = [];
 
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Content-Disposition', `attachment; filename="${imageName}"`);
-      res.send(imageBuffer);
+    for (let i = 1; i <= numPages; i++) {
+      const outputPrefix = path.join(tempDir, `page_${i}`);
 
-      fs.unlinkSync(imagePath);
-    } else {
-      const zip = new AdmZip();
-      for (let i = 0; i < numPages; i++) {
-        const imagePath = await pdfImage.convertPage(i);
-        const imageBuffer = fs.readFileSync(imagePath);
-        const imageName = `pagina_${i + 1}.jpg`;
-        zip.addFile(imageName, imageBuffer);
+      const command = `pdftoppm -jpeg -scale-to 1300 -r 250 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+
+      await new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+          if (error) {
+            reject(new Error(`Erro ao converter página ${i}: ${stderr}`));
+          } else {
+            resolve();
+          }
+        });
+      });
+
+      const imagePath = `${outputPrefix}-${i}.jpg`;
+      if (fs.existsSync(imagePath)) {
+        const imgBuffer = fs.readFileSync(imagePath);
+        attachments.push({ filename: `${safeBase}_page_${i}.jpg`, content: imgBuffer });
         fs.unlinkSync(imagePath);
       }
-
-      const zipBuffer = zip.toBuffer();
-      res.setHeader('Content-Type', 'application/zip');
-      res.setHeader('Content-Disposition', 'attachment; filename=imagens.zip');
-      res.send(zipBuffer);
     }
 
-    fs.unlinkSync(pdfPath); // remove PDF temporário
+    fs.unlinkSync(inputPath);
+    fs.rmdirSync(tempDir, { recursive: true });
+
+    // Retorna como ZIP se mais de uma página
+    if (attachments.length > 1) {
+      const zip = new AdmZip();
+      attachments.forEach(att => zip.addFile(att.filename, att.content));
+      const zipBuffer = zip.toBuffer();
+
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${safeBase}.zip"`);
+      res.send(zipBuffer);
+    } else {
+      // Retorna JPG único diretamente
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Content-Disposition', `attachment; filename="${attachments[0].filename}"`);
+      res.send(attachments[0].content);
+    }
+
   } catch (err) {
     console.error('Erro na conversão de PDF para JPG:', err);
-    res.status(500).send('Erro ao converter PDF');
+    res.status(500).send('Erro ao converter PDF: ' + err.message);
   }
 });
+
 
 
 // Inicia o servidor
