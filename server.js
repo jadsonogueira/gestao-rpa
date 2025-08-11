@@ -378,6 +378,63 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
   }
 });
 
+// 🔽 ADICIONE AQUI
+app.post('/split-pdf', upload.single('pdf'), async (req, res) => {
+  try {
+    if (!req.file || req.file.mimetype !== 'application/pdf') {
+      return res.status(400).send('Envie um único arquivo com field "pdf" (application/pdf).');
+    }
+
+    const srcPdf = await PDFDocument.load(req.file.buffer);
+    const totalPages = srcPdf.getPageCount();
+
+    const rangesSpec = (req.body.ranges || req.query.ranges || '').trim();
+    const parseRanges = (spec, total) => {
+      if (!spec) return Array.from({ length: total }, (_, i) => ({ start: i + 1, end: i + 1 }));
+      const out = [];
+      for (const part of spec.split(',').map(s => s.trim()).filter(Boolean)) {
+        if (part.includes('-')) {
+          const [a, b] = part.split('-').map(n => parseInt(n, 10));
+          const start = Math.min(a, b), end = Math.max(a, b);
+          if (!a || !b || start < 1 || end > total) throw new Error(`Faixa inválida: "${part}"`);
+          out.push({ start, end });
+        } else {
+          const p = parseInt(part, 10);
+          if (!p || p < 1 || p > total) throw new Error(`Página inválida: "${part}"`);
+          out.push({ start: p, end: p });
+        }
+      }
+      return out;
+    };
+
+    const ranges = parseRanges(rangesSpec, totalPages);
+    const zip = new AdmZip();
+
+    for (const { start, end } of ranges) {
+      const out = await PDFDocument.create();
+      const idxs = Array.from({ length: end - start + 1 }, (_, i) => (start - 1) + i);
+      const pages = await out.copyPages(srcPdf, idxs);
+      pages.forEach(p => out.addPage(p));
+
+      const bytes = await out.save();
+      const filename = start === end
+        ? `page-${String(start).padStart(3, '0')}.pdf`
+        : `pages-${String(start).padStart(3, '0')}-${String(end).padStart(3, '0')}.pdf`;
+      zip.addFile(filename, Buffer.from(bytes));
+    }
+
+    const zipBuffer = zip.toBuffer();
+    res
+      .setHeader('Content-Type', 'application/zip')
+      .setHeader('Content-Disposition', 'attachment; filename="split.zip"')
+      .send(zipBuffer);
+
+  } catch (err) {
+    console.error('Erro no split-pdf:', err);
+    res.status(400).send(`Erro ao dividir PDF: ${err.message}`);
+  }
+});
+
 
 // Rota para listar contratos (GET)
 app.get('/contratos', async (req, res) => {
