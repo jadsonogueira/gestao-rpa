@@ -456,13 +456,10 @@ app.post('/split-pdf', upload.single('pdf'), async (req, res) => {
     const safeBase = baseName.replace(/[^\w\-]+/g, '_');
     const downloadName = `${safeBase}_split.zip`;
 
-    res
-      .setHeader('Content-Type', 'application/zip')
-      .setHeader(
-        'Content-Disposition',
-        `attachment; filename="${encodeURIComponent(downloadName)}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
-      )
-      .send(zipBuffer);
+    res.set('Content-Type', 'application/zip');
+    res.set('Content-Disposition', `attachment; filename="${downloadName}"`);
+    return res.send(zipBuffer);
+
 
   } catch (err) {
     console.error('Erro no split-pdf:', err);
@@ -812,28 +809,27 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
     fs.unlinkSync(inputPath);
     fs.rmdirSync(tempDir, { recursive: true });
 
-    // Retorna como ZIP se mais de uma página
-    if (attachments.length > 1) {
-      const zip = new AdmZip();
-      attachments.forEach(att => zip.addFile(att.filename, att.content));
-      const zipBuffer = zip.toBuffer();
+   // Retorna como ZIP se mais de uma página
+if (attachments.length > 1) {
+  const zip = new AdmZip();
+  attachments.forEach(att => zip.addFile(att.filename, att.content));
+  const zipBuffer = zip.toBuffer();
 
-      res.setHeader('Content-Type', 'application/zip');
-      res.setHeader('Content-Disposition', `attachment; filename="${safeBase}.zip"`);
-      res.send(zipBuffer);
-    } else {
-      // Retorna JPG único diretamente
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Content-Disposition', `attachment; filename="${attachments[0].filename}"`);
-      res.send(attachments[0].content);
-    }
+  res.set('Content-Type', 'application/zip');
+  res.set('Content-Disposition', `attachment; filename="${safeBase}.zip"`);
+  return res.send(zipBuffer);
+} else {
+  // JPG único
+  res.set('Content-Type', 'image/jpeg');
+  res.set('Content-Disposition', `attachment; filename="${attachments[0].filename}"`);
+  return res.send(attachments[0].content);
+}
 
   } catch (err) {
     console.error('Erro na conversão de PDF para JPG:', err);
     res.status(500).send('Erro ao converter PDF: ' + err.message);
   }
 });
-
 
 
 // Inicia o servidor
