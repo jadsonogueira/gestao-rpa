@@ -375,13 +375,11 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
     }
 
     const mergedBytes = await mergedPdf.save();
-    res
-      .setHeader('Content-Type', 'application/pdf')
-      .setHeader(
-        'Content-Disposition',
-        `attachment; filename="${encodeURIComponent(downloadName)}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
-      )
-      .send(Buffer.from(mergedBytes));
+    // em vez de encadear setHeader:
+res.set('Content-Type', 'application/pdf');
+res.set('Content-Disposition', `attachment; filename="${downloadName}"`);
+return res.send(Buffer.from(mergedBytes));
+
   } catch (err) {
     console.error('Erro no merge-pdf:', err);
     res.status(500).send(`Erro ao unir PDFs: ${err.message}`);
