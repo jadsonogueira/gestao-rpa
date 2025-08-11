@@ -346,8 +346,6 @@ const upload = multer({
 
 const { PDFDocument } = require('pdf-lib');
 
-const path = require('path'); // garanta que está importado
-
 app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
   try {
     if (!req.files || req.files.length < 2) {
@@ -387,9 +385,6 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
     res.status(500).send(`Erro ao unir PDFs: ${err.message}`);
   }
 });
-
-const path = require('path'); // se ainda não estiver importado no arquivo
-// ...demais imports e a função parseRanges...
 
 app.post('/split-pdf', upload.single('pdf'), async (req, res) => {
   try {
