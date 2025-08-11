@@ -71,8 +71,10 @@ const fluxoInstrucoes = {
   'Criar Doc SEI Externo': 'Crie um documento SEI do tipo EXTERNO.',
   'Criar Doc SEI Editável': 'Crie um documento SEI do tipo Editável.',
   'Analise de processo': 'Preencha os campos para análise do processo SEI.',
-'Unir PDFs': 'Selecione dois ou mais arquivos PDF para juntá-los em um único documento.',
-'PDF para JPG': 'Selecione um PDF. Cada página será convertida em uma imagem JPG.'
+  'Unir PDFs': 'Selecione dois ou mais arquivos PDF para juntá-los em um único documento.',
+  'PDF para JPG': 'Selecione um PDF. Cada página será convertida em uma imagem JPG.',
+  // ✅ Novo
+  'Dividir PDF': 'Selecione um PDF e, opcionalmente, informe faixas (ex.: 1-3,5,7-9). Se não informar, dividiremos página a página.'
 };
 
 // Função para abrir o modal e gerar o formulário
@@ -115,13 +117,12 @@ function abrirFormulario(fluxo) {
       { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
     ];
   } else if (fluxo === 'Analise de processo') {
-  campos = [
-    { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
-    { id: 'memoriaCalculo', placeholder: 'Memória de Cálculo (PDF)', type: 'file', accept: 'application/pdf' },
-    { id: 'diarioObra', placeholder: 'Diário de Obra (PDF)', type: 'file', accept: 'application/pdf' },
-    { id: 'relatorioFotografico', placeholder: 'Relatório Fotográfico (PDF)', type: 'file', accept: 'application/pdf' }
-  ];
-
+    campos = [
+      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
+      { id: 'memoriaCalculo', placeholder: 'Memória de Cálculo (PDF)', type: 'file', accept: 'application/pdf' },
+      { id: 'diarioObra', placeholder: 'Diário de Obra (PDF)', type: 'file', accept: 'application/pdf' },
+      { id: 'relatorioFotografico', placeholder: 'Relatório Fotográfico (PDF)', type: 'file', accept: 'application/pdf' }
+    ];
   } else if (fluxo === 'Alterar ordem de documentos') {
     campos = [
       { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
@@ -143,17 +144,20 @@ function abrirFormulario(fluxo) {
       { id: 'user', placeholder: 'Usuário', type: 'text' },
       { id: 'key', placeholder: 'Senha', type: 'text' },
     ];
-
-    } else if (fluxo === 'Unir PDFs') {
-      campos = [
-        { id: 'pdfs', placeholder: 'Arquivos PDF para unir', type: 'file', accept: '.pdf', multiple: true }
-      ];
-      
-      } else if (fluxo === 'PDF para JPG') {
-  campos = [
-    { id: 'arquivoPdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' }
-  ];
-    
+  } else if (fluxo === 'Unir PDFs') {
+    campos = [
+      { id: 'pdfs', placeholder: 'Arquivos PDF para unir', type: 'file', accept: '.pdf', multiple: true }
+    ];
+  } else if (fluxo === 'PDF para JPG') {
+    campos = [
+      { id: 'arquivoPdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' }
+    ];
+  // ✅ Novo fluxo: Dividir PDF
+  } else if (fluxo === 'Dividir PDF') {
+    campos = [
+      { id: 'pdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' }, // nome "pdf" para bater com o backend
+      { id: 'ranges', placeholder: 'Faixas (ex.: 1-3,5,7-9) — opcional', type: 'text', required: false }
+    ];
   } else if (fluxo === 'Criar Doc SEI Externo') {
     campos = [
       { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
@@ -196,7 +200,7 @@ function abrirFormulario(fluxo) {
       input.id = campo.id;
       input.name = campo.id;
       input.className = 'form-control';
-      input.required = true;
+      input.required = campo.required !== false;
 
       const optionInicial = document.createElement('option');
       optionInicial.value = '';
@@ -215,7 +219,7 @@ function abrirFormulario(fluxo) {
       input = document.createElement('textarea');
       input.rows = 3;
       input.className = 'form-control';
-      input.required = true;
+      input.required = campo.required !== false;
       input.placeholder = campo.placeholder;
     } else if (campo.type === 'radio') {
       input = document.createElement('div');
@@ -297,10 +301,11 @@ function abrirFormulario(fluxo) {
       input = document.createElement('input');
       input.type = campo.type;
       input.className = 'form-control';
-      input.required = true;
+      input.required = campo.required !== false;
       input.placeholder = campo.placeholder;
       if (campo.multiple) input.multiple = true;
       if (campo.accept) input.accept = campo.accept;
+      if (campo.value) input.value = campo.value;
     }
 
     input.id = campo.id;
@@ -454,66 +459,65 @@ function enviarFormularioAxios(e) {
   inputs.forEach((input) => {
     if (input.type === 'file' && input.files.length > 0) {
       for (let i = 0; i < input.files.length; i++) {
-        const keyName = input.name;
+        const keyName = input.name; // importante: "pdf" no Dividir PDF, "pdfs" no Unir
         formData.append(keyName, input.files[i]);
       }
     } else if (input.type !== 'file' && input.type !== 'radio') {
-      formData.append(input.name, input.value.trim());
+      formData.append(input.name, (input.value || '').trim());
     } else if (input.type === 'radio' && input.checked) {
       formData.append(input.name, input.value);
     }
   });
 
   const url = fluxo === 'Unir PDFs'
-  ? `${apiUrl}/merge-pdf`
-  : fluxo === 'PDF para JPG'
-  ? `${apiUrl}/pdf-to-jpg`
-  : `${apiUrl}/send-email`;
+    ? `${apiUrl}/merge-pdf`
+    : fluxo === 'PDF para JPG'
+    ? `${apiUrl}/pdf-to-jpg`
+    : fluxo === 'Dividir PDF'
+    ? `${apiUrl}/split-pdf`
+    : `${apiUrl}/send-email`;
 
-const responseType = fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG'
-  ? 'blob'
-  : 'json';
+  const responseType = (fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG' || fluxo === 'Dividir PDF')
+    ? 'blob'
+    : 'json';
   
-const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token');
 
-axios.post(url, formData, {
-  responseType,
-  headers: {
-    Authorization: `Bearer ${token}`
-  }
-})
+  axios.post(url, formData, {
+    responseType,
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+  .then(response => {
+    hideLoadingOverlay();
 
-    .then(response => {
-      hideLoadingOverlay();
-
-    if (fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG') {
-      const contentType = response.headers['content-type'];
-      
+    if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF'].includes(fluxo)) {
+      const contentType = response.headers['content-type'] || '';
       const extension = contentType.includes('application/pdf')
-      ? 'pdf'
-      : contentType.includes('zip')
-        ? 'zip'
-        : 'jpg';
+        ? 'pdf'
+        : contentType.includes('zip')
+          ? 'zip'
+          : 'jpg';
 
-      const blob = new Blob([response.data], { type: contentType });
+      const blob = new Blob([response.data], { type: contentType || 'application/octet-stream' });
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
       link.download = `resultado.${extension}`;
       link.click();
-      showAlert(`✅ Conversão concluída com sucesso! Arquivo: resultado.${extension}`, 'success');
+      showAlert(`✅ Operação concluída com sucesso! Arquivo: resultado.${extension}`, 'success');
     } else {
       showAlert('✅ Solicitação enviada com sucesso.', 'success');
     }
 
-
-      $('#fluxoModal').modal('hide');
-    })
-    .catch(error => {
-      hideLoadingOverlay();
-      console.error('Erro ao enviar:', error);
-      showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
-      $('#fluxoModal').modal('hide');
-    });
+    $('#fluxoModal').modal('hide');
+  })
+  .catch(error => {
+    hideLoadingOverlay();
+    console.error('Erro ao enviar:', error);
+    showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
+    $('#fluxoModal').modal('hide');
+  });
 }
 
 // Expõe a função abrirFormulario no escopo global (para o HTML)
