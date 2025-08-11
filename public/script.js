@@ -538,7 +538,6 @@ function enviarFormularioAxios(e) {
     showAlert('✅ Solicitação enviada com sucesso.', 'success');
   }
 
-  $('#fluxoModal').modal('show'); // se quiser mostrar o modal aqui, senão remova
 })
 .catch(error => {
   hideLoadingOverlay();
@@ -548,7 +547,7 @@ function enviarFormularioAxios(e) {
 .finally(() => {
   $('#fluxoModal').modal('hide');
 });
-
+}
   
 
 // Expõe a função abrirFormulario no escopo global (para o HTML)
