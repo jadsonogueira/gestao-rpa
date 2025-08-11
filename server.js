@@ -346,16 +346,23 @@ const upload = multer({
 
 const { PDFDocument } = require('pdf-lib');
 
+const path = require('path'); // garanta que está importado
+
 app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
   try {
     if (!req.files || req.files.length < 2) {
       return res.status(400).send('É necessário enviar pelo menos dois arquivos PDF');
     }
 
-    // Ordena alfanumericamente pelos nomes dos arquivos antes de mesclar
+    // Ordena para padronizar a base do nome (primeiro da ordem)
     const arquivosOrdenados = req.files.sort((a, b) =>
       a.originalname.localeCompare(b.originalname, 'pt', { numeric: true, sensitivity: 'base' })
     );
+
+    // Base do nome: primeiro arquivo da ordem, sem extensão
+    const baseName = path.parse(arquivosOrdenados[0].originalname).name;
+    const safeBase = baseName.replace(/[^\w\-]+/g, '_');
+    const downloadName = `${safeBase}_merge.pdf`;
 
     const mergedPdf = await PDFDocument.create();
     for (const file of arquivosOrdenados) {
@@ -364,13 +371,16 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
       }
       const pdf = await PDFDocument.load(file.buffer);
       const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-      pages.forEach(page => mergedPdf.addPage(page));
+      pages.forEach(p => mergedPdf.addPage(p));
     }
 
     const mergedBytes = await mergedPdf.save();
     res
       .setHeader('Content-Type', 'application/pdf')
-      .setHeader('Content-Disposition', 'attachment; filename="merged.pdf"')
+      .setHeader(
+        'Content-Disposition',
+        `attachment; filename="${encodeURIComponent(downloadName)}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
+      )
       .send(Buffer.from(mergedBytes));
   } catch (err) {
     console.error('Erro no merge-pdf:', err);
@@ -378,7 +388,9 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
   }
 });
 
-// 🔽 ADICIONE AQUI
+const path = require('path'); // se ainda não estiver importado no arquivo
+// ...demais imports e a função parseRanges...
+
 app.post('/split-pdf', upload.single('pdf'), async (req, res) => {
   try {
     if (!req.file || req.file.mimetype !== 'application/pdf') {
@@ -389,44 +401,39 @@ app.post('/split-pdf', upload.single('pdf'), async (req, res) => {
     const totalPages = srcPdf.getPageCount();
 
     const rangesSpec = (req.body.ranges || req.query.ranges || '').trim();
-    const parseRanges = (spec, total) => {
-      if (!spec) return Array.from({ length: total }, (_, i) => ({ start: i + 1, end: i + 1 }));
-      const out = [];
-      for (const part of spec.split(',').map(s => s.trim()).filter(Boolean)) {
-        if (part.includes('-')) {
-          const [a, b] = part.split('-').map(n => parseInt(n, 10));
-          const start = Math.min(a, b), end = Math.max(a, b);
-          if (!a || !b || start < 1 || end > total) throw new Error(`Faixa inválida: "${part}"`);
-          out.push({ start, end });
-        } else {
-          const p = parseInt(part, 10);
-          if (!p || p < 1 || p > total) throw new Error(`Página inválida: "${part}"`);
-          out.push({ start: p, end: p });
-        }
-      }
-      return out;
-    };
+    const ranges = rangesSpec
+      ? parseRanges(rangesSpec, totalPages)
+      : Array.from({ length: totalPages }, (_, i) => ({ start: i + 1, end: i + 1 }));
 
-    const ranges = parseRanges(rangesSpec, totalPages);
     const zip = new AdmZip();
 
     for (const { start, end } of ranges) {
       const out = await PDFDocument.create();
-      const idxs = Array.from({ length: end - start + 1 }, (_, i) => (start - 1) + i);
-      const pages = await out.copyPages(srcPdf, idxs);
+      const idxsZeroBased = Array.from({ length: end - start + 1 }, (_, i) => (start - 1) + i);
+      const pages = await out.copyPages(srcPdf, idxsZeroBased);
       pages.forEach(p => out.addPage(p));
 
       const bytes = await out.save();
       const filename = start === end
         ? `page-${String(start).padStart(3, '0')}.pdf`
         : `pages-${String(start).padStart(3, '0')}-${String(end).padStart(3, '0')}.pdf`;
+
       zip.addFile(filename, Buffer.from(bytes));
     }
 
     const zipBuffer = zip.toBuffer();
+
+    // Base do nome: arquivo enviado, sem extensão
+    const baseName = path.parse(req.file.originalname).name;
+    const safeBase = baseName.replace(/[^\w\-]+/g, '_');
+    const downloadName = `${safeBase}_split.zip`;
+
     res
       .setHeader('Content-Type', 'application/zip')
-      .setHeader('Content-Disposition', 'attachment; filename="split.zip"')
+      .setHeader(
+        'Content-Disposition',
+        `attachment; filename="${encodeURIComponent(downloadName)}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
+      )
       .send(zipBuffer);
 
   } catch (err) {
@@ -434,6 +441,7 @@ app.post('/split-pdf', upload.single('pdf'), async (req, res) => {
     res.status(400).send(`Erro ao dividir PDF: ${err.message}`);
   }
 });
+
 
 
 // Rota para listar contratos (GET)
