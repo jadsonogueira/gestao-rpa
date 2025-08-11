@@ -489,78 +489,63 @@ function enviarFormularioAxios(e) {
       Authorization: `Bearer ${token}`
     }
   })
-  .then(response => {
-    hideLoadingOverlay();
 
-    if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF'].includes(fluxo)) {
-      const contentType = response.headers['content-type'] || '';
-      const extension = contentType.includes('application/pdf')
-        ? 'pdf'
-        : contentType.includes('zip')
-          ? 'zip'
-          : 'jpg';
+.then(response => {
+  hideLoadingOverlay();
 
-      
-      if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF'].includes(fluxo)) {
-  const contentType = response.headers['content-type'] || 'application/octet-stream';
+  if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF'].includes(fluxo)) {
+    const contentType = response.headers['content-type'] || 'application/octet-stream';
 
-  // 1) tenta pegar o nome do header
-  const cd = response.headers['content-disposition'] || '';
-  let filename = null;
-  const m = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
-  if (m) {
-    try { filename = decodeURIComponent(m[1] || m[2]); }
-    catch { filename = (m[1] || m[2]); }
-  }
-
-  // 2) fallbacks por fluxo (se não veio no header)
-  if (!filename) {
-    if (fluxo === 'Unir PDFs') {
-      const first = e.target.querySelector('input[name="pdfs"]')?.files?.[0]?.name || 'merged.pdf';
-      filename = first.replace(/\.[^.]+$/, '') + '_merge.pdf';
-    } else if (fluxo === 'Dividir PDF') {
-      const first = e.target.querySelector('input[name="pdf"]')?.files?.[0]?.name || 'split.zip';
-      filename = first.replace(/\.[^.]+$/, '') + '_split.zip';
-    } else if (fluxo === 'PDF para JPG') {
-      const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo')
-                    .replace(/\.pdf$/i, '');
-      filename = contentType.includes('zip') ? `${base}.zip` : `${base}.jpg`;
-    } else {
-      // último recurso
-      const ext = contentType.includes('pdf') ? 'pdf'
-               : contentType.includes('zip') ? 'zip'
-               : contentType.includes('jpeg') ? 'jpg'
-               : 'bin';
-      filename = `resultado.${ext}`;
+    // 1) tenta pegar o nome do header
+    const cd = response.headers['content-disposition'] || '';
+    let filename = null;
+    const m = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
+    if (m) {
+      try { filename = decodeURIComponent(m[1] || m[2]); }
+      catch { filename = (m[1] || m[2]); }
     }
+
+    // 2) fallbacks por fluxo (se não veio no header)
+    if (!filename) {
+      if (fluxo === 'Unir PDFs') {
+        const first = e.target.querySelector('input[name="pdfs"]')?.files?.[0]?.name || 'merged.pdf';
+        filename = first.replace(/\.[^.]+$/, '') + '_merge.pdf';
+      } else if (fluxo === 'Dividir PDF') {
+        const first = e.target.querySelector('input[name="pdf"]')?.files?.[0]?.name || 'split.zip';
+        filename = first.replace(/\.[^.]+$/, '') + '_split.zip';
+      } else if (fluxo === 'PDF para JPG') {
+        const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo')
+                      .replace(/\.pdf$/i, '');
+        filename = contentType.includes('zip') ? `${base}.zip` : `${base}.jpg`;
+      } else {
+        const ext = contentType.includes('pdf') ? 'pdf'
+                 : contentType.includes('zip') ? 'zip'
+                 : contentType.includes('jpeg') ? 'jpg'
+                 : 'bin';
+        filename = `resultado.${ext}`;
+      }
+    }
+
+    // 3) baixa com o nome certo (evita sombrear a variável "url" da requisição)
+    const blob = new Blob([response.data], { type: contentType });
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(blobUrl);
+
+    showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
+  } else {
+    showAlert('✅ Solicitação enviada com sucesso.', 'success');
   }
 
-  // 3) baixa com o nome certo
-  const blob = new Blob([response.data], { type: contentType });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  window.URL.revokeObjectURL(url);
+  $('#fluxoModal').modal('hide');
+})
 
-  showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
-} else {
-  showAlert('✅ Solicitação enviada com sucesso.', 'success');
-}
-
-
-    $('#fluxoModal').modal('hide');
-  })
-  .catch(error => {
-    hideLoadingOverlay();
-    console.error('Erro ao enviar:', error);
-    showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
-    $('#fluxoModal').modal('hide');
-  });
-}
+  
 
 // Expõe a função abrirFormulario no escopo global (para o HTML)
 window.abrirFormulario = abrirFormulario;
