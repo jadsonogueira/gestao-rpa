@@ -116,8 +116,6 @@ console.log('Ghostscript command:', cmd);
   return compressed;
 }
 
-const PDFMerger = require('pdf-merger-js');
-
 
 // Importa a classe PDFImage do pdf-image
 const PDFImage = require("pdf-image").PDFImage;
@@ -354,26 +352,28 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
       return res.status(400).send('É necessário enviar pelo menos dois arquivos PDF');
     }
 
-    // Não muta req.files
+    // Ordena por nome para padronizar a base do arquivo final
     const arquivosOrdenados = [...req.files].sort((a, b) =>
       a.originalname.localeCompare(b.originalname, 'pt', { numeric: true, sensitivity: 'base' })
     );
 
-    // Base do nome
+    // Gera nome de download a partir do primeiro
     const baseName = path.parse(arquivosOrdenados[0].originalname).name;
     const safeBase = baseName.replace(/[^\w\-]+/g, '_');
     const downloadName = `${safeBase}_merge.pdf`;
 
-    // Tenta com pdf-lib
     const mergedPdf = await PDFDocument.create();
 
     for (const file of arquivosOrdenados) {
-      const extOk  = path.extname(file.originalname).toLowerCase() === '.pdf';
-      const mimeOk = (file.mimetype || '').toLowerCase().includes('pdf');
-      if (!(extOk || mimeOk)) {
+      const isPdf =
+        (file.mimetype && file.mimetype.toLowerCase().includes('pdf')) ||
+        /\.pdf$/i.test(file.originalname);
+
+      if (!isPdf) {
         return res.status(400).send(`Arquivo não é PDF: ${file.originalname}`);
       }
 
+      // ignoreEncryption ajuda quando o PDF tem “permissões” mas sem senha interativa
       const pdf = await PDFDocument.load(file.buffer, { ignoreEncryption: true });
       const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
       pages.forEach(p => mergedPdf.addPage(p));
@@ -383,44 +383,15 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
 
     res.set('Content-Type', 'application/pdf');
     res.set('Content-Length', String(buf.length));
-    res.set(
-      'Content-Disposition',
+    // filename + filename* para lidar com UTF-8 corretamente
+    res.set('Content-Disposition',
       `attachment; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
     );
+
     return res.send(buf);
-
   } catch (err) {
-    console.error('Erro no merge-pdf (pdf-lib):', err);
-
-    // Fallback: pdf-merger-js
-    try {
-      const arquivosOrdenados = [...(req.files || [])].sort((a, b) =>
-        a.originalname.localeCompare(b.originalname, 'pt', { numeric: true, sensitivity: 'base' })
-      );
-
-      const baseName = arquivosOrdenados.length
-        ? path.parse(arquivosOrdenados[0].originalname).name
-        : 'merged';
-      const safeBase = baseName.replace(/[^\w\-]+/g, '_');
-      const downloadName = `${safeBase}_merge.pdf`;
-
-      const merger = new PDFMerger();
-      for (const f of arquivosOrdenados) {
-        await merger.add(f.buffer);
-      }
-      const buf = await merger.saveAsBuffer();
-
-      res.set('Content-Type', 'application/pdf');
-      res.set('Content-Length', String(buf.length));
-      res.set(
-        'Content-Disposition',
-        `attachment; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
-      );
-      return res.send(buf);
-    } catch (fallbackErr) {
-      console.error('Fallback (pdf-merger-js) falhou:', fallbackErr);
-      return res.status(500).send(`Erro ao unir PDFs: ${err.message}`);
-    }
+    console.error('Erro no merge-pdf:', err);
+    return res.status(500).send(`Erro ao unir PDFs: ${err.message}`);
   }
 });
 
