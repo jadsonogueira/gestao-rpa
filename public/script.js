@@ -42,7 +42,7 @@ const listaUsuarios = [
   'José Joaquim da Silva Júnior',
   'Lucas Veloso Facury Lasmar',
   'Natália Maria do Carmo Lopes Guimarães Battaglini',
-  'Pablo Garcia Fernandes de Souza',
+  'Pablo Garcia Fernandes',
   'Rodrigo Emanuel Tahan',
   'Wagner Ferreira da Cunha'
 ];
