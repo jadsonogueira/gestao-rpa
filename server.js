@@ -395,6 +395,42 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
   }
 });
 
+// --- Helper: interpreta "ranges" do split (ex.: "1-3,5,7-9") ---
+function parseRanges(spec, totalPages) {
+  const ranges = [];
+  if (!spec) {
+    return Array.from({ length: totalPages }, (_, i) => ({ start: i + 1, end: i + 1 }));
+  }
+  const parts = spec.split(',').map(s => s.trim()).filter(Boolean);
+
+  for (const part of parts) {
+    if (part.includes('-')) {
+      const [aStr, bStr] = part.split('-');
+      const a = parseInt(aStr, 10);
+      const b = parseInt(bStr, 10);
+      if (!Number.isInteger(a) || !Number.isInteger(b)) {
+        throw new Error(`Faixa inválida: "${part}"`);
+      }
+      if (a < 1 || b < 1 || a > totalPages || b > totalPages) {
+        throw new Error(`Faixa fora do total de páginas (${totalPages}): "${part}"`);
+      }
+      const start = Math.min(a, b);
+      const end   = Math.max(a, b);
+      ranges.push({ start, end });
+    } else {
+      const p = parseInt(part, 10);
+      if (!Number.isInteger(p) || p < 1 || p > totalPages) {
+        throw new Error(`Página inválida ou fora do total (${totalPages}): "${part}"`);
+      }
+      ranges.push({ start: p, end: p });
+    }
+  }
+
+  return ranges;
+}
+
+
+
 app.post('/split-pdf', upload.single('pdf'), async (req, res) => {
   try {
     if (!req.file || req.file.mimetype !== 'application/pdf') {
