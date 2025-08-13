@@ -354,70 +354,75 @@ app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
       return res.status(400).send('É necessário enviar pelo menos dois arquivos PDF');
     }
 
-    // Ordena para padronizar a base do nome (primeiro da ordem)
-    const arquivosOrdenados = req.files.sort((a, b) =>
+    // Não muta req.files
+    const arquivosOrdenados = [...req.files].sort((a, b) =>
       a.originalname.localeCompare(b.originalname, 'pt', { numeric: true, sensitivity: 'base' })
     );
 
-    // Base do nome: primeiro arquivo da ordem, sem extensão
+    // Base do nome
     const baseName = path.parse(arquivosOrdenados[0].originalname).name;
     const safeBase = baseName.replace(/[^\w\-]+/g, '_');
     const downloadName = `${safeBase}_merge.pdf`;
 
+    // Tenta com pdf-lib
     const mergedPdf = await PDFDocument.create();
+
     for (const file of arquivosOrdenados) {
-      if (file.mimetype !== 'application/pdf') {
-        throw new Error(`Arquivo inválido: ${file.originalname}`);
+      const extOk  = path.extname(file.originalname).toLowerCase() === '.pdf';
+      const mimeOk = (file.mimetype || '').toLowerCase().includes('pdf');
+      if (!(extOk || mimeOk)) {
+        return res.status(400).send(`Arquivo não é PDF: ${file.originalname}`);
       }
-      const pdf = await PDFDocument.load(file.buffer);
+
+      const pdf = await PDFDocument.load(file.buffer, { ignoreEncryption: true });
       const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
       pages.forEach(p => mergedPdf.addPage(p));
     }
 
-    const mergedBytes = await mergedPdf.save();
-    // em vez de encadear setHeader:
-res.set('Content-Type', 'application/pdf');
-res.set('Content-Disposition', `attachment; filename="${downloadName}"`);
-return res.send(Buffer.from(mergedBytes));
+    const buf = Buffer.from(await mergedPdf.save());
+
+    res.set('Content-Type', 'application/pdf');
+    res.set('Content-Length', String(buf.length));
+    res.set(
+      'Content-Disposition',
+      `attachment; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
+    );
+    return res.send(buf);
 
   } catch (err) {
-    console.error('Erro no merge-pdf:', err);
-    res.status(500).send(`Erro ao unir PDFs: ${err.message}`);
-  }
-});
+    console.error('Erro no merge-pdf (pdf-lib):', err);
 
-// --- Helper: interpreta "ranges" do split (ex.: "1-3,5,7-9") ---
-function parseRanges(spec, totalPages) {
-  const ranges = [];
-  if (!spec) {
-    return Array.from({ length: totalPages }, (_, i) => ({ start: i + 1, end: i + 1 }));
-  }
-  const parts = spec.split(',').map(s => s.trim()).filter(Boolean);
-  for (const part of parts) {
-    if (part.includes('-')) {
-      const [aStr, bStr] = part.split('-');
-      const a = parseInt(aStr, 10);
-      const b = parseInt(bStr, 10);
-      if (!Number.isInteger(a) || !Number.isInteger(b)) {
-        throw new Error(`Faixa inválida: "${part}"`);
+    // Fallback: pdf-merger-js
+    try {
+      const arquivosOrdenados = [...(req.files || [])].sort((a, b) =>
+        a.originalname.localeCompare(b.originalname, 'pt', { numeric: true, sensitivity: 'base' })
+      );
+
+      const baseName = arquivosOrdenados.length
+        ? path.parse(arquivosOrdenados[0].originalname).name
+        : 'merged';
+      const safeBase = baseName.replace(/[^\w\-]+/g, '_');
+      const downloadName = `${safeBase}_merge.pdf`;
+
+      const merger = new PDFMerger();
+      for (const f of arquivosOrdenados) {
+        await merger.add(f.buffer);
       }
-      if (a < 1 || b < 1 || a > totalPages || b > totalPages) {
-        throw new Error(`Faixa fora do total de páginas (${totalPages}): "${part}"`);
-      }
-      const start = Math.min(a, b);
-      const end   = Math.max(a, b);
-      ranges.push({ start, end });
-    } else {
-      const p = parseInt(part, 10);
-      if (!Number.isInteger(p) || p < 1 || p > totalPages) {
-        throw new Error(`Página inválida ou fora do total (${totalPages}): "${part}"`);
-      }
-      ranges.push({ start: p, end: p });
+      const buf = await merger.saveAsBuffer();
+
+      res.set('Content-Type', 'application/pdf');
+      res.set('Content-Length', String(buf.length));
+      res.set(
+        'Content-Disposition',
+        `attachment; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
+      );
+      return res.send(buf);
+    } catch (fallbackErr) {
+      console.error('Fallback (pdf-merger-js) falhou:', fallbackErr);
+      return res.status(500).send(`Erro ao unir PDFs: ${err.message}`);
     }
   }
-  return ranges;
-}
-
+});
 
 app.post('/split-pdf', upload.single('pdf'), async (req, res) => {
   try {
