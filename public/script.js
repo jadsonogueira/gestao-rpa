@@ -49,7 +49,7 @@ async function carregarUsuariosExternos() {
   // [{ _id, idExterno, nome, empresa }]
   const lista = await fetchJSON('/usuarios-externos');
   // value: _id (ou mude para idExterno se preferir), label: Nome (Empresa)
-  return lista.map(u => ({ value: u._id, label: `${u.nome} (${u.empresa})` }));
+  return lista.map(u => ({ value: u._id, label: `${u.nome}` }));
 }
 
 async function carregarContratos() {
