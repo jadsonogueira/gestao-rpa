@@ -672,7 +672,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
 
     for (let i = 1; i <= numPages; i++) {
-      const command = `pdftoppm -jpg -r 300 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+      const command = `pdftoppm -jpeg -r 300 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
       await new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
           if (error) {
@@ -797,7 +797,7 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
     for (let i = 1; i <= numPages; i++) {
       const outputPrefix = path.join(tempDir, `page_${i}`);
 
-      const command = `pdftoppm -jpg -r 300 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+      const command = `pdftoppm -jpeg -r 300 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
 
       await new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
