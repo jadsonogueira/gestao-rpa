@@ -1,9 +1,7 @@
-// ==================== script.js (substituição completa) ====================
-
-// Base da API
+// Define a URL da API com base no ambiente
 const apiUrl = window.location.origin;
 
-// ---------- UI helpers ----------
+// Função para exibir alertas
 function showAlert(message, type = 'success') {
   const alertPlaceholder = document.getElementById('alertPlaceholder');
   if (alertPlaceholder) {
@@ -20,46 +18,48 @@ function showAlert(message, type = 'success') {
   }
 }
 
-
+// Funções para mostrar/esconder o overlay "Aguarde"
 function showLoadingOverlay() {
   const overlay = document.getElementById('loadingOverlay');
-  if (overlay) overlay.style.display = 'flex';
+  if (overlay) {
+    overlay.style.display = 'flex'; // "flex" para centralizar o conteúdo
+  }
 }
 
 function hideLoadingOverlay() {
   const overlay = document.getElementById('loadingOverlay');
-  if (overlay) overlay.style.display = 'none';
-}
-
-// ---------- Fetch helpers (JWT) ----------
-async function fetchJSON(path) {
-  const token = localStorage.getItem('token');
-  const res = await fetch(`${apiUrl}${path}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  if (!res.ok) {
-    // tenta extrair texto de erro pra log
-    let txt = '';
-    try { txt = await res.text(); } catch {}
-    throw new Error(`Falha ao buscar ${path}: ${res.status} ${txt}`);
+  if (overlay) {
+    overlay.style.display = 'none';
   }
-  return res.json();
 }
 
-async function carregarUsuariosExternos() {
-  // [{ _id, idExterno, nome, empresa }]
-  const lista = await fetchJSON('/usuarios-externos');
-  // value: _id (ou mude para idExterno se preferir), label: Nome (Empresa)
-  return lista.map(u => ({ value: u._id, label: `${u.nome}` }));
-}
+// Listas para seleção
+const listaUsuarios = [
+  'Antônio Sílvio Rabelo Neto',
+  'Bruno Moreira de Medeiros',
+  'Bruno Zafalon Martins Ferreira',
+  'Francisco Jailson Nascimento dos Santos',
+  'José Joaquim da Silva Júnior',
+  'Lucas Veloso Facury Lasmar',
+  'Natália Maria do Carmo Lopes Guimarães Battaglini',
+  'Pablo Garcia Fernandes',
+  'Rodrigo Emanuel Tahan',
+  'Wagner Ferreira da Cunha'
+];
 
-async function carregarContratos() {
-  // [{ _id, numero }]
-  const lista = await fetchJSON('/contratos');
-  return lista.map(c => ({ value: c.numero, label: c.numero }));
-}
+const listacontratos = [
+  '00 00121',
+  '12 00121',
+  '12 00088',
+  '12 00101',
+  '12 00212',
+  '12 00426',
+  '12 00449',
+  '12 00458',
+  '12 00594'
+];
 
-// ---------- Instruções por fluxo ----------
+// Instruções específicas para cada fluxo
 const fluxoInstrucoes = {
   'Consultar empenho': 'Preencha os campos e selecione o contrato SEI correto. Você receberá um email com o resultado.',
   'Liberar assinatura externa': 'Informe os dados e o número do DOC_SEI no formato numérico (ex.: 12345678).',
@@ -73,120 +73,119 @@ const fluxoInstrucoes = {
   'Analise de processo': 'Preencha os campos para análise do processo SEI.',
   'Unir PDFs': 'Selecione dois ou mais arquivos PDF para juntá-los em um único documento.',
   'PDF para JPG': 'Selecione um PDF. Cada página será convertida em uma imagem JPG.',
+  // ✅ Novo
   'Dividir PDF': 'Selecione um PDF e, opcionalmente, informe faixas (ex.: 1-3,5,7-9). Se não informar, dividiremos página a página.'
 };
 
-// ---------- UI builders ----------
-function buildSelectOptions(selectEl, options) {
-  const opt0 = document.createElement('option');
-  opt0.value = '';
-  opt0.disabled = true;
-  opt0.selected = true;
-  opt0.textContent = 'Selecione uma opção';
-  selectEl.appendChild(opt0);
-
-  options.forEach(o => {
-    const opt = document.createElement('option');
-    opt.value = o.value;
-    opt.textContent = o.label;
-    selectEl.appendChild(opt);
-  });
-}
-
-// ---------- Form modal ----------
-async function abrirFormulario(fluxo) {
+// Função para abrir o modal e gerar o formulário
+function abrirFormulario(fluxo) {
   const modalTitle = document.getElementById('modalTitle');
   const modalBody = document.querySelector('.modal-body');
   if (!modalTitle || !modalBody) {
-    console.error('Elementos do modal não encontrados.');
+    console.error("Elementos do modal não encontrados.");
     return;
   }
-
   modalTitle.innerText = fluxo;
-  modalBody.innerHTML = '';
 
+  // Instruções
   const instrucaoText = document.createElement('p');
   instrucaoText.textContent = fluxoInstrucoes[fluxo] || 'Preencha todos os campos.';
+  
+  modalBody.innerHTML = '';
   modalBody.appendChild(instrucaoText);
 
+  // Criação do formulário
   const fluxoForm = document.createElement('form');
   fluxoForm.id = 'fluxoForm';
   fluxoForm.enctype = 'multipart/form-data';
   modalBody.appendChild(fluxoForm);
 
+  // Define os campos de acordo com o fluxo
   let campos = [];
-
-  try {
-    if (fluxo === 'Consultar empenho') {
-      const contratos = await carregarContratos().catch(() => []);
-      campos = [{ id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: contratos }];
-
-    } else if (fluxo === 'Liberar assinatura externa') {
-      const usuarios = await carregarUsuariosExternos().catch(() => []);
-      campos = [
-        { id: 'assinante', placeholder: 'Assinante', type: 'select', options: usuarios },
-        { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
-      ];
-
-    } else if (fluxo === 'Liberar acesso externo') {
-      const usuarios = await carregarUsuariosExternos().catch(() => []);
-      campos = [
-        { id: 'user', placeholder: 'Usuário externo', type: 'select', options: usuarios },
-        { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
-      ];
-
-    } else if (fluxo === 'Analise de processo') {
-      campos = [
-        { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
-        { id: 'memoriaCalculo', placeholder: 'Memória de Cálculo (PDF)', type: 'file', accept: 'application/pdf' },
-        { id: 'diarioObra', placeholder: 'Diário de Obra (PDF)', type: 'file', accept: 'application/pdf' },
-        { id: 'relatorioFotografico', placeholder: 'Relatório Fotográfico (PDF)', type: 'file', accept: 'application/pdf' }
-      ];
-
-    } else if (fluxo === 'Alterar ordem de documentos') {
-      campos = [
-        { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
-        { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
-      ];
-
-    } else if (fluxo === 'Inserir anexo em doc SEI') {
-      campos = [
-        { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
-        { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
-      ];
-
-    } else if (fluxo === 'Inserir imagem em doc SEI') {
-      campos = [
-        { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
-        { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] },
-      ];
-
-    } else if (fluxo === 'Assinatura em doc SEI') {
-      campos = [
-        { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
-        { id: 'user', placeholder: 'Usuário', type: 'text' },
-        { id: 'key', placeholder: 'Senha', type: 'text' },
-      ];
-
-    } else if (fluxo === 'Unir PDFs') {
-      campos = [{ id: 'pdfs', placeholder: 'Arquivos PDF para unir', type: 'file', accept: '.pdf', multiple: true }];
-
-    } else if (fluxo === 'PDF para JPG') {
-      campos = [{ id: 'arquivoPdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' }];
-
-    } else if (fluxo === 'Dividir PDF') {
-      campos = [
-        { id: 'pdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' },
-        { id: 'ranges', placeholder: 'Faixas (ex.: 1-3,5,7-9) — opcional', type: 'text', required: false }
-      ];
-    }
-  } catch (e) {
-    console.error('Erro ao montar campos do fluxo:', e);
-    showAlert('Falha ao carregar dados para o formulário.', 'danger');
+  if (fluxo === 'Consultar empenho') {
+    campos = [
+      { id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: listacontratos },
+    ];
+  } else if (fluxo === 'Liberar assinatura externa') {
+    campos = [
+      { id: 'assinante', placeholder: 'Assinante', type: 'select', options: listaUsuarios },
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+    ];
+  } else if (fluxo === 'Liberar acesso externo') {
+    campos = [
+      { id: 'user', placeholder: 'Usuário', type: 'select', options: listaUsuarios },
+      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
+    ];
+  } else if (fluxo === 'Analise de processo') {
+    campos = [
+      { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
+      { id: 'memoriaCalculo', placeholder: 'Memória de Cálculo (PDF)', type: 'file', accept: 'application/pdf' },
+      { id: 'diarioObra', placeholder: 'Diário de Obra (PDF)', type: 'file', accept: 'application/pdf' },
+      { id: 'relatorioFotografico', placeholder: 'Relatório Fotográfico (PDF)', type: 'file', accept: 'application/pdf' }
+    ];
+  } else if (fluxo === 'Alterar ordem de documentos') {
+    campos = [
+      { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
+      { id: 'instrucoes', placeholder: 'Instruções', type: 'textarea' },
+    ];
+  } else if (fluxo === 'Inserir anexo em doc SEI') {
+    campos = [
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+      { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
+    ];
+  } else if (fluxo === 'Inserir imagem em doc SEI') {
+    campos = [
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+      { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] },
+    ];
+  } else if (fluxo === 'Assinatura em doc SEI') {
+    campos = [
+      { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
+      { id: 'user', placeholder: 'Usuário', type: 'text' },
+      { id: 'key', placeholder: 'Senha', type: 'text' },
+    ];
+  } else if (fluxo === 'Unir PDFs') {
+    campos = [
+      { id: 'pdfs', placeholder: 'Arquivos PDF para unir', type: 'file', accept: '.pdf', multiple: true }
+    ];
+  } else if (fluxo === 'PDF para JPG') {
+    campos = [
+      { id: 'arquivoPdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' }
+    ];
+  // ✅ Novo fluxo: Dividir PDF
+  } else if (fluxo === 'Dividir PDF') {
+    campos = [
+      { id: 'pdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' }, // nome "pdf" para bater com o backend
+      { id: 'ranges', placeholder: 'Faixas (ex.: 1-3,5,7-9) — opcional', type: 'text', required: false }
+    ];
+  } else if (fluxo === 'Criar Doc SEI Externo') {
+    campos = [
+      { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
+      { id: 'tipoDocumento', placeholder: 'Tipo do Documento', type: 'text' },
+      { id: 'dataFormatada', placeholder: 'Data', type: 'date' },
+      { id: 'numero', placeholder: 'Número', type: 'text' },
+      { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
+      { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
+    ];
+  } else if (fluxo === 'Criar Doc SEI Editável') {
+    campos = [
+      { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
+      { 
+        id: 'tipoDocumento', 
+        placeholder: 'Tipo do Documento', 
+        type: 'select', 
+        options: ['Planilha', 'Nota(s) Fiscal(is)', 'Curva S','Diário de Obras', 'Boletim de Desempenho Parcial - Medições']
+      },
+      { id: 'numero', placeholder: 'Número', type: 'text', value: '-' },
+      { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
+      { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] },
+    ];
+  } else {
+    console.warn("Fluxo não reconhecido:", fluxo);
     return;
   }
 
-  // Renderiza campos
+  // Cria os campos dinamicamente
   campos.forEach((campo) => {
     const formGroup = document.createElement('div');
     formGroup.className = 'form-group';
@@ -202,7 +201,20 @@ async function abrirFormulario(fluxo) {
       input.name = campo.id;
       input.className = 'form-control';
       input.required = campo.required !== false;
-      buildSelectOptions(input, campo.options || []);
+
+      const optionInicial = document.createElement('option');
+      optionInicial.value = '';
+      optionInicial.disabled = true;
+      optionInicial.selected = true;
+      optionInicial.textContent = 'Selecione uma opção';
+      input.appendChild(optionInicial);
+
+      campo.options.forEach((opcao) => {
+        const option = document.createElement('option');
+        option.value = opcao;
+        option.textContent = opcao;
+        input.appendChild(option);
+      });
     } else if (campo.type === 'textarea') {
       input = document.createElement('textarea');
       input.rows = 3;
@@ -212,7 +224,7 @@ async function abrirFormulario(fluxo) {
     } else if (campo.type === 'radio') {
       input = document.createElement('div');
       input.id = campo.id;
-      (campo.options || []).forEach((optionText, index) => {
+      campo.options.forEach((optionText, index) => {
         const optionId = `${campo.id}_${index}`;
         const radioDiv = document.createElement('div');
         radioDiv.className = 'form-check';
@@ -235,7 +247,7 @@ async function abrirFormulario(fluxo) {
         input.appendChild(radioDiv);
       });
 
-      // comportamentos dos métodos de upload
+      // Listener para exibir containers (Imagens, ZIP, PDF) dependendo do método
       input.addEventListener('change', function(e) {
         const metodo = e.target.value;
         const imagensContainer = document.getElementById('imagensContainer');
@@ -249,30 +261,43 @@ async function abrirFormulario(fluxo) {
           imagensContainer.style.display = 'block';
           zipContainer.style.display = 'none';
           pdfContainer.style.display = 'none';
-          if (zipInput) { zipInput.required = false; zipInput.value = ''; }
-          if (numeroImagensSelect) numeroImagensSelect.required = true;
-          if (pdfInput) { pdfInput.required = false; pdfInput.value = ''; }
-          document.querySelectorAll('#arquivosContainer input[type="file"]').forEach(inp => inp.required = true);
+          zipInput.required = false;
+          zipInput.value = '';
+          numeroImagensSelect.required = true;
+          if (pdfInput) {
+            pdfInput.required = false;
+            pdfInput.value = '';
+          }
+          const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
+          imageInputs.forEach(inp => inp.required = true);
         } else if (metodo === 'Arquivo ZIP') {
           imagensContainer.style.display = 'none';
           zipContainer.style.display = 'block';
           pdfContainer.style.display = 'none';
-          if (zipInput) zipInput.required = true;
-          if (numeroImagensSelect) { numeroImagensSelect.required = false; numeroImagensSelect.value = ''; }
-          if (pdfInput) { pdfInput.required = false; pdfInput.value = ''; }
-          document.querySelectorAll('#arquivosContainer input[type="file"]').forEach(inp => { inp.required = false; inp.value = ''; });
+          zipInput.required = true;
+          numeroImagensSelect.required = false;
+          numeroImagensSelect.value = '';
+          if (pdfInput) {
+            pdfInput.required = false;
+            pdfInput.value = '';
+          }
+          const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
+          imageInputs.forEach(inp => { inp.required = false; inp.value = ''; });
         } else if (metodo === 'PDF para JPG') {
           imagensContainer.style.display = 'none';
           zipContainer.style.display = 'none';
           pdfContainer.style.display = 'block';
-          if (zipInput) { zipInput.required = false; zipInput.value = ''; }
-          if (numeroImagensSelect) { numeroImagensSelect.required = false; numeroImagensSelect.value = ''; }
-          document.querySelectorAll('#arquivosContainer input[type="file"]').forEach(inp => { inp.required = false; inp.value = ''; });
+          zipInput.required = false;
+          zipInput.value = '';
+          numeroImagensSelect.required = false;
+          numeroImagensSelect.value = '';
+          const imageInputs = document.querySelectorAll('#arquivosContainer input[type="file"]');
+          imageInputs.forEach(inp => { inp.required = false; inp.value = ''; });
           if (pdfInput) pdfInput.required = true;
         }
       });
     } else {
-      // input padrão (text, file, etc.)
+      // input padrão (text, email, file, etc.)
       input = document.createElement('input');
       input.type = campo.type;
       input.className = 'form-control';
@@ -281,8 +306,6 @@ async function abrirFormulario(fluxo) {
       if (campo.multiple) input.multiple = true;
       if (campo.accept) input.accept = campo.accept;
       if (campo.value) input.value = campo.value;
-      input.id = campo.id;
-      input.name = campo.id;
     }
 
     input.id = campo.id;
@@ -292,8 +315,7 @@ async function abrirFormulario(fluxo) {
     fluxoForm.appendChild(formGroup);
   });
 
-  // ----- Containers extras (mesma lógica do seu código) -----
-  // Imagens individuais
+  // Container para Imagens Individuais
   const imagensContainer = document.createElement('div');
   imagensContainer.id = 'imagensContainer';
   imagensContainer.style.display = 'none';
@@ -359,7 +381,7 @@ async function abrirFormulario(fluxo) {
   arquivosContainer.id = 'arquivosContainer';
   imagensContainer.appendChild(arquivosContainer);
 
-  // ZIP
+  // Container para ZIP
   const zipContainer = document.createElement('div');
   zipContainer.id = 'zipContainer';
   zipContainer.style.display = 'none';
@@ -383,7 +405,7 @@ async function abrirFormulario(fluxo) {
   zipGroup.appendChild(zipInput);
   zipContainer.appendChild(zipGroup);
 
-  // PDF para JPG
+  // Container para PDF
   const pdfContainer = document.createElement('div');
   pdfContainer.id = 'pdfContainer';
   pdfContainer.style.display = 'none';
@@ -407,33 +429,38 @@ async function abrirFormulario(fluxo) {
   pdfGroup.appendChild(pdfInput);
   pdfContainer.appendChild(pdfGroup);
 
-  // Botão enviar
+  // Botão de submit
   const submitButton = document.createElement('button');
   submitButton.type = 'submit';
   submitButton.textContent = 'Enviar';
   submitButton.className = 'btn btn-primary btn-block mt-3';
   fluxoForm.appendChild(submitButton);
 
+  // Evento de submit do formulário
   fluxoForm.onsubmit = enviarFormularioAxios;
 
-  // Abre modal
+  // Abre o modal
   $('#fluxoModal').modal('show');
 }
 
-// ---------- Submit (mantém sua lógica com Axios + download) ----------
+// Envia o formulário usando Axios, com overlay "Aguarde"
 function enviarFormularioAxios(e) {
   e.preventDefault();
+
+  // Exibe overlay de "Processando, aguarde..."
   showLoadingOverlay();
 
   const fluxo = document.getElementById('modalTitle').innerText;
   const formData = new FormData();
   formData.append('fluxo', fluxo);
 
+  // Coleta inputs do form
   const inputs = e.target.querySelectorAll('input, textarea, select');
   inputs.forEach((input) => {
     if (input.type === 'file' && input.files.length > 0) {
       for (let i = 0; i < input.files.length; i++) {
-        formData.append(input.name, input.files[i]);
+        const keyName = input.name; // importante: "pdf" no Dividir PDF, "pdfs" no Unir
+        formData.append(keyName, input.files[i]);
       }
     } else if (input.type !== 'file' && input.type !== 'radio') {
       formData.append(input.name, (input.value || '').trim());
@@ -453,71 +480,75 @@ function enviarFormularioAxios(e) {
   const responseType = (fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG' || fluxo === 'Dividir PDF')
     ? 'blob'
     : 'json';
-
+  
   const token = localStorage.getItem('token');
 
-  axios.post(url, formData, {
-    responseType,
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(response => {
-    hideLoadingOverlay();
+ axios.post(url, formData, {
+  responseType,
+  headers: { Authorization: `Bearer ${token}` }
+})
+.then(response => {
+  hideLoadingOverlay();
 
-    if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF'].includes(fluxo)) {
-      const contentType = response.headers['content-type'] || 'application/octet-stream';
-      const cd = response.headers['content-disposition'] || '';
-      let filename = null;
-      const m = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
-      if (m) {
-        try { filename = decodeURIComponent(m[1] || m[2]); }
-        catch { filename = (m[1] || m[2]); }
-      }
+  if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF'].includes(fluxo)) {
+    const contentType = response.headers['content-type'] || 'application/octet-stream';
 
-      if (!filename) {
-        if (fluxo === 'Unir PDFs') {
-          const first = e.target.querySelector('input[name="pdfs"]')?.files?.[0]?.name || 'merged.pdf';
-          filename = first.replace(/\.[^.]+$/, '') + '_merge.pdf';
-        } else if (fluxo === 'Dividir PDF') {
-          const first = e.target.querySelector('input[name="pdf"]')?.files?.[0]?.name || 'split.zip';
-          filename = first.replace(/\.[^.]+$/, '') + '_split.zip';
-        } else if (fluxo === 'PDF para JPG') {
-          const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
-          filename = contentType.includes('zip') ? `${base}.zip` : `${base}.jpg`;
-        } else {
-          const ext = contentType.includes('pdf') ? 'pdf'
-                   : contentType.includes('zip') ? 'zip'
-                   : contentType.includes('jpeg') ? 'jpg'
-                   : 'bin';
-          filename = `resultado.${ext}`;
-        }
-      }
-
-      const blob = new Blob([response.data], { type: contentType });
-      const blobUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(blobUrl);
-
-      showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
-    } else {
-      showAlert('✅ Solicitação enviada com sucesso.', 'success');
+    // 1) tenta pegar o nome do header
+    const cd = response.headers['content-disposition'] || '';
+    let filename = null;
+    const m = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
+    if (m) {
+      try { filename = decodeURIComponent(m[1] || m[2]); }
+      catch { filename = (m[1] || m[2]); }
     }
-  })
-  .catch(error => {
-    hideLoadingOverlay();
-    console.error('Erro ao enviar:', error);
-    showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
-  })
-  .finally(() => {
-    $('#fluxoModal').modal('hide');
-  });
+
+    // 2) fallbacks por fluxo
+    if (!filename) {
+      if (fluxo === 'Unir PDFs') {
+        const first = e.target.querySelector('input[name="pdfs"]')?.files?.[0]?.name || 'merged.pdf';
+        filename = first.replace(/\.[^.]+$/, '') + '_merge.pdf';
+      } else if (fluxo === 'Dividir PDF') {
+        const first = e.target.querySelector('input[name="pdf"]')?.files?.[0]?.name || 'split.zip';
+        filename = first.replace(/\.[^.]+$/, '') + '_split.zip';
+      } else if (fluxo === 'PDF para JPG') {
+        const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
+        filename = contentType.includes('zip') ? `${base}.zip` : `${base}.jpg`;
+      } else {
+        const ext = contentType.includes('pdf') ? 'pdf'
+                 : contentType.includes('zip') ? 'zip'
+                 : contentType.includes('jpeg') ? 'jpg'
+                 : 'bin';
+        filename = `resultado.${ext}`;
+      }
+    }
+
+    // 3) baixa com o nome certo
+    const blob = new Blob([response.data], { type: contentType });
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(blobUrl);
+
+    showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
+  } else {
+    showAlert('✅ Solicitação enviada com sucesso.', 'success');
+  }
+
+})
+.catch(error => {
+  hideLoadingOverlay();
+  console.error('Erro ao enviar:', error);
+  showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
+})
+.finally(() => {
+  $('#fluxoModal').modal('hide');
+});
 }
+  
 
-// Expor no escopo global (cards chamam isso pelo onclick do HTML)
+// Expõe a função abrirFormulario no escopo global (para o HTML)
 window.abrirFormulario = abrirFormulario;
-
-// ==================== fim script.js ====================
