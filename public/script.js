@@ -37,7 +37,6 @@ async function fetchJSON(path) {
     headers: { Authorization: `Bearer ${token}` }
   });
   if (!res.ok) {
-    // tenta extrair texto de erro pra log
     let txt = '';
     try { txt = await res.text(); } catch {}
     throw new Error(`Falha ao buscar ${path}: ${res.status} ${txt}`);
@@ -48,16 +47,14 @@ async function fetchJSON(path) {
 async function carregarUsuariosExternos() {
   // [{ _id, idExterno, nome, empresa }]
   const lista = await fetchJSON('/usuarios-externos');
-
-  // envie o NOME como value (e guarde os ids como data-* se quiser)
+  // value será o NOME (para o e-mail ir com o nome, não com o _id)
   return lista.map(u => ({
-    value: u.nome,          // << antes era u._id
-    label: u.nome,          // o que aparece no dropdown
-    id: u._id,              // opcional: para data-attributes
-    idExterno: u.idExterno  // opcional
+    value: u.nome,
+    label: u.nome,
+    id: u._id,
+    idExterno: u.idExterno
   }));
 }
-
 
 async function carregarContratos() {
   // [{ _id, numero }]
@@ -93,10 +90,22 @@ function buildSelectOptions(selectEl, options) {
 
   options.forEach(o => {
     const opt = document.createElement('option');
-    opt.value = o.value;
-    opt.textContent = o.label;
+    opt.value = o.value;       // agora é o nome, para ir no e-mail
+    opt.textContent = o.label; // exibe só o nome
+    // se quiser usar ids depois sem enviar por e-mail:
+    if (o.id) opt.dataset.id = o.id;
+    if (o.idExterno) opt.dataset.idexterno = o.idExterno;
     selectEl.appendChild(opt);
   });
+}
+
+function hojeYYYYMMDD() {
+  const d = new Date();
+  // ajuste fuso se necessário
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 // ---------- Form modal ----------
@@ -184,6 +193,37 @@ async function abrirFormulario(fluxo) {
       campos = [
         { id: 'pdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' },
         { id: 'ranges', placeholder: 'Faixas (ex.: 1-3,5,7-9) — opcional', type: 'text', required: false }
+      ];
+
+    // ✅ Faltavam estes dois:
+    } else if (fluxo === 'Criar Doc SEI Externo') {
+      campos = [
+        { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
+        { id: 'tipoDocumento', placeholder: 'Tipo do Documento', type: 'text' },
+        { id: 'dataFormatada', placeholder: 'Data', type: 'date', value: hojeYYYYMMDD() },
+        { id: 'numero', placeholder: 'Número', type: 'text', value: '-' },
+        { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
+        { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' }
+      ];
+
+    } else if (fluxo === 'Criar Doc SEI Editável') {
+      campos = [
+        { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
+        {
+          id: 'tipoDocumento',
+          placeholder: 'Tipo do Documento',
+          type: 'select',
+          options: [
+            { value: 'Planilha', label: 'Planilha' },
+            { value: 'Nota(s) Fiscal(is)', label: 'Nota(s) Fiscal(is)' },
+            { value: 'Curva S', label: 'Curva S' },
+            { value: 'Diário de Obras', label: 'Diário de Obras' },
+            { value: 'Boletim de Desempenho Parcial - Medições', label: 'Boletim de Desempenho Parcial - Medições' }
+          ]
+        },
+        { id: 'numero', placeholder: 'Número', type: 'text', value: '-' },
+        { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
+        { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] }
       ];
     }
   } catch (e) {
@@ -298,7 +338,7 @@ async function abrirFormulario(fluxo) {
     fluxoForm.appendChild(formGroup);
   });
 
-  // ----- Containers extras (mesma lógica do seu código) -----
+  // ----- Containers extras (iguais ao seu código) -----
   // Imagens individuais
   const imagensContainer = document.createElement('div');
   imagensContainer.id = 'imagensContainer';
@@ -426,7 +466,7 @@ async function abrirFormulario(fluxo) {
   $('#fluxoModal').modal('show');
 }
 
-// ---------- Submit (mantém sua lógica com Axios + download) ----------
+// ---------- Submit ----------
 function enviarFormularioAxios(e) {
   e.preventDefault();
   showLoadingOverlay();
