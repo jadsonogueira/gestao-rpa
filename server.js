@@ -690,6 +690,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
         attachments.push({
           filename: `${safeBase}_page_${i}.jpg`,
           content: imgBuffer,
+          contentType: 'image/jpeg'
         });
 
         fs.unlinkSync(imagePath); // remove imagem temporária
