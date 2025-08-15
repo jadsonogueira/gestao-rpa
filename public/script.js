@@ -17,7 +17,6 @@ function showAlert(message, type = 'success') {
     alert(message);
   }
 }
-
 // Funções para mostrar/esconder o overlay "Aguarde"
 function showLoadingOverlay() {
   const overlay = document.getElementById('loadingOverlay');
