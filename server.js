@@ -798,7 +798,7 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
     for (let i = 1; i <= numPages; i++) {
       const outputPrefix = path.join(tempDir, `page_${i}`);
 
-      const command = `pdftoppm -jpeg -scale-to 1300 -r 250 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+      const command = `pdftoppm -png -r 300 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
 
       await new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
