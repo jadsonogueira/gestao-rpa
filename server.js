@@ -66,6 +66,33 @@ const os = require("os");
 const { exec: execShell } = require('child_process');
 
 /**
+ * Recomprime JPEG sem mudar resolução, reduzindo tamanho.
+ * -strip                → remove EXIF/perfis
+ * -interlace JPEG       → progressivo
+ * -sampling-factor 4:2:0→ downsample cromático (ok p/ documentos)
+ * -quality              → 80–85 = bom equilíbrio
+ * Retorna o menor entre original e otimizado (failsafe).
+ */
+async function optimizeJpegBuffer(inputBuffer, quality = 82) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jpg-opt-'));
+  const inPath = path.join(tmpDir, 'in.jpg');
+  const outPath = path.join(tmpDir, 'out.jpg');
+  fs.writeFileSync(inPath, inputBuffer);
+
+  const cmd = `magick "${inPath}" -sampling-factor 4:2:0 -strip -interlace JPEG -quality ${quality} "${outPath}"`;
+  await new Promise((resolve, reject) => {
+    exec(cmd, (err) => err ? reject(err) : resolve());
+  });
+
+  const out = fs.readFileSync(outPath);
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+
+  // fallback: se algo não reduziu, mantenha o original
+  return out.length < inputBuffer.length ? out : inputBuffer;
+}
+
+
+/**
  * Se o PDF for maior que 4 MB, comprime via Ghostscript.
  * Caso contrário, retorna o buffer original.
  */
@@ -685,13 +712,15 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
       const imagePath = `${outputPrefix}-${i}.jpg`;
       if (fs.existsSync(imagePath)) {
-        const imgBuffer = fs.readFileSync(imagePath);
-
+       const imgBuffer = fs.readFileSync(imagePath);
+        const optimized = await optimizeJpegBuffer(imgBuffer, 82);
+        
         attachments.push({
           filename: `${safeBase}_page_${i}.jpg`,
-          content: imgBuffer,
+          content: optimized,
           contentType: 'image/jpeg'
         });
+
 
         fs.unlinkSync(imagePath); // remove imagem temporária
       }
@@ -810,13 +839,15 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
         });
       });
 
-      const imagePath = `${outputPrefix}-${i}.jpg`;
-      if (fs.existsSync(imagePath)) {
-        const imgBuffer = fs.readFileSync(imagePath);
-        attachments.push({ filename: `${safeBase}_page_${i}.jpg`, content: imgBuffer });
-        fs.unlinkSync(imagePath);
-      }
-    }
+     const imgBuffer = fs.readFileSync(imagePath);
+const optimized = await optimizeJpegBuffer(imgBuffer, 82); // 80–85 bom equilíbrio
+attachments.push({
+  filename: `${safeBase}_page_${i}.jpg`,
+  content: optimized,
+  contentType: 'image/jpeg',
+});
+fs.unlinkSync(imagePath);
+
 
     fs.unlinkSync(inputPath);
     fs.rmdirSync(tempDir, { recursive: true });
