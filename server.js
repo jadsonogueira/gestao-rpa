@@ -79,7 +79,11 @@ async function optimizeJpegBuffer(inputBuffer, quality = 82) {
   const outPath = path.join(tmpDir, 'out.jpg');
   fs.writeFileSync(inPath, inputBuffer);
 
-  const cmd = `magick "${inPath}" -sampling-factor 4:2:0 -strip -interlace JPEG -quality ${quality} "${outPath}"`;
+  // escolhe o binário certo (Windows usa "magick", Linux/Mac geralmente "convert")
+const IM_BIN = process.platform === 'win32' ? 'magick' : 'convert';
+
+const cmd = `${IM_BIN} "${inPath}" -sampling-factor 4:2:0 -strip -interlace JPEG -quality ${quality} "${outPath}"`;
+
   await new Promise((resolve, reject) => {
     exec(cmd, (err) => err ? reject(err) : resolve());
   });
