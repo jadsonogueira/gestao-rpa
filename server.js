@@ -848,7 +848,9 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
       const imagePath = `${outputPrefix}-${i}.jpg`;
       if (fs.existsSync(imagePath)) {
         const imgBuffer = fs.readFileSync(imagePath);
-        attachments.push({ filename: `${safeBase}_page_${i}.jpg`, content: imgBuffer });
+        const optimized = await optimizeJpegBuffer(imgBuffer, 1500, 82);
+        attachments.push({ filename: `${safeBase}_page_${i}.jpg`, content: optimized });
+
         fs.unlinkSync(imagePath);
       }
     }
