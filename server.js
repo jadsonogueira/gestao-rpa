@@ -65,6 +65,40 @@ const os = require("os");
 // === PASSO: Helper de compressão de PDF ===
 const { exec: execShell } = require('child_process');
 
+// === Helper: otimiza/resize JPG mantendo nitidez ===
+async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 82) {
+  try {
+    const tmpDir  = fs.mkdtempSync(path.join(os.tmpdir(), 'jpg-opt-'));
+    const inPath  = path.join(tmpDir, 'in.jpg');
+    const outPath = path.join(tmpDir, 'out.jpg');
+    fs.writeFileSync(inPath, inputBuffer);
+
+    // Windows usa "magick"; Linux/macOS geralmente "convert"
+    const IM_BIN = process.platform === 'win32' ? 'magick' : 'convert';
+    const safeMax = Math.max(600, Math.min(4000, Number(maxWidth) || 1500));
+
+    // -resize Wx> só reduz (não amplia); mantém proporção
+    const cmd =
+      `${IM_BIN} "${inPath}" -resize ${safeMax}x>` +
+      ` -sampling-factor 4:2:0 -strip -interlace JPEG -quality ${quality} "${outPath}"`;
+
+    await new Promise((resolve, reject) =>
+      exec(cmd, (err, _o, stderr) => err ? reject(new Error(stderr || String(err))) : resolve())
+    );
+
+    const out = fs.readFileSync(outPath);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+
+    // Failsafe: se não ficar menor, mantém o original
+    return out.length < inputBuffer.length ? out : inputBuffer;
+  } catch (e) {
+    console.error('optimizeJpegBuffer falhou; usando original:', e.message);
+    return inputBuffer;
+  }
+}
+
+
+
 /**
  * Se o PDF for maior que 4 MB, comprime via Ghostscript.
  * Caso contrário, retorna o buffer original.
