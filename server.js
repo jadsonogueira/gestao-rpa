@@ -79,8 +79,9 @@ async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 82) {
 
     // -resize Wx> só reduz (não amplia); mantém proporção
     const cmd =
-      `${IM_BIN} "${inPath}" -resize ${safeMax}x>` +
-      ` -sampling-factor 4:2:0 -strip -interlace JPEG -quality ${quality} "${outPath}"`;
+    `${IM_BIN} "${inPath}" -resize ${safeMax}x${safeMax}>` + // limita LADO MAIOR a 1500
+    ` -sampling-factor 4:2:0 -strip -interlace JPEG -quality ${quality} "${outPath}"`;
+
 
     await new Promise((resolve, reject) =>
       exec(cmd, (err, _o, stderr) => err ? reject(new Error(stderr || String(err))) : resolve())
