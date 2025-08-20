@@ -721,11 +721,12 @@ app.post('/send-email', upload.any(), async (req, res) => {
       if (fs.existsSync(imagePath)) {
         const imgBuffer = fs.readFileSync(imagePath);
 
-        attachments.push({
-          filename: `${safeBase}_page_${i}.jpg`,
-          content: imgBuffer,
-          contentType: 'image/jpeg'
-        });
+       const optimized = await optimizeJpegBuffer(imgBuffer, 1500, 82);
+      attachments.push({
+        filename: `${safeBase}_page_${i}.jpg`,
+        content: optimized,
+        contentType: 'image/jpeg'
+      });
 
         fs.unlinkSync(imagePath); // remove imagem temporária
       }
