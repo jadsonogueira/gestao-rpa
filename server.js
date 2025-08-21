@@ -91,7 +91,7 @@ async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 82) {
     fs.rmSync(tmpDir, { recursive: true, force: true });
 
     // Failsafe: se não ficar menor, mantém o original
-    return out.length < inputBuffer.length ? out : inputBuffer;
+    return out;
   } catch (e) {
     console.error('optimizeJpegBuffer falhou; usando original:', e.message);
     return inputBuffer;
