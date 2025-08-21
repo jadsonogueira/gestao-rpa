@@ -75,7 +75,7 @@ async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 82) {
 
     // Windows usa "magick"; Linux/macOS geralmente "convert"
     const IM_BIN = process.platform === 'win32' ? 'magick' : 'convert';
-    const safeMax = Math.max(600, Math.min(2000, Number(maxWidth) || 1500));
+    const safeMax = Math.max(600, Math.min(4000, Number(maxWidth) || 1500));
 
     // -resize Wx> só reduz (não amplia); mantém proporção
     const cmd =
@@ -707,7 +707,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
     const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
 
     for (let i = 1; i <= numPages; i++) {
-      const command = `pdftoppm -jpeg -r 300 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+     const TARGET = 1500; // lado maior em px
+const command = `pdftoppm -jpeg -scale-to ${TARGET} -jpegopt quality=82 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+
       await new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
           if (error) {
@@ -834,7 +836,9 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
     for (let i = 1; i <= numPages; i++) {
       const outputPrefix = path.join(tempDir, `page_${i}`);
 
-      const command = `pdftoppm -jpeg -r 300 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+     const TARGET = 1500; // lado maior em px
+const command = `pdftoppm -jpeg -scale-to ${TARGET} -jpegopt quality=82 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+
 
       await new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
