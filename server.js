@@ -75,7 +75,7 @@ async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 82) {
 
     // Windows usa "magick"; Linux/macOS geralmente "convert"
     const IM_BIN = process.platform === 'win32' ? 'magick' : 'convert';
-    const safeMax = Math.max(600, Math.min(4000, Number(maxWidth) || 1500));
+    const safeMax = Math.max(600, Math.min(2000, Number(maxWidth) || 1500));
 
     // -resize Wx> só reduz (não amplia); mantém proporção
     const cmd =
