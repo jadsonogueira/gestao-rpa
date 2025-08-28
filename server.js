@@ -60,10 +60,10 @@ const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const os = require("os");
-
-
-// === PASSO: Helper de compressão de PDF ===
 const { exec: execShell } = require('child_process');
+const util = require('util');
+const execP = util.promisify(exec);
+
 
 // === Helper: otimiza/resize JPG mantendo nitidez ===
 async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 82) {
@@ -173,6 +173,63 @@ function sanitizeFilename(filename) {
     .replace(/[^\w.\-]/g, "_");
 }
 // -----------------------------------------------------
+
+async function hasBinary(bin) {
+  try {
+    await execP(process.platform === 'win32' ? `where ${bin}` : `which ${bin}`);
+    return true;
+  } catch { return false; }
+}
+
+async function makePdfSearchable(inBuffer, langs = 'por+eng') {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-'));
+  const inPath = path.join(tmpDir, 'input.pdf');
+  const outPath = path.join(tmpDir, 'output.pdf');
+  fs.writeFileSync(inPath, inBuffer);
+
+  try {
+    if (await hasBinary('ocrmypdf')) {
+      const cmd = `ocrmypdf --skip-text -l ${langs} --optimize 1 "${inPath}" "${outPath}"`;
+      await execP(cmd);
+      const out = fs.readFileSync(outPath);
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      return out;
+    }
+
+    const hasPdftoppm = await hasBinary('pdftoppm');
+    const hasTesseract = await hasBinary('tesseract');
+    if (!hasPdftoppm || !hasTesseract) {
+      throw new Error('Faltam binários: ocrmypdf ou tesseract/pdftoppm.');
+    }
+
+    const parsed = await pdfParse(inBuffer);
+    const numPages = parsed.numpages || 1;
+    const pagePdfBuffers = [];
+
+    for (let i = 1; i <= numPages; i++) {
+      const ppmPrefix = path.join(tmpDir, `page_${i}`);
+      await execP(`pdftoppm -tiff -f ${i} -l ${i} "${inPath}" "${ppmPrefix}"`);
+      const tiffPath = `${ppmPrefix}-1.tif`;
+      const pageOut = path.join(tmpDir, `ocr_page_${i}`);
+      await execP(`tesseract "${tiffPath}" "${pageOut}" -l ${langs} pdf`);
+      pagePdfBuffers.push(fs.readFileSync(`${pageOut}.pdf`));
+    }
+
+    const merged = await PDFDocument.create();
+    for (const buf of pagePdfBuffers) {
+      const part = await PDFDocument.load(buf, { ignoreEncryption: true });
+      const pages = await merged.copyPages(part, part.getPageIndices());
+      pages.forEach(p => merged.addPage(p));
+    }
+    const mergedBytes = await merged.save();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return Buffer.from(mergedBytes);
+  } catch (e) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    throw e;
+  }
+}
+
 
 // Verifica variáveis de ambiente obrigatórias
 if (
@@ -884,6 +941,38 @@ if (attachments.length > 1) {
     res.status(500).send('Erro ao converter PDF: ' + err.message);
   }
 });
+
+
+// OCR
+app.post('/pdf-make-searchable', upload.single('arquivoPdf'), async (req, res) => {
+  try {
+    if (!req.file || req.file.mimetype !== 'application/pdf') {
+      return res.status(400).send('Envie um "arquivoPdf" (application/pdf).');
+    }
+
+    const langs = (req.body.lang || req.query.lang || process.env.OCR_LANGS || 'por+eng').trim();
+
+    // Opcional: comprimir antes se >4MB (você já tem esse helper)
+    const inputBuffer = await compressPDFIfNeeded(req.file);
+
+    const searchable = await makePdfSearchable(inputBuffer, langs);
+
+    const baseName = path.parse(req.file.originalname).name;
+    const safeBase = sanitizeFilename(baseName);
+    const downloadName = `${safeBase}_pesquisavel.pdf`;
+
+    res.set('Content-Type', 'application/pdf');
+    res.set('Content-Length', String(searchable.length));
+    res.set('Content-Disposition',
+      `attachment; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
+    );
+    return res.send(searchable);
+  } catch (err) {
+    console.error('Erro no /pdf-make-searchable:', err);
+    return res.status(500).send('Erro ao tornar PDF pesquisável: ' + err.message);
+  }
+});
+
 
 
 // Inicia o servidor
