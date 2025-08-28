@@ -76,6 +76,7 @@ const fluxoInstrucoes = {
   'Analise de processo': 'Preencha os campos para análise do processo SEI.',
   'Unir PDFs': 'Selecione dois ou mais arquivos PDF para juntá-los em um único documento.',
   'PDF para JPG': 'Selecione um PDF. Cada página será convertida em uma imagem JPG.',
+  'PDF pesquisável (OCR)': 'Envie um PDF e receba o mesmo arquivo com camada de texto (OCR).',
   'Dividir PDF': 'Selecione um PDF e, opcionalmente, informe faixas (ex.: 1-3,5,7-9). Se não informar, dividiremos página a página.'
 };
 
@@ -182,6 +183,13 @@ async function abrirFormulario(fluxo) {
         { id: 'user', placeholder: 'Usuário', type: 'text' },
         { id: 'key', placeholder: 'Senha', type: 'text' },
       ];
+
+      } else if (fluxo === 'PDF pesquisável (OCR)') {
+  campos = [
+    { id: 'arquivoPdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' },
+    { id: 'lang', placeholder: 'Idiomas do OCR (ex.: por+eng)', type: 'text', required: false }
+  ];
+
 
     } else if (fluxo === 'Unir PDFs') {
       campos = [{ id: 'pdfs', placeholder: 'Arquivos PDF para unir', type: 'file', accept: '.pdf', multiple: true }];
@@ -489,16 +497,20 @@ function enviarFormularioAxios(e) {
   });
 
   const url = fluxo === 'Unir PDFs'
-    ? `${apiUrl}/merge-pdf`
-    : fluxo === 'PDF para JPG'
-    ? `${apiUrl}/pdf-to-jpg`
-    : fluxo === 'Dividir PDF'
-    ? `${apiUrl}/split-pdf`
-    : `${apiUrl}/send-email`;
+  ? `${apiUrl}/merge-pdf`
+  : fluxo === 'PDF para JPG'
+  ? `${apiUrl}/pdf-to-jpg`
+  : fluxo === 'Dividir PDF'
+  ? `${apiUrl}/split-pdf`
+  : fluxo === 'PDF pesquisável (OCR)'
+  ? `${apiUrl}/pdf-make-searchable`
+  : `${apiUrl}/send-email`;
 
-  const responseType = (fluxo === 'Unir PDFs' || fluxo === 'PDF para JPG' || fluxo === 'Dividir PDF')
-    ? 'blob'
-    : 'json';
+
+  const responseType = (['Unir PDFs','PDF para JPG','Dividir PDF','PDF pesquisável (OCR)'].includes(fluxo))
+  ? 'blob'
+  : 'json';
+
 
   const token = localStorage.getItem('token');
 
@@ -509,59 +521,53 @@ function enviarFormularioAxios(e) {
   .then(response => {
     hideLoadingOverlay();
 
-    if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF'].includes(fluxo)) {
-      const contentType = response.headers['content-type'] || 'application/octet-stream';
-      const cd = response.headers['content-disposition'] || '';
-      let filename = null;
-      const m = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
-      if (m) {
-        try { filename = decodeURIComponent(m[1] || m[2]); }
-        catch { filename = (m[1] || m[2]); }
-      }
+   if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF', 'PDF pesquisável (OCR)'].includes(fluxo)) {
+  const contentType = response.headers['content-type'] || 'application/octet-stream';
+  const cd = response.headers['content-disposition'] || '';
+  let filename = null;
+  const m = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
+  if (m) {
+    try { filename = decodeURIComponent(m[1] || m[2]); }
+    catch { filename = (m[1] || m[2]); }
+  }
 
-      if (!filename) {
-        if (fluxo === 'Unir PDFs') {
-          const first = e.target.querySelector('input[name="pdfs"]')?.files?.[0]?.name || 'merged.pdf';
-          filename = first.replace(/\.[^.]+$/, '') + '_merge.pdf';
-        } else if (fluxo === 'Dividir PDF') {
-          const first = e.target.querySelector('input[name="pdf"]')?.files?.[0]?.name || 'split.zip';
-          filename = first.replace(/\.[^.]+$/, '') + '_split.zip';
-        } else if (fluxo === 'PDF para JPG') {
-          const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
-          filename = contentType.includes('zip') ? `${base}.zip` : `${base}.jpg`;
-        } else {
-          const ext = contentType.includes('pdf') ? 'pdf'
-                   : contentType.includes('zip') ? 'zip'
-                   : contentType.includes('jpeg') ? 'jpg'
-                   : 'bin';
-          filename = `resultado.${ext}`;
-        }
-      }
-
-      const blob = new Blob([response.data], { type: contentType });
-      const blobUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(blobUrl);
-
-      showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
+  if (!filename) {
+    if (fluxo === 'Unir PDFs') {
+      const first = e.target.querySelector('input[name="pdfs"]')?.files?.[0]?.name || 'merged.pdf';
+      filename = first.replace(/\.[^.]+$/, '') + '_merge.pdf';
+    } else if (fluxo === 'Dividir PDF') {
+      const first = e.target.querySelector('input[name="pdf"]')?.files?.[0]?.name || 'split.zip';
+      filename = first.replace(/\.[^.]+$/, '') + '_split.zip';
+    } else if (fluxo === 'PDF para JPG') {
+      const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
+      filename = contentType.includes('zip') ? `${base}.zip` : `${base}.jpg`;
+    } else if (fluxo === 'PDF pesquisável (OCR)') {
+      const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
+      filename = `${base}_pesquisavel.pdf`;
     } else {
-      showAlert('✅ Solicitação enviada com sucesso.', 'success');
+      const ext = contentType.includes('pdf') ? 'pdf'
+               : contentType.includes('zip') ? 'zip'
+               : contentType.includes('jpeg') ? 'jpg'
+               : 'bin';
+      filename = `resultado.${ext}`;
     }
-  })
-  .catch(error => {
-    hideLoadingOverlay();
-    console.error('Erro ao enviar:', error);
-    showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
-  })
-  .finally(() => {
-    $('#fluxoModal').modal('hide');
-  });
+  }
+
+  const blob = new Blob([response.data], { type: contentType });
+  const blobUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(blobUrl);
+
+  showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
+} else {
+  showAlert('✅ Solicitação enviada com sucesso.', 'success');
 }
+
 
 // Expor no escopo global (cards chamam isso pelo onclick do HTML)
 window.abrirFormulario = abrirFormulario;
