@@ -568,6 +568,16 @@ function enviarFormularioAxios(e) {
   showAlert('✅ Solicitação enviada com sucesso.', 'success');
 }
 
+})
+.catch(error => {
+  hideLoadingOverlay();
+  console.error('Erro ao enviar:', error);
+  showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
+})
+.finally(() => {
+  $('#fluxoModal').modal('hide');
+});
+} // <-- fecha a função abrirFormulario
 
 // Expor no escopo global (cards chamam isso pelo onclick do HTML)
 window.abrirFormulario = abrirFormulario;
