@@ -515,59 +515,58 @@ function enviarFormularioAxios(e) {
   const token = localStorage.getItem('token');
 
   axios.post(url, formData, {
-    responseType,
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  .then(response => {
-    hideLoadingOverlay();
+  responseType,
+  headers: { Authorization: `Bearer ${token}` }
+})
+.then(response => {
+  hideLoadingOverlay();
 
-   if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF', 'PDF pesquisável (OCR)'].includes(fluxo)) {
-  const contentType = response.headers['content-type'] || 'application/octet-stream';
-  const cd = response.headers['content-disposition'] || '';
-  let filename = null;
-  const m = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
-  if (m) {
-    try { filename = decodeURIComponent(m[1] || m[2]); }
-    catch { filename = (m[1] || m[2]); }
-  }
-
-  if (!filename) {
-    if (fluxo === 'Unir PDFs') {
-      const first = e.target.querySelector('input[name="pdfs"]')?.files?.[0]?.name || 'merged.pdf';
-      filename = first.replace(/\.[^.]+$/, '') + '_merge.pdf';
-    } else if (fluxo === 'Dividir PDF') {
-      const first = e.target.querySelector('input[name="pdf"]')?.files?.[0]?.name || 'split.zip';
-      filename = first.replace(/\.[^.]+$/, '') + '_split.zip';
-    } else if (fluxo === 'PDF para JPG') {
-      const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
-      filename = contentType.includes('zip') ? `${base}.zip` : `${base}.jpg`;
-    } else if (fluxo === 'PDF pesquisável (OCR)') {
-      const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
-      filename = `${base}_pesquisavel.pdf`;
-    } else {
-      const ext = contentType.includes('pdf') ? 'pdf'
-               : contentType.includes('zip') ? 'zip'
-               : contentType.includes('jpeg') ? 'jpg'
-               : 'bin';
-      filename = `resultado.${ext}`;
+  if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF', 'PDF pesquisável (OCR)'].includes(fluxo)) {
+    const contentType = response.headers['content-type'] || 'application/octet-stream';
+    const cd = response.headers['content-disposition'] || '';
+    let filename = null;
+    const m = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
+    if (m) {
+      try { filename = decodeURIComponent(m[1] || m[2]); }
+      catch { filename = (m[1] || m[2]); }
     }
+
+    if (!filename) {
+      if (fluxo === 'Unir PDFs') {
+        const first = e.target.querySelector('input[name="pdfs"]')?.files?.[0]?.name || 'merged.pdf';
+        filename = first.replace(/\.[^.]+$/, '') + '_merge.pdf';
+      } else if (fluxo === 'Dividir PDF') {
+        const first = e.target.querySelector('input[name="pdf"]')?.files?.[0]?.name || 'split.zip';
+        filename = first.replace(/\.[^.]+$/, '') + '_split.zip';
+      } else if (fluxo === 'PDF para JPG') {
+        const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
+        filename = contentType.includes('zip') ? `${base}.zip` : `${base}.jpg`;
+      } else if (fluxo === 'PDF pesquisável (OCR)') {
+        const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
+        filename = `${base}_pesquisavel.pdf`;
+      } else {
+        const ext = contentType.includes('pdf') ? 'pdf'
+                 : contentType.includes('zip') ? 'zip'
+                 : contentType.includes('jpeg') ? 'jpg'
+                 : 'bin';
+        filename = `resultado.${ext}`;
+      }
+    }
+
+    const blob = new Blob([response.data], { type: contentType });
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(blobUrl);
+
+    showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
+  } else {
+    showAlert('✅ Solicitação enviada com sucesso.', 'success');
   }
-
-  const blob = new Blob([response.data], { type: contentType });
-  const blobUrl = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = blobUrl;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  window.URL.revokeObjectURL(blobUrl);
-
-  showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
-} else {
-  showAlert('✅ Solicitação enviada com sucesso.', 'success');
-}
-
 })
 .catch(error => {
   hideLoadingOverlay();
@@ -581,5 +580,3 @@ function enviarFormularioAxios(e) {
 
 // Expor no escopo global (cards chamam isso pelo onclick do HTML)
 window.abrirFormulario = abrirFormulario;
-
-// ==================== fim script.js ====================
