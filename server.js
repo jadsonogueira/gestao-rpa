@@ -105,22 +105,31 @@ async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 82) {
  * Caso contrário, retorna o buffer original.
  */
 async function compressPDFIfNeeded(file) {
-  
-
   const MAX_SIZE = 4 * 1024 * 1024; // 4 MB
-  if (file.buffer.length <= MAX_SIZE) {
+  if (!file || !file.buffer) return file?.buffer || Buffer.alloc(0);
+  if (file.buffer.length <= MAX_SIZE) return file.buffer;
+
+  // ➜ se GS não existir, não falha o fluxo
+  try {
+    // usa o hasBinary que você já tem no arquivo
+    if (typeof hasBinary === 'function') {
+      const ok = await hasBinary('gs');
+      if (!ok) {
+        console.warn('[compressPDFIfNeeded] Ghostscript ausente; pulando compressão.');
+        return file.buffer;
+      }
+    }
+  } catch (_) {
+    console.warn('[compressPDFIfNeeded] Erro checando gs; pulando compressão.');
     return file.buffer;
   }
-  // 1) sanitize o originalname para gerar nomes de arquivo seguros
-  const safeName = sanitizeFilename(file.originalname);
+
+  const safeName = sanitizeFilename(file.originalname || `in_${Date.now()}.pdf`);
   const timestamp = Date.now();
   const tmpIn  = `/tmp/${timestamp}_${safeName}`;
   const tmpOut = `/tmp/compressed_${timestamp}_${safeName}`;
   fs.writeFileSync(tmpIn, file.buffer);
 
- 
-
-  // 2) monte o comando envolvendo os paths entre aspas
   const cmd = [
     'gs -sDEVICE=pdfwrite',
     '-dCompatibilityLevel=1.4',
@@ -136,20 +145,21 @@ async function compressPDFIfNeeded(file) {
     `"${tmpIn}"`
   ].join(' ');
 
-console.log('Ghostscript command:', cmd);
-
-  
-  // 3) execute o Ghostscript
-  await new Promise((resolve, reject) =>
-    execShell(cmd, err => err ? reject(err) : resolve())
-  );
-
-  // 4) leia o resultado, limpe os temporários e retorne o buffer
-  const compressed = fs.readFileSync(tmpOut);
-  fs.unlinkSync(tmpIn);
-  fs.unlinkSync(tmpOut);
-  return compressed;
+  try {
+    await new Promise((resolve, reject) =>
+      execShell(cmd, err => err ? reject(err) : resolve())
+    );
+    const compressed = fs.readFileSync(tmpOut);
+    return compressed.length ? compressed : file.buffer;
+  } catch (e) {
+    console.error('[compressPDFIfNeeded] Falha Ghostscript, usando original:', e.message);
+    return file.buffer;
+  } finally {
+    try { fs.unlinkSync(tmpIn); } catch {}
+    try { fs.unlinkSync(tmpOut); } catch {}
+  }
 }
+
 
 
 // Importa a classe PDFImage do pdf-image
@@ -293,6 +303,22 @@ app.get('/usuarios', async (req, res) => {
     res.status(500).send('Erro ao buscar usuários');
   }
 });
+
+app.get('/_debug/ocr-binaries', async (req, res) => {
+  try {
+    const out = {
+      ocrmypdf: typeof hasBinary === 'function' ? await hasBinary('ocrmypdf') : false,
+      tesseract: typeof hasBinary === 'function' ? await hasBinary('tesseract') : false,
+      pdftoppm: typeof hasBinary === 'function' ? await hasBinary('pdftoppm') : false,
+      gs: typeof hasBinary === 'function' ? await hasBinary('gs') : false,
+      convert: typeof hasBinary === 'function' ? await hasBinary(process.platform === 'win32' ? 'magick' : 'convert') : false,
+    };
+    res.json(out);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 
 // Rota para remover um usuário externo pelo ID
 app.delete('/usuarios-externos/:id', async (req, res) => {
