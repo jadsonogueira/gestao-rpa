@@ -29,7 +29,6 @@ async function overwriteDriveFile(fileId, buffer, mimeType) {
   });
 }
 
-
 // Verifica se o ImageMagick está instalado
 exec('convert -version', (error, stdout, stderr) => {
   if (error) {
