@@ -883,7 +883,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
           // Anexa o PDF (ou qualquer arquivo) sem compressão
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
-       } else if (file.fieldname === 'arquivoPdf') {
+       } } else if (file.fieldname === 'arquivoPdf') {
   const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI', 'PDF para JPG'].includes(fluxo);
 
   try {
@@ -899,13 +899,15 @@ app.post('/send-email', upload.any(), async (req, res) => {
     const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
     const outputPrefix = path.join(tempDir, 'page'); // gera page-1.jpg, page-2.jpg, ...
 
-    // 🔹 Gera TODAS as páginas de uma vez (mais estável que loop com -f/-l)
+    // 🔹 Gera TODAS as páginas de uma vez
     const command = `pdftoppm -jpeg -scale-to ${TARGET} -jpegopt quality=82 "${inputPath}" "${outputPrefix}"`;
     await new Promise((resolve, reject) => {
-      exec(command, (error, _stdout, stderr) => error ? reject(new Error(stderr || error.message)) : resolve());
+      exec(command, (error, _stdout, stderr) =>
+        error ? reject(new Error(stderr || error.message)) : resolve()
+      );
     });
 
-    // 🔹 Coleta todos os arquivos gerados (page-1.jpg, page-2.jpg, ...)
+    // 🔹 Coleta todos os arquivos gerados
     const allFiles = fs.readdirSync(tempDir)
       .filter(name => /^page-\d+\.jpg$/i.test(name))
       .sort((a, b) => {
@@ -924,7 +926,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
       const imgBuffer = fs.readFileSync(imagePath);
       const optimized = await optimizeJpegBuffer(imgBuffer, TARGET, 82);
 
-      // extrai o índice da página do nome 'page-<n>.jpg'
       const n = parseInt(fname.match(/^page-(\d+)\.jpg$/i)[1], 10);
       attachments.push({
         filename: `${safeBase}_page_${String(n).padStart(3, '0')}.jpg`,
@@ -944,7 +945,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
     console.error("Erro na conversão de PDF para JPG (send-email/arquivoPdf):", error.message);
     return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
   }
-}
+} // <-- fecha corretamente o else if
 
 
     // Se houver anexos, adiciona ao e-mail
