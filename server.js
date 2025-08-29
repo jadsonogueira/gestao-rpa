@@ -104,14 +104,17 @@ async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 82) {
  * Se o PDF for maior que 4 MB, comprime via Ghostscript.
  * Caso contrário, retorna o buffer original.
  */
+/**
+ * Se o PDF for maior que 4 MB, tenta comprimir com Ghostscript.
+ * Se não houver GS ou der erro, retorna o buffer original.
+ */
 async function compressPDFIfNeeded(file) {
   const MAX_SIZE = 4 * 1024 * 1024; // 4 MB
   if (!file || !file.buffer) return file?.buffer || Buffer.alloc(0);
   if (file.buffer.length <= MAX_SIZE) return file.buffer;
 
-  // ➜ se GS não existir, não falha o fluxo
+  // Se GS não existir, não falha o fluxo
   try {
-    // usa o hasBinary que você já tem no arquivo
     if (typeof hasBinary === 'function') {
       const ok = await hasBinary('gs');
       if (!ok) {
@@ -119,7 +122,7 @@ async function compressPDFIfNeeded(file) {
         return file.buffer;
       }
     }
-  } catch (_) {
+  } catch {
     console.warn('[compressPDFIfNeeded] Erro checando gs; pulando compressão.');
     return file.buffer;
   }
@@ -159,8 +162,6 @@ async function compressPDFIfNeeded(file) {
     try { fs.unlinkSync(tmpOut); } catch {}
   }
 }
-
-
 
 // Importa a classe PDFImage do pdf-image
 const PDFImage = require("pdf-image").PDFImage;
