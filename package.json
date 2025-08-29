@@ -34,6 +34,8 @@
     "pdf2pic": "^3.1.4",
     "pg": "^8.13.0",
     "pdf-merger-js": "^4.2.0",
-    "sharp": "^0.32.1"
+    "sharp": "^0.32.1",
+    "tesseract.js": "^5.1.0",
+    "@tesseract.js/node": "^5.1.0"
   }
 }
