@@ -1,3 +1,8 @@
+"scripts": {
+  "start": "node server.js",
+  "dev": "nodemon server.js",
+  "check": "node --check server.js"
+}
 {
   "name": "appdnit",
   "version": "1.0.0",
