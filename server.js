@@ -883,7 +883,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
           // Anexa o PDF (ou qualquer arquivo) sem compressão
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
-       } } else if (file.fieldname === 'arquivoPdf') {
+       } else if (file.fieldname === 'arquivoPdf') {
   const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI', 'PDF para JPG'].includes(fluxo);
 
   try {
