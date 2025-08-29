@@ -884,64 +884,69 @@ app.post('/send-email', upload.any(), async (req, res) => {
           // Anexa o PDF (ou qualquer arquivo) sem compressão
           attachments.push({ filename: safeOriginalName, content: file.buffer });
         
-        } else if (file.fieldname === 'arquivoPdf') {
-   const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI', 'PDF para JPG'].includes(fluxo);
+       } else if (file.fieldname === 'arquivoPdf') {
+  const deveConverterPDF = ['Criar Doc SEI Editável', 'Inserir imagem em doc SEI', 'PDF para JPG'].includes(fluxo);
 
-  // Conversão sequencial de PDF para JPG com pdftoppm
   try {
+    if (!/application\/pdf/i.test(file.mimetype)) {
+      return res.status(400).send(`Arquivo inválido (esperado PDF): ${file.originalname}`);
+    }
+
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-'));
     const inputPath = path.join(tempDir, 'input.pdf');
-    const outputPrefix = path.join(tempDir, 'page');
-
     fs.writeFileSync(inputPath, file.buffer);
 
-    // Conta as páginas do PDF
-    const parsed = await pdfParse(file.buffer);
-    const numPages = parsed.numpages;
-
+    const TARGET = 1500; // lado maior
     const safeBase = sanitizeFilename(file.originalname.replace(/\.pdf$/i, ''));
+    const outputPrefix = path.join(tempDir, 'page'); // gera page-1.jpg, page-2.jpg, ...
 
-    for (let i = 1; i <= numPages; i++) {
-     const TARGET = 1500; // lado maior em px
-const command = `pdftoppm -jpeg -scale-to ${TARGET} -jpegopt quality=82 -f ${i} -l ${i} "${inputPath}" "${outputPrefix}"`;
+    // 🔹 Gera TODAS as páginas de uma vez (mais estável que loop com -f/-l)
+    const command = `pdftoppm -jpeg -scale-to ${TARGET} -jpegopt quality=82 "${inputPath}" "${outputPrefix}"`;
+    await new Promise((resolve, reject) => {
+      exec(command, (error, _stdout, stderr) => error ? reject(new Error(stderr || error.message)) : resolve());
+    });
 
-      await new Promise((resolve, reject) => {
-        exec(command, (error, stdout, stderr) => {
-          if (error) {
-            reject(new Error(`Erro ao converter página ${i}: ${stderr}`));
-          } else {
-            resolve();
-          }
-        });
+    // 🔹 Coleta todos os arquivos gerados (page-1.jpg, page-2.jpg, ...)
+    const allFiles = fs.readdirSync(tempDir)
+      .filter(name => /^page-\d+\.jpg$/i.test(name))
+      .sort((a, b) => {
+        const ai = parseInt(a.match(/^page-(\d+)\.jpg$/i)[1], 10);
+        const bi = parseInt(b.match(/^page-(\d+)\.jpg$/i)[1], 10);
+        return ai - bi;
       });
 
-      const imagePath = `${outputPrefix}-${i}.jpg`;
-      if (fs.existsSync(imagePath)) {
-        const imgBuffer = fs.readFileSync(imagePath);
+    if (allFiles.length === 0) {
+      throw new Error('Nenhuma imagem gerada pelo pdftoppm');
+    }
 
-       const optimized = await optimizeJpegBuffer(imgBuffer, 1500, 82);
+    // 🔹 Anexa todas, otimizando cada uma
+    for (const fname of allFiles) {
+      const imagePath = path.join(tempDir, fname);
+      const imgBuffer = fs.readFileSync(imagePath);
+      const optimized = await optimizeJpegBuffer(imgBuffer, TARGET, 82);
+
+      // extrai o índice da página do nome 'page-<n>.jpg'
+      const n = parseInt(fname.match(/^page-(\d+)\.jpg$/i)[1], 10);
       attachments.push({
-        filename: `${safeBase}_page_${i}.jpg`,
+        filename: `${safeBase}_page_${String(n).padStart(3, '0')}.jpg`,
         content: optimized,
         contentType: 'image/jpeg'
       });
 
-        fs.unlinkSync(imagePath); // remove imagem temporária
-      }
+      try { fs.unlinkSync(imagePath); } catch {}
     }
 
-    fs.unlinkSync(inputPath);
-   fs.readdirSync(tempDir).forEach(f => fs.unlinkSync(path.join(tempDir, f)));
-fs.rmdirSync(tempDir);
+    console.log(`[send-email][arquivoPdf] Geradas ${allFiles.length} imagens para ${file.originalname}. attachments total=${attachments.length}`);
+
+    try { fs.unlinkSync(inputPath); } catch {}
+    try { fs.rmdirSync(tempDir, { recursive: true }); } catch {}
 
   } catch (error) {
-    console.error("Erro na conversão de PDF para JPG (sequencial):", error.message);
+    console.error("Erro na conversão de PDF para JPG (send-email/arquivoPdf):", error.message);
     return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
   }
 }
 
-      }
-    }
 
     // Se houver anexos, adiciona ao e-mail
     if (attachments.length > 0) {
