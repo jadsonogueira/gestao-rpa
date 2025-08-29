@@ -63,6 +63,117 @@ const os = require("os");
 const { exec: execShell } = require('child_process');
 const util = require('util');
 const execP = util.promisify(exec);
+const { createWorker } = require('tesseract.js');
+
+/**
+ * Torna um PDF pesquisável (OCR).
+ * Tenta nesta ordem:
+ * 1. ocrmypdf (se instalado no host)
+ * 2. tesseract CLI + pdftoppm (se instalados)
+ * 3. Tesseract.js (WASM) + pdftoppm (sempre disponível no Render Free)
+ */
+async function makePdfSearchable(inBuffer, langs = 'por+eng') {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-'));
+  const inPath = path.join(tmpDir, 'input.pdf');
+  fs.writeFileSync(inPath, inBuffer);
+
+  try {
+    // --- Caminho A: OCRmyPDF
+    if (await hasBinary('ocrmypdf')) {
+      const outPath = path.join(tmpDir, 'output.pdf');
+      const cmd = `ocrmypdf --skip-text -l ${langs} --optimize 1 "${inPath}" "${outPath}"`;
+      await execP(cmd);
+      const out = fs.readFileSync(outPath);
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      return out;
+    }
+
+    // --- Caminho B: Tesseract CLI + pdftoppm
+    const hasPdftoppm = await hasBinary('pdftoppm');
+    const hasTesseract = await hasBinary('tesseract');
+    if (hasPdftoppm && hasTesseract) {
+      const parsed = await pdfParse(inBuffer);
+      const numPages = parsed.numpages || 1;
+      const pagePdfBuffers = [];
+
+      for (let i = 1; i <= numPages; i++) {
+        const ppmPrefix = path.join(tmpDir, `page_${i}`);
+        await execP(`pdftoppm -tiff -f ${i} -l ${i} "${inPath}" "${ppmPrefix}"`);
+        const tiffPath = `${ppmPrefix}-1.tif`;
+        const pageOut = path.join(tmpDir, `ocr_page_${i}`);
+        await execP(`tesseract "${tiffPath}" "${pageOut}" -l ${langs} pdf`);
+        pagePdfBuffers.push(fs.readFileSync(`${pageOut}.pdf`));
+      }
+
+      const merged = await PDFDocument.create();
+      for (const buf of pagePdfBuffers) {
+        const part = await PDFDocument.load(buf, { ignoreEncryption: true });
+        const pages = await merged.copyPages(part, part.getPageIndices());
+        pages.forEach(p => merged.addPage(p));
+      }
+      const mergedBytes = await merged.save();
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      return Buffer.from(mergedBytes);
+    }
+
+    // --- Caminho C: Tesseract.js (WASM) + pdftoppm
+    if (!hasPdftoppm) {
+      throw new Error('Nenhuma rota de OCR disponível: falta pdftoppm.');
+    }
+
+    const parsed = await pdfParse(inBuffer);
+    const numPages = parsed.numpages || 1;
+    const imgPaths = [];
+    for (let i = 1; i <= numPages; i++) {
+      const outPrefix = path.join(tmpDir, `page_${i}`);
+      await execP(`pdftoppm -png -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
+      imgPaths.push(`${outPrefix}-1.png`);
+    }
+
+    // Worker Tesseract.js
+    const worker = await createWorker();
+    await worker.loadLanguage(langs);
+    await worker.initialize(langs);
+
+    const merged = await PDFDocument.create();
+
+    for (let p = 0; p < imgPaths.length; p++) {
+      const imageBytes = fs.readFileSync(imgPaths[p]);
+      const { data } = await worker.recognize(imageBytes);
+
+      const embeddedPng = await merged.embedPng(imageBytes);
+      const { width, height } = embeddedPng.size();
+      const page = merged.addPage([width, height]);
+      page.drawImage(embeddedPng, { x: 0, y: 0, width, height });
+
+      // Texto invisível (pesquisável)
+      for (const w of data.words || []) {
+        const { x0, y0, x1, y1 } = w.bbox;
+        const wWidth = Math.max(1, x1 - x0);
+        const wHeight = Math.max(1, y1 - y0);
+        const fontSize = Math.max(6, Math.min(72, wHeight));
+        const yPdf = height - (y0 + wHeight);
+
+        page.drawText(w.text, {
+          x: x0,
+          y: yPdf,
+          size: fontSize,
+          opacity: 0.01 // invisível mas pesquisável
+        });
+      }
+    }
+
+    await worker.terminate();
+    const mergedBytes = await merged.save();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return Buffer.from(mergedBytes);
+
+  } catch (e) {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    throw e;
+  }
+}
+
 
 
 // === Helper: otimiza/resize JPG mantendo nitidez ===
