@@ -36,6 +36,6 @@
     "pdf-merger-js": "^4.2.0",
     "sharp": "^0.32.1",
     "tesseract.js": "^5.1.0",
-    "@tesseract.js/node": "^5.1.0"
+    "@tesseract.js": "^5.1.0"
   }
 }
