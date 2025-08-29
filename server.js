@@ -62,14 +62,28 @@ const os = require("os");
 const { exec: execShell } = require('child_process');
 const util = require('util');
 const execP = util.promisify(exec);
+const { PDFDocument } = require('pdf-lib');
 const { createWorker } = require('tesseract.js');
 
+async function getWorker(langs = 'por+eng') {
+  const worker = await createWorker({
+    // baixa os dados de idioma via CDN (não depende de pacotes no host)
+    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+    cachePath: '/tmp',
+  });
+  const langList = (langs || 'eng').split('+').map(s => s.trim()).filter(Boolean);
+  for (const lg of langList) {
+    await worker.loadLanguage(lg);
+  }
+  await worker.initialize(langList.join('+'));
+  return worker;
+}
+
 /**
- * Torna um PDF pesquisável (OCR).
- * Tenta nesta ordem:
- * 1. ocrmypdf (se instalado no host)
- * 2. tesseract CLI + pdftoppm (se instalados)
- * 3. Tesseract.js (WASM) + pdftoppm (sempre disponível no Render Free)
+ * Torna um PDF pesquisável (OCR):
+ * A) ocrmypdf (se instalado)
+ * B) tesseract CLI + pdftoppm (se instalados)
+ * C) tesseract.js (WASM) + pdftoppm (sempre disponível no Render Free)
  */
 async function makePdfSearchable(inBuffer, langs = 'por+eng') {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-'));
@@ -79,6 +93,7 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
   try {
     // --- Caminho A: OCRmyPDF
     if (await hasBinary('ocrmypdf')) {
+      console.log('[OCR] Usando ocrmypdf');
       const outPath = path.join(tmpDir, 'output.pdf');
       const cmd = `ocrmypdf --skip-text -l ${langs} --optimize 1 "${inPath}" "${outPath}"`;
       await execP(cmd);
@@ -91,10 +106,12 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
     const hasPdftoppm = await hasBinary('pdftoppm');
     const hasTesseract = await hasBinary('tesseract');
     if (hasPdftoppm && hasTesseract) {
+      console.log('[OCR] Usando tesseract CLI + pdftoppm');
       const parsed = await pdfParse(inBuffer);
       const numPages = parsed.numpages || 1;
-      const pagePdfBuffers = [];
+      console.log(`[OCR] Páginas: ${numPages}`);
 
+      const pagePdfBuffers = [];
       for (let i = 1; i <= numPages; i++) {
         const ppmPrefix = path.join(tmpDir, `page_${i}`);
         await execP(`pdftoppm -tiff -f ${i} -l ${i} "${inPath}" "${ppmPrefix}"`);
@@ -116,10 +133,15 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
     }
 
     // --- Caminho C: Tesseract.js (WASM) + pdftoppm
-    if (!hasPdftoppm) throw new Error('Nenhuma rota de OCR disponível: falta pdftoppm.');
+    if (!hasPdftoppm) {
+      throw new Error('Nenhuma rota de OCR disponível: falta pdftoppm.');
+    }
+    console.log('[OCR] Usando tesseract.js (WASM) + pdftoppm');
 
     const parsed = await pdfParse(inBuffer);
     const numPages = parsed.numpages || 1;
+    console.log(`[OCR] Páginas: ${numPages}`);
+
     const imgPaths = [];
     for (let i = 1; i <= numPages; i++) {
       const outPrefix = path.join(tmpDir, `page_${i}`);
@@ -127,15 +149,9 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
       imgPaths.push(`${outPrefix}-1.png`);
     }
 
-    // Worker Tesseract.js
-    const worker = await createWorker(); // pode configurar langPath se quiser fixar CDN
-    // carrega múltiplos idiomas "por+eng" com segurança
-    const langList = (langs || 'eng').split('+').map(s => s.trim()).filter(Boolean);
-    for (const lg of langList) await worker.loadLanguage(lg);
-    await worker.initialize(langList.join('+'));
+    const worker = await getWorker(langs); // ✅ já inicializado
 
     const merged = await PDFDocument.create();
-
     for (const pngPath of imgPaths) {
       const imageBytes = fs.readFileSync(pngPath);
       const { data } = await worker.recognize(imageBytes);
@@ -145,18 +161,16 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
       const page = merged.addPage([width, height]);
       page.drawImage(embeddedPng, { x: 0, y: 0, width, height });
 
-      for (const w of data.words || []) {
+      for (const w of (data.words || [])) {
         const { x0, y0, x1, y1 } = w.bbox;
-        const wWidth = Math.max(1, x1 - x0);
-        const wHeight = Math.max(1, y1 - y0);
-        const fontSize = Math.max(6, Math.min(72, wHeight));
-        const yPdf = height - (y0 + wHeight);
-
+        const h = Math.max(1, y1 - y0);
+        const yPdf = height - (y0 + h);
+        const size = Math.max(6, Math.min(72, h));
         page.drawText(w.text, {
           x: x0,
           y: yPdf,
-          size: fontSize,
-          opacity: 0.01
+          size,
+          opacity: 0.01, // invisível e pesquisável
         });
       }
     }
@@ -165,14 +179,12 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
     const mergedBytes = await merged.save();
     fs.rmSync(tmpDir, { recursive: true, force: true });
     return Buffer.from(mergedBytes);
-
   } catch (e) {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+    console.error('[OCR] Falhou:', e.message);
     throw e;
   }
 }
-
-
 
 
 // === Helper: otimiza/resize JPG mantendo nitidez ===
@@ -572,8 +584,6 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
 });
-
-const { PDFDocument } = require('pdf-lib');
 
 app.post('/merge-pdf', upload.array('pdfs'), async (req, res) => {
   try {
