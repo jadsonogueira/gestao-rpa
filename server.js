@@ -116,9 +116,7 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
     }
 
     // --- Caminho C: Tesseract.js (WASM) + pdftoppm
-    if (!hasPdftoppm) {
-      throw new Error('Nenhuma rota de OCR disponível: falta pdftoppm.');
-    }
+    if (!hasPdftoppm) throw new Error('Nenhuma rota de OCR disponível: falta pdftoppm.');
 
     const parsed = await pdfParse(inBuffer);
     const numPages = parsed.numpages || 1;
@@ -130,14 +128,16 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
     }
 
     // Worker Tesseract.js
-    const worker = await createWorker();
-    await worker.loadLanguage(langs);
-    await worker.initialize(langs);
+    const worker = await createWorker(); // pode configurar langPath se quiser fixar CDN
+    // carrega múltiplos idiomas "por+eng" com segurança
+    const langList = (langs || 'eng').split('+').map(s => s.trim()).filter(Boolean);
+    for (const lg of langList) await worker.loadLanguage(lg);
+    await worker.initialize(langList.join('+'));
 
     const merged = await PDFDocument.create();
 
-    for (let p = 0; p < imgPaths.length; p++) {
-      const imageBytes = fs.readFileSync(imgPaths[p]);
+    for (const pngPath of imgPaths) {
+      const imageBytes = fs.readFileSync(pngPath);
       const { data } = await worker.recognize(imageBytes);
 
       const embeddedPng = await merged.embedPng(imageBytes);
@@ -145,7 +145,6 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
       const page = merged.addPage([width, height]);
       page.drawImage(embeddedPng, { x: 0, y: 0, width, height });
 
-      // Texto invisível (pesquisável)
       for (const w of data.words || []) {
         const { x0, y0, x1, y1 } = w.bbox;
         const wWidth = Math.max(1, x1 - x0);
@@ -157,7 +156,7 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
           x: x0,
           y: yPdf,
           size: fontSize,
-          opacity: 0.01 // invisível mas pesquisável
+          opacity: 0.01
         });
       }
     }
@@ -172,6 +171,7 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
     throw e;
   }
 }
+
 
 
 
