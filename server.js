@@ -946,6 +946,9 @@ app.post('/send-email', upload.any(), async (req, res) => {
     return res.status(400).send("Erro na conversão do PDF para JPG: " + error.message);
   }
 } // <-- fecha corretamente o else if
+        
+      } // <-- fecha o for (const file of req.files)
+    }   // <-- fecha o if (req.files && req.files.length > 0)
 
 
     // Se houver anexos, adiciona ao e-mail
