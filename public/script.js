@@ -80,6 +80,7 @@ const fluxoInstrucoes = {
   'Dividir PDF': 'Selecione um PDF e, opcionalmente, informe faixas (ex.: 1-3,5,7-9). Se não informar, dividiremos página a página.'
 };
 
+
 // ---------- Helpers de data ----------
 function hojeYYYYMMDD() {
   const d = new Date();
