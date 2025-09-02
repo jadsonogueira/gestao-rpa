@@ -1,4 +1,4 @@
-// ==================== script.js (substituição completa) ====================
+// ==================== script.js (com agendamento em todos os serviços) ====================
 
 // Base da API
 const apiUrl = window.location.origin;
@@ -80,6 +80,27 @@ const fluxoInstrucoes = {
   'Dividir PDF': 'Selecione um PDF e, opcionalmente, informe faixas (ex.: 1-3,5,7-9). Se não informar, dividiremos página a página.'
 };
 
+// ---------- Helpers de data ----------
+function hojeYYYYMMDD() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function agoraParaDatetimeLocalMin() {
+  // formata para "YYYY-MM-DDTHH:MM" (sem segundos) no fuso local
+  const d = new Date();
+  d.setMinutes(d.getMinutes() + 5); // buffer de 5 min
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
 // ---------- UI builders ----------
 function buildSelectOptions(selectEl, options) {
   const opt0 = document.createElement('option');
@@ -93,20 +114,10 @@ function buildSelectOptions(selectEl, options) {
     const opt = document.createElement('option');
     opt.value = o.value;       // agora é o nome, para ir no e-mail
     opt.textContent = o.label; // exibe só o nome
-    // se quiser usar ids depois sem enviar por e-mail:
     if (o.id) opt.dataset.id = o.id;
     if (o.idExterno) opt.dataset.idexterno = o.idExterno;
     selectEl.appendChild(opt);
   });
-}
-
-function hojeYYYYMMDD() {
-  const d = new Date();
-  // ajuste fuso se necessário
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
 }
 
 // ---------- Form modal ----------
@@ -184,12 +195,11 @@ async function abrirFormulario(fluxo) {
         { id: 'key', placeholder: 'Senha', type: 'text' },
       ];
 
-      } else if (fluxo === 'PDF pesquisável (OCR)') {
-  campos = [
-    { id: 'arquivoPdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' },
-    { id: 'lang', placeholder: 'Idiomas do OCR (ex.: por+eng)', type: 'text', required: false }
-  ];
-
+    } else if (fluxo === 'PDF pesquisável (OCR)') {
+      campos = [
+        { id: 'arquivoPdf', placeholder: 'Selecione o arquivo PDF', type: 'file', accept: '.pdf' },
+        { id: 'lang', placeholder: 'Idiomas do OCR (ex.: por+eng)', type: 'text', required: false }
+      ];
 
     } else if (fluxo === 'Unir PDFs') {
       campos = [{ id: 'pdfs', placeholder: 'Arquivos PDF para unir', type: 'file', accept: '.pdf', multiple: true }];
@@ -203,7 +213,6 @@ async function abrirFormulario(fluxo) {
         { id: 'ranges', placeholder: 'Faixas (ex.: 1-3,5,7-9) — opcional', type: 'text', required: false }
       ];
 
-    // ✅ Faltavam estes dois:
     } else if (fluxo === 'Criar Doc SEI Externo') {
       campos = [
         { id: 'processoSei', placeholder: 'Número do Processo SEI', type: 'text' },
@@ -447,136 +456,4 @@ async function abrirFormulario(fluxo) {
   pdfGroup.className = 'form-group';
   const pdfLabel = document.createElement('label');
   pdfLabel.htmlFor = 'arquivoPdf';
-  pdfLabel.textContent = 'Selecione o(s) arquivo(s) PDF';
-
-  const pdfInput = document.createElement('input');
-  pdfInput.type = 'file';
-  pdfInput.id = 'arquivoPdf';
-  pdfInput.name = 'arquivoPdf';
-  pdfInput.className = 'form-control-file';
-  pdfInput.accept = '.pdf';
-  pdfInput.required = false;
-
-  pdfGroup.appendChild(pdfLabel);
-  pdfGroup.appendChild(pdfInput);
-  pdfContainer.appendChild(pdfGroup);
-
-  // Botão enviar
-  const submitButton = document.createElement('button');
-  submitButton.type = 'submit';
-  submitButton.textContent = 'Enviar';
-  submitButton.className = 'btn btn-primary btn-block mt-3';
-  fluxoForm.appendChild(submitButton);
-
-  fluxoForm.onsubmit = enviarFormularioAxios;
-
-  // Abre modal
-  $('#fluxoModal').modal('show');
-}
-
-// ---------- Submit ----------
-function enviarFormularioAxios(e) {
-  e.preventDefault();
-  showLoadingOverlay();
-
-  const fluxo = document.getElementById('modalTitle').innerText;
-  const formData = new FormData();
-  formData.append('fluxo', fluxo);
-
-  const inputs = e.target.querySelectorAll('input, textarea, select');
-  inputs.forEach((input) => {
-    if (input.type === 'file' && input.files.length > 0) {
-      for (let i = 0; i < input.files.length; i++) {
-        formData.append(input.name, input.files[i]);
-      }
-    } else if (input.type !== 'file' && input.type !== 'radio') {
-      formData.append(input.name, (input.value || '').trim());
-    } else if (input.type === 'radio' && input.checked) {
-      formData.append(input.name, input.value);
-    }
-  });
-
-  const url = fluxo === 'Unir PDFs'
-  ? `${apiUrl}/merge-pdf`
-  : fluxo === 'PDF para JPG'
-  ? `${apiUrl}/pdf-to-jpg`
-  : fluxo === 'Dividir PDF'
-  ? `${apiUrl}/split-pdf`
-  : fluxo === 'PDF pesquisável (OCR)'
-  ? `${apiUrl}/pdf-make-searchable`
-  : `${apiUrl}/send-email`;
-
-
-  const responseType = (['Unir PDFs','PDF para JPG','Dividir PDF','PDF pesquisável (OCR)'].includes(fluxo))
-  ? 'blob'
-  : 'json';
-
-
-  const token = localStorage.getItem('token');
-
-  axios.post(url, formData, {
-  responseType,
-  headers: { Authorization: `Bearer ${token}` }
-})
-.then(response => {
-  hideLoadingOverlay();
-
-  if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF', 'PDF pesquisável (OCR)'].includes(fluxo)) {
-    const contentType = response.headers['content-type'] || 'application/octet-stream';
-    const cd = response.headers['content-disposition'] || '';
-    let filename = null;
-    const m = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
-    if (m) {
-      try { filename = decodeURIComponent(m[1] || m[2]); }
-      catch { filename = (m[1] || m[2]); }
-    }
-
-    if (!filename) {
-      if (fluxo === 'Unir PDFs') {
-        const first = e.target.querySelector('input[name="pdfs"]')?.files?.[0]?.name || 'merged.pdf';
-        filename = first.replace(/\.[^.]+$/, '') + '_merge.pdf';
-      } else if (fluxo === 'Dividir PDF') {
-        const first = e.target.querySelector('input[name="pdf"]')?.files?.[0]?.name || 'split.zip';
-        filename = first.replace(/\.[^.]+$/, '') + '_split.zip';
-      } else if (fluxo === 'PDF para JPG') {
-        const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
-        filename = contentType.includes('zip') ? `${base}.zip` : `${base}.jpg`;
-      } else if (fluxo === 'PDF pesquisável (OCR)') {
-        const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
-        filename = `${base}_pesquisavel.pdf`;
-      } else {
-        const ext = contentType.includes('pdf') ? 'pdf'
-                 : contentType.includes('zip') ? 'zip'
-                 : contentType.includes('jpeg') ? 'jpg'
-                 : 'bin';
-        filename = `resultado.${ext}`;
-      }
-    }
-
-    const blob = new Blob([response.data], { type: contentType });
-    const blobUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(blobUrl);
-
-    showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
-  } else {
-    showAlert('✅ Solicitação enviada com sucesso.', 'success');
-  }
-})
-.catch(error => {
-  hideLoadingOverlay();
-  console.error('Erro ao enviar:', error);
-  showAlert('❌ Ocorreu um erro no envio do formulário.', 'danger');
-})
-.finally(() => {
-  $('#fluxoModal').modal('hide');
-});
-} // <-- fecha a função abrirFormulario
-
-// Expor no escopo global (cards chamam isso pelo onclick do HTML)
-window.abrirFormulario = abrirFormulario;
+  pdfLabel.textContent = 'Selecione o(s) arquivo(s
