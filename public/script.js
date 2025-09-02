@@ -1,7 +1,9 @@
 // ==================== script.js (com agendamento em todos os serviços) ====================
+'use strict';
 
 // Base da API
 const apiUrl = window.location.origin;
+console.log('[script.js] carregado');
 
 // ---------- UI helpers ----------
 function showAlert(message, type = 'success') {
@@ -80,7 +82,6 @@ const fluxoInstrucoes = {
   'Dividir PDF': 'Selecione um PDF e, opcionalmente, informe faixas (ex.: 1-3,5,7-9). Se não informar, dividiremos página a página.'
 };
 
-
 // ---------- Helpers de data ----------
 function hojeYYYYMMDD() {
   const d = new Date();
@@ -91,7 +92,7 @@ function hojeYYYYMMDD() {
 }
 
 function agoraParaDatetimeLocalMin() {
-  // formata para "YYYY-MM-DDTHH:MM" (sem segundos) no fuso local
+  // "YYYY-MM-DDTHH:MM" (sem segundos) no fuso local
   const d = new Date();
   d.setMinutes(d.getMinutes() + 5); // buffer de 5 min
   const yyyy = d.getFullYear();
@@ -111,7 +112,7 @@ function buildSelectOptions(selectEl, options) {
   opt0.textContent = 'Selecione uma opção';
   selectEl.appendChild(opt0);
 
-  options.forEach(o => {
+  (options || []).forEach(o => {
     const opt = document.createElement('option');
     opt.value = o.value;       // agora é o nome, para ir no e-mail
     opt.textContent = o.label; // exibe só o nome
@@ -457,4 +458,256 @@ async function abrirFormulario(fluxo) {
   pdfGroup.className = 'form-group';
   const pdfLabel = document.createElement('label');
   pdfLabel.htmlFor = 'arquivoPdf';
-  pdfLabel.textContent = 'Selecione o(s) arquivo(s
+  pdfLabel.textContent = 'Selecione o(s) arquivo(s) PDF';
+
+  const pdfInput = document.createElement('input');
+  pdfInput.type = 'file';
+  pdfInput.id = 'arquivoPdf';
+  pdfInput.name = 'arquivoPdf';
+  pdfInput.className = 'form-control-file';
+  pdfInput.accept = '.pdf';
+  pdfInput.required = false;
+
+  pdfGroup.appendChild(pdfLabel);
+  pdfGroup.appendChild(pdfInput);
+  pdfContainer.appendChild(pdfGroup);
+
+  // ====== BLOCO DE AGENDAMENTO (presente para todos os serviços) ======
+  const agGroup = document.createElement('div');
+  agGroup.className = 'form-group';
+  agGroup.id = 'agendamentoGroup';
+
+  const agLegend = document.createElement('label');
+  agLegend.textContent = 'Agendamento do envio';
+  agLegend.style.display = 'block';
+  agLegend.style.fontWeight = '500';
+
+  const agRadios = document.createElement('div');
+  agRadios.className = 'd-flex align-items-center';
+
+  const rImediatoId = 'envio_imediato';
+  const rAgendarId = 'envio_agendar';
+
+  const rImediato = document.createElement('input');
+  rImediato.type = 'radio';
+  rImediato.name = 'envio';
+  rImediato.id = rImediatoId;
+  rImediato.value = 'imediato';
+  rImediato.className = 'mr-2';
+  rImediato.checked = true; // padrão
+
+  const lImediato = document.createElement('label');
+  lImediato.htmlFor = rImediatoId;
+  lImediato.className = 'mr-4 mb-0';
+  lImediato.textContent = 'Imediato';
+
+  const rAgendar = document.createElement('input');
+  rAgendar.type = 'radio';
+  rAgendar.name = 'envio';
+  rAgendar.id = rAgendarId;
+  rAgendar.value = 'agendar';
+  rAgendar.className = 'mr-2';
+
+  const lAgendar = document.createElement('label');
+  lAgendar.htmlFor = rAgendarId;
+  lAgendar.className = 'mr-3 mb-0';
+  lAgendar.textContent = 'Agendar';
+
+  const quandoWrap = document.createElement('div');
+  quandoWrap.className = 'ml-2';
+  quandoWrap.style.display = 'none';
+
+  const quandoInput = document.createElement('input');
+  quandoInput.type = 'datetime-local';
+  quandoInput.id = 'quando';
+  quandoInput.name = 'quando';
+  quandoInput.className = 'form-control';
+  quandoInput.style.maxWidth = '260px';
+  quandoInput.min = agoraParaDatetimeLocalMin();
+
+  quandoWrap.appendChild(quandoInput);
+
+  agRadios.appendChild(rImediato);
+  agRadios.appendChild(lImediato);
+  agRadios.appendChild(rAgendar);
+  agRadios.appendChild(lAgendar);
+  agRadios.appendChild(quandoWrap);
+
+  agGroup.appendChild(agLegend);
+  agGroup.appendChild(agRadios);
+  fluxoForm.appendChild(agGroup);
+
+  // alterna exibição do campo "quando"
+  agGroup.addEventListener('change', (e) => {
+    if (e.target && e.target.name === 'envio') {
+      const isAgendar = e.target.value === 'agendar';
+      quandoWrap.style.display = isAgendar ? 'block' : 'none';
+      quandoInput.required = isAgendar;
+      if (!isAgendar) quandoInput.value = '';
+      if (isAgendar && !quandoInput.min) quandoInput.min = agoraParaDatetimeLocalMin();
+    }
+  });
+
+  // Botão enviar
+  const submitButton = document.createElement('button');
+  submitButton.type = 'submit';
+  submitButton.textContent = 'Enviar';
+  submitButton.className = 'btn btn-primary btn-block mt-3';
+  fluxoForm.appendChild(submitButton);
+
+  fluxoForm.onsubmit = enviarFormularioAxios;
+
+  // Abre modal
+  try {
+    if (window.$ && $('#fluxoModal').length) {
+      $('#fluxoModal').modal('show');
+    } else {
+      // fallback básico sem jQuery/Bootstrap (se necessário)
+      const modal = document.getElementById('fluxoModal');
+      if (modal) modal.style.display = 'block';
+    }
+  } catch (err) {
+    console.error('Falha ao abrir modal:', err);
+  }
+}
+
+// ---------- Submit ----------
+function enviarFormularioAxios(e) {
+  e.preventDefault();
+
+  // Validação simples do agendamento antes de enviar
+  const envioSelecionado = (e.target.querySelector('input[name="envio"]:checked') || {}).value || 'imediato';
+  if (envioSelecionado === 'agendar') {
+    const quandoEl = e.target.querySelector('#quando');
+    if (!quandoEl || !quandoEl.value) {
+      showAlert('Informe a data e hora do agendamento.', 'warning');
+      return;
+    }
+    // valida mínimo
+    const min = quandoEl.min ? new Date(quandoEl.min) : null;
+    const escolhido = new Date(quandoEl.value);
+    if (min && escolhido < min) {
+      showAlert('Escolha um horário de agendamento no futuro (mínimo alguns minutos à frente).', 'warning');
+      return;
+    }
+  }
+
+  showLoadingOverlay();
+
+  const fluxo = document.getElementById('modalTitle').innerText;
+  const formData = new FormData();
+  formData.append('fluxo', fluxo);
+
+  const inputs = e.target.querySelectorAll('input, textarea, select');
+  inputs.forEach((input) => {
+    if (input.type === 'file' && input.files.length > 0) {
+      for (let i = 0; i < input.files.length; i++) {
+        formData.append(input.name, input.files[i]);
+      }
+    } else if (input.type !== 'file' && input.type !== 'radio') {
+      formData.append(input.name, (input.value || '').trim());
+    } else if (input.type === 'radio' && input.checked) {
+      formData.append(input.name, input.value);
+    }
+  });
+
+  // Anexa versão UTC do agendamento (ajuda o backend a evitar problemas de fuso)
+  if (envioSelecionado === 'agendar') {
+    const whenEl = e.target.querySelector('#quando');
+    if (whenEl && whenEl.value) {
+      formData.append('quandoUtc', new Date(whenEl.value).toISOString());
+    }
+  }
+
+  // Decide endpoint
+  const url = fluxo === 'Unir PDFs'
+    ? `${apiUrl}/merge-pdf`
+    : fluxo === 'PDF para JPG'
+    ? `${apiUrl}/pdf-to-jpg`
+    : fluxo === 'Dividir PDF'
+    ? `${apiUrl}/split-pdf`
+    : fluxo === 'PDF pesquisável (OCR)'
+    ? `${apiUrl}/pdf-make-searchable`
+    : `${apiUrl}/send-email`;
+
+  const responseType = (['Unir PDFs','PDF para JPG','Dividir PDF','PDF pesquisável (OCR)'].includes(fluxo))
+    ? 'blob'
+    : 'json';
+
+  const token = localStorage.getItem('token');
+
+  axios.post(url, formData, {
+    responseType,
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  .then(response => {
+    if (['Unir PDFs', 'PDF para JPG', 'Dividir PDF', 'PDF pesquisável (OCR)'].includes(fluxo)) {
+      const contentType = response.headers['content-type'] || 'application/octet-stream';
+      const cd = response.headers['content-disposition'] || '';
+      let filename = null;
+      const m = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(cd);
+      if (m) {
+        try { filename = decodeURIComponent(m[1] || m[2]); }
+        catch { filename = (m[1] || m[2]); }
+      }
+
+      if (!filename) {
+        if (fluxo === 'Unir PDFs') {
+          const first = e.target.querySelector('input[name="pdfs"]')?.files?.[0]?.name || 'merged.pdf';
+          filename = first.replace(/\.[^.]+$/, '') + '_merge.pdf';
+        } else if (fluxo === 'Dividir PDF') {
+          const first = e.target.querySelector('input[name="pdf"]')?.files?.[0]?.name || 'split.zip';
+          filename = first.replace(/\.[^.]+$/, '') + '_split.zip';
+        } else if (fluxo === 'PDF para JPG') {
+          const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
+          filename = contentType.includes('zip') ? `${base}.zip` : `${base}.jpg`;
+        } else if (fluxo === 'PDF pesquisável (OCR)') {
+          const base = (e.target.querySelector('input[name="arquivoPdf"]')?.files?.[0]?.name || 'arquivo').replace(/\.pdf$/i, '');
+          filename = `${base}_pesquisavel.pdf`;
+        } else {
+          const ext = contentType.includes('pdf') ? 'pdf'
+                   : contentType.includes('zip') ? 'zip'
+                   : contentType.includes('jpeg') ? 'jpg'
+                   : 'bin';
+          filename = `resultado.${ext}`;
+        }
+      }
+
+      const blob = new Blob([response.data], { type: contentType });
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+
+      showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
+
+      // FECHA O MODAL APÓS SUCESSO
+      if (window.$ && $('#fluxoModal').length) {
+        $('#fluxoModal').modal('hide');
+      }
+    } else {
+      showAlert('✅ Solicitação enviada com sucesso.', 'success');
+
+      // FECHA O MODAL APÓS SUCESSO
+      if (window.$ && $('#fluxoModal').length) {
+        $('#fluxoModal').modal('hide');
+      }
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    showAlert('Falha ao processar sua solicitação.', 'danger');
+  })
+  .finally(() => {
+    hideLoadingOverlay();
+  });
+}
+
+// Expor no escopo global (cards chamam isso pelo onclick do HTML)
+window.abrirFormulario = abrirFormulario;
+
+// ==================== fim script.js ====================
