@@ -781,11 +781,8 @@ function spToUtcIso(localStr) {
   }
 
   const y  = +m[1], mo = +m[2], d = +m[3], hh = +m[4], mi = +m[5];
-  const iso = new Date(
-  `${String(y).padStart(4,'0')}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}T` +
-  `${String(hh).padStart(2,'0')}:${String(mi).padStart(2,'0')}:00-03:00`
-  ).toISOString().replace(/\.\d{3}Z$/, 'Z');
-  return iso;
+  const ms = Date.UTC(y, mo - 1, d, hh + 4, mi, 0);
+  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
 // Enviamos SEMPRE "Agendamento:" para o Flow
