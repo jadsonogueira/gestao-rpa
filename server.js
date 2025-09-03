@@ -761,34 +761,53 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
 
-// === Agendamento para o Power Automate (fix fuso Brasil) ===
+// === Agendamento para o Power Automate (robusto p/ formatos + buffer) ===
 const { envio, quando, quandoUtc } = req.body;
 
-// converte "YYYY-MM-DDTHH:MM" (na parede de São Paulo) para UTC ISO (…:SSZ)
-function brLocalToUtcIso(localStr) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(localStr || '');
-  if (!m) return null;
-  const [, y, mo, d, hh, mi] = m.map(Number);
-  // Brasil (America/Sao_Paulo) hoje é UTC-3 (sem DST) → somar 3h e emitir em UTC
-  const utcMs = Date.UTC(y, mo - 1, d, hh + 4, mi, 0);
-  return new Date(utcMs).toISOString().replace(/\.\d{3}Z$/, 'Z');
+// Converte "YYYY-MM-DDTHH:MM" OU "YYYY-MM-DD HH:MM" (24h)
+// OU "YYYY-MM-DD HH:MM AM/PM" assumindo America/Sao_Paulo (-03:00) -> ISO UTC (...:SSZ)
+function spToUtcIso(localStr) {
+  if (!localStr) return null;
+
+  // 24h com 'T' ou espaço
+  let m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})$/.exec(localStr);
+  if (!m) {
+    // 12h com AM/PM
+    const m12 = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(localStr);
+    if (!m12) return null;
+    let hh = (+m12[4]) % 12;
+    if (/pm/i.test(m12[6])) hh += 12;
+    m = [null, m12[1], m12[2], m12[3], String(hh).padStart(2,'0'), m12[5]];
+  }
+
+  const y  = +m[1], mo = +m[2], d = +m[3], hh = +m[4], mi = +m[5];
+  const ms = Date.UTC(y, mo - 1, d, hh + 3, mi, 0); // SP (-03:00) -> UTC
+  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
 if (envio === 'agendar') {
-  // 1) Preferimos o valor local do input (sempre interpretado como -03:00)
-  let iso = brLocalToUtcIso(quando);
+  // 1) Tente sempre parsear o que veio do input
+  let iso = spToUtcIso(quando);
 
-  // 2) Fallback: se não vier "quando", aceita quandoUtc do cliente
+  // 2) Fallback: se não deu para parsear, usa quandoUtc (desde que válido)
   if (!iso && quandoUtc) {
     const d = new Date(quandoUtc);
     if (!isNaN(d)) iso = d.toISOString().replace(/\.\d{3}Z$/, 'Z');
   }
 
   if (iso) {
+    // 3) Buffer: evita timestamp no passado/empatado
+    const ts = Date.parse(iso);
+    const minFuture = Date.now() + 30 * 1000;      // pelo menos 30s à frente
+    if (isFinite(ts) && ts <= minFuture) {
+      iso = new Date(Date.now() + 2 * 60 * 1000)   // empurra 2min
+              .toISOString().replace(/\.\d{3}Z$/, 'Z');
+    }
     mailContent += `Agendamento: ${iso}\n`;
   }
 }
 // === fim bloco de agendamento ===
+
 
 
     
