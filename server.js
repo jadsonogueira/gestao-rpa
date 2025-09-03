@@ -760,6 +760,26 @@ app.post('/send-email', upload.any(), async (req, res) => {
     }
 
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
+
+// === Agendamento para o Power Automate (somente adiciona a linha no corpo) ===
+const { envio, quandoUtc, quando } = req.body;
+if (envio === 'agendar') {
+  // tenta usar quandoUtc; se não vier, usa quando (local)
+  let iso = null;
+  if (quandoUtc) {
+    const d = new Date(quandoUtc);
+    if (!isNaN(d)) iso = d.toISOString().replace(/\.\d{3}Z$/, 'Z'); // normaliza p/ ...:SSZ
+  } else if (quando) {
+    const d = new Date(quando);
+    if (!isNaN(d)) iso = d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  }
+  if (iso) {
+    mailContent += `Agendamento: ${iso}\n`;
+  }
+}
+// === fim bloco de agendamento ===
+
+    
     mailContent += `Requerente: ${usuario?.username || 'Desconhecido'}\n`;
     mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
 
