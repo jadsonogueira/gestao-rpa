@@ -770,7 +770,7 @@ function brLocalToUtcIso(localStr) {
   if (!m) return null;
   const [, y, mo, d, hh, mi] = m.map(Number);
   // Brasil (America/Sao_Paulo) hoje é UTC-3 (sem DST) → somar 3h e emitir em UTC
-  const utcMs = Date.UTC(y, mo - 1, d, hh + 3, mi, 0);
+  const utcMs = Date.UTC(y, mo - 1, d, hh + 4, mi, 0);
   return new Date(utcMs).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
