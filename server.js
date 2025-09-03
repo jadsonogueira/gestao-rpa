@@ -761,7 +761,7 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
 
-// === Agendamento para o Power Automate (robusto p/ formatos + buffer) ===
+// === Agendamento para o Power Automate (sempre envia "Agendamento:") ===
 const { envio, quando, quandoUtc } = req.body;
 
 // Converte "YYYY-MM-DDTHH:MM" OU "YYYY-MM-DD HH:MM" (24h)
@@ -785,28 +785,25 @@ function spToUtcIso(localStr) {
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
+// Enviamos SEMPRE "Agendamento:" para o Flow
+let agIso = null;
 if (envio === 'agendar') {
-  // 1) Tente sempre parsear o que veio do input
-  let iso = spToUtcIso(quando);
+  // tenta parsear o input; se não der, usa quandoUtc do front
+  agIso = spToUtcIso(quando)
+       || (quandoUtc && (() => {
+            const d = new Date(quandoUtc);
+            return isNaN(d) ? null : d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+          })());
+} else {
+  // imediato -> agora + 5s (buffer p/ nunca cair no passado)
+  agIso = new Date(Date.now() + 5 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
 
-  // 2) Fallback: se não deu para parsear, usa quandoUtc (desde que válido)
-  if (!iso && quandoUtc) {
-    const d = new Date(quandoUtc);
-    if (!isNaN(d)) iso = d.toISOString().replace(/\.\d{3}Z$/, 'Z');
-  }
-
-  if (iso) {
-    // 3) Buffer: evita timestamp no passado/empatado
-    const ts = Date.parse(iso);
-    const minFuture = Date.now() + 30 * 1000;      // pelo menos 30s à frente
-    if (isFinite(ts) && ts <= minFuture) {
-      iso = new Date(Date.now() + 2 * 60 * 1000)   // empurra 2min
-              .toISOString().replace(/\.\d{3}Z$/, 'Z');
-    }
-    mailContent += `Agendamento: ${iso}\n`;
-  }
+if (agIso) {
+  mailContent += `Agendamento: ${agIso}\n`;
 }
 // === fim bloco de agendamento ===
+
 
 
 
