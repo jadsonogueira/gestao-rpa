@@ -761,23 +761,35 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
 
-// === Agendamento para o Power Automate (somente adiciona a linha no corpo) ===
-const { envio, quandoUtc, quando } = req.body;
+// === Agendamento para o Power Automate (fix fuso Brasil) ===
+const { envio, quando, quandoUtc } = req.body;
+
+// converte "YYYY-MM-DDTHH:MM" (na parede de São Paulo) para UTC ISO (…:SSZ)
+function brLocalToUtcIso(localStr) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(localStr || '');
+  if (!m) return null;
+  const [, y, mo, d, hh, mi] = m.map(Number);
+  // Brasil (America/Sao_Paulo) hoje é UTC-3 (sem DST) → somar 3h e emitir em UTC
+  const utcMs = Date.UTC(y, mo - 1, d, hh + 3, mi, 0);
+  return new Date(utcMs).toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
 if (envio === 'agendar') {
-  // tenta usar quandoUtc; se não vier, usa quando (local)
-  let iso = null;
-  if (quandoUtc) {
+  // 1) Preferimos o valor local do input (sempre interpretado como -03:00)
+  let iso = brLocalToUtcIso(quando);
+
+  // 2) Fallback: se não vier "quando", aceita quandoUtc do cliente
+  if (!iso && quandoUtc) {
     const d = new Date(quandoUtc);
-    if (!isNaN(d)) iso = d.toISOString().replace(/\.\d{3}Z$/, 'Z'); // normaliza p/ ...:SSZ
-  } else if (quando) {
-    const d = new Date(quando);
     if (!isNaN(d)) iso = d.toISOString().replace(/\.\d{3}Z$/, 'Z');
   }
+
   if (iso) {
     mailContent += `Agendamento: ${iso}\n`;
   }
 }
 // === fim bloco de agendamento ===
+
 
     
     mailContent += `Requerente: ${usuario?.username || 'Desconhecido'}\n`;
