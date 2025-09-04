@@ -761,56 +761,50 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
 
-// === Agendamento para o Power Automate (robusto e sem 500) ===
+    
+// === Agendamento para o Power Automate (sempre envia "Agendamento:") ===
 const { envio, quando, quandoUtc } = req.body;
 
-// Normaliza formatos do input p/ UTC assumindo America/Sao_Paulo (-03:00)
-function parseQuandoSP(localStr) {
+// Converte "YYYY-MM-DDTHH:MM" OU "YYYY-MM-DD HH:MM" (24h)
+// OU "YYYY-MM-DD HH:MM AM/PM" assumindo America/Sao_Paulo (-03:00) -> ISO UTC (...:SSZ)
+function spToUtcIso(localStr) {
   if (!localStr) return null;
 
-  // 24h com 'T' ou espaço -> YYYY-MM-DDTHH:MM
-  const m24 = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})$/.exec(localStr);
-  if (m24) {
-    const [ , y, mo, d, hh, mi ] = m24;
-    return new Date(`${y}-${mo}-${d}T${hh}:${mi}:00-03:00`)
-             .toISOString().replace(/\.\d{3}Z$/, 'Z');
-  }
-
-  // 12h com AM/PM -> YYYY-MM-DD HH:MM AM/PM
-  const m12 = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(localStr);
-  if (m12) {
+  // 24h com 'T' ou espaço
+  let m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})$/.exec(localStr);
+  if (!m) {
+    // 12h com AM/PM
+    const m12 = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(localStr);
+    if (!m12) return null;
     let hh = (+m12[4]) % 12;
     if (/pm/i.test(m12[6])) hh += 12;
-    const hh2 = String(hh).padStart(2, '0');
-    return new Date(`${m12[1]}-${m12[2]}-${m12[3]}T${hh2}:${m12[5]}:00-03:00`)
-             .toISOString().replace(/\.\d{3}Z$/, 'Z');
+    m = [null, m12[1], m12[2], m12[3], String(hh).padStart(2,'0'), m12[5]];
   }
 
-  return null; // formato não reconhecido
+  const y  = +m[1], mo = +m[2], d = +m[3], hh = +m[4], mi = +m[5];
+  const ms = Date.UTC(y, mo - 1, d, hh + 3, mi, 0); // SP (-03:00) -> UTC
+  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
-// 1) Calcula o ISO conforme modo
+// Enviamos SEMPRE "Agendamento:" para o Flow
 let agIso = null;
 if (envio === 'agendar') {
-  agIso = parseQuandoSP(quando);
-  if (!agIso && quandoUtc) {
-    const d = new Date(quandoUtc);
-    if (!isNaN(d)) agIso = d.toISOString().replace(/\.\d{3}Z$/, 'Z');
-  }
+  // tenta parsear o input; se não der, usa quandoUtc do front
+  agIso = spToUtcIso(quando)
+       || (quandoUtc && (() => {
+            const d = new Date(quandoUtc);
+            return isNaN(d) ? null : d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+          })());
 } else {
-  // imediato: manda agora + 5s (garante que o Delay Until não considere "passado")
+  // imediato -> agora + 5s (buffer p/ nunca cair no passado)
   agIso = new Date(Date.now() + 5 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
-// 2) Fallback final para nunca dar 500 nem mandar passado
-if (!agIso) {
-  agIso = new Date(Date.now() + (envio === 'agendar' ? 2*60*1000 : 5*1000))
-            .toISOString().replace(/\.\d{3}Z$/, 'Z');
+if (agIso) {
+  mailContent += `Agendamento: ${agIso}\n`;
 }
+// === fim bloco de agendamento ===
 
-// 3) Escreve no corpo que o Power Automate lê
-mailContent += `Agendamento: ${agIso}\n`;
-// === fim bloco ===
 
 
     
