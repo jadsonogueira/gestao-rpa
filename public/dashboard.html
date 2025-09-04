@@ -16,6 +16,18 @@
       pointer-events: none;
       opacity: 0.6;
     }
+
+    /* Destaque para serviços de PDF */
+    .pdf-service {
+      background-color: rgba(0, 123, 255, 0.1); /* azul translúcido */
+      border: 1px solid rgba(0, 123, 255, 0.3);
+    }
+    
+    .pdf-service:hover {
+      background-color: rgba(0, 123, 255, 0.2);
+    }
+
+    
     .service-card {
       transition: transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
@@ -251,20 +263,20 @@
         </div>
       </div>
 
-      <!-- Unir PDFs -->
-      <div class="col-md-4 mb-4">
-        <div class="card service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Unir PDFs')">
-          <div class="card-body text-center">
-            <i class="fas fa-file-pdf service-icon"></i>
-            <h5 class="card-title">Unir PDFs</h5>
-            <p class="service-description">Junte múltiplos arquivos PDF em um único documento</p>
-          </div>
-        </div>
-      </div>
+     <!-- Unir PDFs -->
+<div class="col-md-4 mb-4">
+  <div class="card service-card pdf-service" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Unir PDFs')">
+    <div class="card-body text-center">
+      <i class="fas fa-file-pdf service-icon"></i>
+      <h5 class="card-title">Unir PDFs</h5>
+      <p class="service-description">Junte múltiplos arquivos PDF em um único documento</p>
+    </div>
+  </div>
+</div>
 
 <!-- Dividir PDF -->
 <div class="col-md-4 mb-4">
-  <div class="card service-card"
+  <div class="card service-card pdf-service"
        data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin"
        onclick="abrirFormulario('Dividir PDF')">
     <div class="card-body text-center">
@@ -275,8 +287,9 @@
   </div>
 </div>
 
+<!-- PDF pesquisável (OCR) -->
 <div class="col-md-4 mb-4">
-  <div class="card service-card"
+  <div class="card service-card pdf-service"
        data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin"
        onclick="abrirFormulario('PDF pesquisável (OCR)')">
     <div class="card-body text-center">
@@ -287,17 +300,18 @@
   </div>
 </div>
 
-      
-      <div class="col-md-4 mb-4" data-role="classe_b">
-  <div class="card h-100">
-    <div class="card-body d-flex flex-column">
+<!-- PDF para JPG -->
+<div class="col-md-4 mb-4" data-role="classe_b">
+  <div class="card service-card pdf-service h-100">
+    <div class="card-body d-flex flex-column text-center">
+      <i class="fas fa-image service-icon"></i>
       <h5 class="card-title">PDF para JPG</h5>
       <p class="card-text">Converta um arquivo PDF em imagens JPG (uma por página).</p>
-      <button class="btn btn-primary mt-auto" onclick="abrirFormulario('PDF para JPG')">Abrir</button>
+      <button class="btn btn-light mt-auto" onclick="abrirFormulario('PDF para JPG')">Abrir</button>
     </div>
   </div>
 </div>
-      
+
       <!-- Analise de processo -->
       <div class="col-md-4 mb-4">
         <div class="card service-card" data-role="admin" onclick="abrirFormulario('Analise de processo')">
