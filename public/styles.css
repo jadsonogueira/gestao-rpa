@@ -152,3 +152,40 @@ button.custom-button:hover {
   text-decoration: none;
   color: white;
 }
+
+/* Ajustes finos para dark mode */
+html, body { background-color: #121212 !important; color: #e0e0e0; }
+.text-muted { color: #b6b6b6 !important; }
+
+.card.service-card {
+  background-color: #1c1c1c !important;
+  border: 1px solid #2c2c2c !important;
+  color: #e0e0e0 !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,.35);
+}
+.card.service-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+
+/* Destaque translúcido azul para serviços de PDF */
+.pdf-service {
+  background-color: rgba(0,123,255,.10) !important;
+  border-color: rgba(0,123,255,.30) !important;
+}
+.pdf-service:hover { background-color: rgba(0,123,255,.20) !important; }
+
+/* Ícones e inputs no dark */
+.service-icon { color: #66b2ff !important; }
+.form-control {
+  background-color: #2a2a2a !important;
+  border: 1px solid #444 !important;
+  color: #e0e0e0 !important;
+}
+.form-control:focus {
+  background-color: #2f2f2f !important;
+  border-color: #80bdff !important;
+  box-shadow: 0 0 0 .2rem rgba(0,123,255,.25) !important;
+  color: #fff !important;
+}
+
+/* Modal dark */
+.modal-content { background:#1e1e1e !important; color:#e0e0e0 !important; border:1px solid #333 !important; }
+.modal-header, .modal-footer { background:#2a2a2a !important; border-color:#444 !important; }
