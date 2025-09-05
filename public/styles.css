@@ -82,11 +82,11 @@ button.custom-button:hover {
 }
 
 .pdf-service {
-  background-color: rgba(40, 167, 69, 0.1);   /* verde translúcido */
-  border: 1px solid rgba(40, 167, 69, 0.3);
+  background-color: rgba(111, 66, 193, 0.1);  /* roxo translúcido */
+  border: 1px solid rgba(111, 66, 193, 0.3);
 }
 .pdf-service:hover {
-  background-color: rgba(40, 167, 69, 0.2);
+  background-color: rgba(111, 66, 193, 0.2);
 }
 
 /* Ícones */
