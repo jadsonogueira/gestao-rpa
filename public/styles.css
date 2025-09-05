@@ -81,14 +81,12 @@ button.custom-button:hover {
   box-shadow: 0 4px 20px rgba(0,0,0,0.6);
 }
 
-/* Serviços de PDF destacados */
 .pdf-service {
-  background-color: rgba(0, 123, 255, 0.1);
-  border: 1px solid rgba(0, 123, 255, 0.3);
+  background-color: rgba(40, 167, 69, 0.1);   /* verde translúcido */
+  border: 1px solid rgba(40, 167, 69, 0.3);
 }
-
 .pdf-service:hover {
-  background-color: rgba(0, 123, 255, 0.2);
+  background-color: rgba(40, 167, 69, 0.2);
 }
 
 /* Ícones */
