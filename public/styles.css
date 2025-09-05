@@ -189,3 +189,14 @@ html, body { background-color: #121212 !important; color: #e0e0e0; }
 /* Modal dark */
 .modal-content { background:#1e1e1e !important; color:#e0e0e0 !important; border:1px solid #333 !important; }
 .modal-header, .modal-footer { background:#2a2a2a !important; border-color:#444 !important; }
+
+/* Correção de contraste no Dark Mode */
+.text-muted, 
+label, 
+.form-group label {
+  color: #cfcfcf !important; /* cinza claro para melhor leitura */
+}
+
+.modal-body {
+  color: #e0e0e0 !important; /* texto principal dentro do modal */
+}
