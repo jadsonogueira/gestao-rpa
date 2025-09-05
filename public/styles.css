@@ -2,17 +2,18 @@
 
 /* Estilos Gerais */
 body {
-  background-color: #f8f9fa; /* Cor de fundo padrão do Bootstrap */
+  background-color: #121212; /* Fundo escuro */
+  color: #e0e0e0; /* Texto claro */
 }
 
 h1 {
-  color: #343a40; /* Cor de texto escura */
+  color: #f1f1f1; /* Títulos claros */
   margin-bottom: 30px;
 }
 
 header {
-  background-color: #007bff; /* Cor primária do Bootstrap */
-  color: white;
+  background-color: #1e1e1e; /* Cabeçalho escuro */
+  color: #e0e0e0;
   padding: 20px;
   text-align: center;
 }
@@ -23,56 +24,131 @@ main {
 
 /* Botões Personalizados */
 button.custom-button {
-  background-color: #4285f4;
+  background-color: #007bff; /* Azul padrão */
   color: white;
   padding: 15px 25px;
   margin: 10px;
   border: none;
   cursor: pointer;
   font-size: 16px;
+  border-radius: 6px;
 }
 
 button.custom-button:hover {
-  background-color: #357ae8;
+  background-color: #0056b3;
 }
 
-/* Modais Personalizados (se necessário) */
+/* Modais Personalizados */
 .custom-modal .modal-content {
-  background-color: #fefefe;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
   padding: 20px;
+  border: 1px solid #333;
 }
 
-/* Estilos do Formulário Personalizado (opcional) */
+/* Estilos do Formulário */
 .custom-form-group {
   margin-bottom: 15px;
 }
 
 .custom-form-control {
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  color: #e0e0e0;
   padding: 10px;
   font-size: 16px;
 }
 
+.custom-form-control:focus {
+  background-color: #2f2f2f;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+  color: #fff;
+}
 
-    .whatsapp-float {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: #25D366;
-    color: white;
-    border-radius: 50%;
-    width: 55px;
-    height: 55px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-    font-size: 24px;
-    z-index: 1000;
-    text-decoration: none;
-  }
+/* Cartões de Serviço */
+.service-card {
+  background-color: #1c1c1c;
+  border: 1px solid #2c2c2c;
+  color: #e0e0e0;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  height: 100%;
+}
 
-  .whatsapp-float:hover {
-    background-color: #1ebe5d;
-    text-decoration: none;
-    color: white;
-  }
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+
+/* Serviços de PDF destacados */
+.pdf-service {
+  background-color: rgba(0, 123, 255, 0.1);
+  border: 1px solid rgba(0, 123, 255, 0.3);
+}
+
+.pdf-service:hover {
+  background-color: rgba(0, 123, 255, 0.2);
+}
+
+/* Ícones */
+.service-icon {
+  color: #66b2ff;
+}
+
+/* Botões padrão */
+.btn {
+  border-radius: 6px;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #004085;
+}
+
+.btn-outline-light {
+  color: #e0e0e0;
+  border-color: #aaa;
+}
+
+.btn-outline-light:hover {
+  background-color: #e0e0e0;
+  color: #121212;
+}
+
+/* Tooltip dark */
+.tooltip-inner {
+  background-color: #333;
+  color: #fff;
+  border: 1px solid #444;
+}
+
+/* WhatsApp flutuante */
+.whatsapp-float {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #25D366;
+  color: white;
+  border-radius: 50%;
+  width: 55px;
+  height: 55px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+  font-size: 24px;
+  z-index: 1000;
+  text-decoration: none;
+}
+
+.whatsapp-float:hover {
+  background-color: #1ebe5d;
+  text-decoration: none;
+  color: white;
+}
