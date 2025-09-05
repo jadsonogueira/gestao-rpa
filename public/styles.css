@@ -198,3 +198,18 @@ label,
 .modal-body {
   color: #e0e0e0 !important; /* texto principal dentro do modal */
 }
+
+/* coloque este bloco AO FINAL do seu styles.css */
+.card.service-card.pdf-service {
+  background-color: rgba(111, 66, 193, 0.12) !important; /* roxo translúcido elegante */
+  border-color: rgba(111, 66, 193, 0.35) !important;
+}
+.card.service-card.pdf-service:hover {
+  background-color: rgba(111, 66, 193, 0.20) !important;
+}
+.card.service-card.pdf-service .service-icon {
+  color: #b18cff !important; /* ícone com acento roxo */
+}
+.card.service-card.pdf-service .service-description {
+  color: #cfcfe6 !important; /* melhora contraste do subtítulo */
+}
