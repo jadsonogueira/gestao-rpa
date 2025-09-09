@@ -15,6 +15,7 @@ function slugify2(nome) {
     .replace(/(^-|-$)/g, "");
 }
 
+
 async function carregarFormulario2(nome, destinoEl) {
   const arquivo = FORM_MAP2[nome] || `${slugify2(nome)}.html`;
   const url = `${BASE_FORMS}/${arquivo}`;
