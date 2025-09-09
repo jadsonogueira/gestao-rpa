@@ -2,81 +2,385 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>RPDNIT – Dashboard2 (teste)</title>
+  <title>RPDNIT – Dashboard (novo layout)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0f13">
 
-  <!-- Bootstrap 4.5 -->
+  <!-- Bootstrap 4.5 (mantido para compatibilidade) -->
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Font Awesome -->
+  <!-- Font Awesome 5 -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
 
-  <!-- Estilos do layout novo -->
-  <link rel="stylesheet" href="dark.css?v=2">
-
+  <!-- === Estilos do layout novo (pré-visualização single-file) === -->
   <style>
-    body { background:#0b0f13; color:#eef2f6; }
-    .cardx {
-      background:#121821; border:1px solid rgba(255,255,255,.06);
-      border-radius:16px; padding:18px; cursor:pointer;
-      transition:.2s; height:100%;
+    :root{
+      /* Paleta escura elegante */
+      --bg: #0b0f13;            /* fundo principal */
+      --panel: #121821;         /* cartões e barras */
+      --panel-2: #0f141b;       /* sidebar */
+      --muted: #9aa8b4;         /* textos de apoio */
+      --text: #eef2f6;          /* texto principal */
+      --brand: #4da3ff;         /* realces (azul frio) */
+      --brand-2: #6ee7f3;       /* gradiente sutil */
+      --ok: #3ddc97;
+      --warn: #ffcf5c;
+      --danger: #ff6b6b;
+      --card-hover: rgba(77,163,255,.08);
+      --border: rgba(255,255,255,.06);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
     }
-    .cardx:hover {
-      transform:translateY(-3px);
-      border-color:rgba(77,163,255,.4);
-      background:linear-gradient(180deg,rgba(77,163,255,.04),transparent 40%);
-    }
-    .cardx h6 { font-weight:600; margin:0 0 6px; }
-    .cardx p { color:#9aa8b4; font-size:.9rem; }
-    .cardx .ic { font-size:22px; margin-bottom:8px; color:#4da3ff; }
+    html,body{height:100%;}
+    body{background: var(--bg); color: var(--text);}
+    .layout{display:grid; grid-template-columns: 280px 1fr; min-height:100vh;}
+    /* Sidebar */
+    .sidebar{background: var(--panel-2); border-right: 1px solid var(--border); position:sticky; top:0; height:100vh;}
+    .brand{display:flex; align-items:center; gap:.6rem; padding:20px 22px; border-bottom:1px solid var(--border);}  
+    .brand i{font-size:1.1rem; color:var(--brand);}    
+    .brand .title{font-weight:700; letter-spacing:.3px;}
+    .side-menu{padding:14px;}
+    .side-group{margin-bottom:12px;}
+    .side-label{font-size:.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; padding:10px 10px 6px 10px;}
+    .nav-btn{display:flex; align-items:center; gap:.75rem; padding:10px 12px; border-radius:12px; color: var(--text); text-decoration:none; border:1px solid transparent;}
+    .nav-btn:hover{background:rgba(255,255,255,.04); border-color:var(--border);} 
+    .nav-btn i{width:18px; text-align:center; color:var(--muted);}
+    .nav-btn.active{background:linear-gradient(90deg, rgba(77,163,255,.15), rgba(110,231,243,.12)); border-color: rgba(77,163,255,.35);}  
+
+    /* Área principal */
+    .main{display:flex; flex-direction:column;}
+    .topbar{position:sticky; top:0; z-index:50; background:rgba(18,24,33,.86); backdrop-filter: blur(6px); border-bottom:1px solid var(--border);} 
+    .topbar-inner{display:flex; align-items:center; gap:16px; padding:14px 20px;} 
+    .search{flex:1; position:relative;}
+    .search input{width:100%; background:#0c1219; border:1px solid var(--border); color:var(--text); padding:10px 40px 10px 38px; border-radius:12px;}
+    .search i{position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted);} 
+    .pill{font-size:.75rem; color:#cde6ff; background:linear-gradient(90deg, rgba(77,163,255,.25), rgba(110,231,243,.18)); border:1px solid rgba(77,163,255,.45); padding:6px 10px; border-radius:999px;}
+    .user{display:flex; align-items:center; gap:10px;}
+    .avatar{width:32px; height:32px; border-radius:50%; background:#1a2330; display:grid; place-items:center; color:var(--muted);}
+
+    .content{padding:26px 22px 40px;}
+    .page-title{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+    .page-title h2{font-size:1.35rem; margin:0;}
+
+    /* Seções de serviços */
+    .section{margin-top:16px;}
+    .section h5{font-size:.92rem; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; margin:0 0 10px 2px;}
+    .cards{display:grid; grid-template-columns:repeat(12, 1fr); grid-gap:14px;}
+    .span-3{grid-column: span 3;}  /* 4 por linha em >=1200px */
+    .span-4{grid-column: span 4;}
+    .span-6{grid-column: span 6;}
+
+    @media (max-width:1200px){ .span-3{grid-column: span 4;} }
+    @media (max-width:992px){ .span-3,.span-4{grid-column: span 6;} .layout{grid-template-columns: 92px 1fr;} .hide-at-md{display:none;} }
+    @media (max-width:576px){ .span-3,.span-4,.span-6{grid-column: span 12;} .topbar-inner{gap:8px;} }
+
+    /* Cartões */
+    .cardx{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); height:100%; display:flex; flex-direction:column; padding:16px; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; cursor:pointer;}
+    .cardx:hover{transform: translateY(-4px); border-color: rgba(77,163,255,.4); box-shadow: 0 14px 34px rgba(0,0,0,.45); background:linear-gradient(180deg, rgba(77,163,255,.04), transparent 40%);}
+    .cardx .ic{font-size:22px; margin-bottom:10px; color:var(--brand);} 
+    .cardx h6{font-weight:700; margin:0 0 6px 0;}
+    .cardx p{color:var(--muted); font-size:.9rem; margin:0 0 12px 0;}
+
+    /* Acento para serviços de PDF */
+    .pdf-accent{position:relative;}
+    .pdf-accent:before{content:""; position:absolute; inset:0; border-radius:var(--radius); pointer-events:none; border:1px solid rgba(77,163,255,.5);} 
+    .pdf-accent:after{content:""; position:absolute; left:-1px; top:14px; bottom:14px; width:4px; border-radius:3px; background: linear-gradient(180deg, var(--brand), var(--brand-2));}
+
+    /* Estados e restrições */
+    .restrito{filter: blur(1.2px); pointer-events:none; opacity:.65;}
+    .btn-slim{align-self:flex-start; margin-top:auto; border-radius:12px;}
+
+    /* Toast/alerta */
+    .alert-container{position:fixed; top:20px; right:20px; z-index:1050; max-width:360px;}
+
+    /* Botão flutuante WhatsApp */
+    .whatsapp-float{position:fixed; right:18px; bottom:20px; width:52px; height:52px; border-radius:50%; display:grid; place-items:center; background:#25D366; color:white; box-shadow: var(--shadow); z-index:9999;}
+    .whatsapp-float:hover{text-decoration:none; color:white;}
+
+    /* Tooltip Bootstrap override (dark) */
+    .tooltip-inner{background:#0f141b; color:var(--text); border:1px solid var(--border);} 
+    .bs-tooltip-auto[x-placement^=top] .arrow::before, .bs-tooltip-top .arrow::before{border-top-color:#0f141b;}
   </style>
 </head>
 <body>
-  <div class="container py-4">
-    <h3 class="mb-4 text-center">Dashboard2 – Teste</h3>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <i class="fas fa-road"></i>
+        <div class="title">RPDNIT</div>
+      </div>
+      <nav class="side-menu">
+        <div class="side-group">
+          <div class="side-label hide-at-md">Navegação</div>
+          <a class="nav-btn active" href="/dashboard.html"><i class="fas fa-th-large"></i><span class="hide-at-md">Serviços</span></a>
+          <a class="nav-btn" href="/admin.html"><i class="fas fa-tools"></i><span class="hide-at-md">Administração</span></a>
+          <a class="nav-btn" href="/login.html"><i class="fas fa-sign-in-alt"></i><span class="hide-at-md">Login</span></a>
+          <a class="nav-btn" href="/"><i class="fas fa-user-plus"></i><span class="hide-at-md">Cadastro</span></a>
+        </div>
+        <div class="side-group">
+          <div class="side-label hide-at-md">Atalhos</div>
+          <a class="nav-btn" href="#pdf">
+            <i class="fas fa-file-pdf"></i><span class="hide-at-md">Ferramentas PDF</span>
+          </a>
+          <a class="nav-btn" href="#sei">
+            <i class="fas fa-file"></i><span class="hide-at-md">Fluxos SEI</span>
+          </a>
+          <a class="nav-btn" href="#outros">
+            <i class="fas fa-layer-group"></i><span class="hide-at-md">Outros</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
 
-    <div class="row">
-      <div class="col-md-4 mb-4">
-        <div class="cardx service-card" onclick="abrirFormulario2('Consultar empenho')">
-          <i class="ic fas fa-search"></i>
-          <h6>Consultar Empenho</h6>
-          <p>Verifique informações sobre empenhos e contratos.</p>
+    <!-- Main -->
+    <main class="main">
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="topbar-inner">
+          <div class="search">
+            <i class="fas fa-search"></i>
+            <input id="searchInput" type="text" placeholder="Buscar serviço… (ex.: PDF, assinatura, acesso externo)">
+          </div>
+          <span class="pill" id="rolePill">…</span>
+          <div class="user">
+            <div class="avatar"><i class="fas fa-user"></i></div>
+            <button class="btn btn-outline-light btn-sm" id="logoutButton"><i class="fas fa-sign-out-alt mr-1"></i> Sair</button>
+          </div>
         </div>
       </div>
-      <div class="col-md-4 mb-4">
-        <div class="cardx service-card" onclick="abrirFormulario2('Liberar assinatura externa')">
-          <i class="ic fas fa-signature"></i>
-          <h6>Liberar Assinatura Externa</h6>
-          <p>Solicite liberação de assinatura externa.</p>
+
+      <!-- Conteúdo -->
+      <section class="content">
+        <div class="page-title">
+          <h2>Serviços Disponíveis</h2>
+          <small class="text-muted" style="color:var(--muted) !important;">Selecione um serviço para iniciar uma solicitação</small>
         </div>
-      </div>
-      <div class="col-md-4 mb-4">
-        <div class="cardx service-card" onclick="abrirFormulario2('Unir PDFs')">
-          <i class="ic fas fa-file-pdf"></i>
-          <h6>Unir PDFs</h6>
-          <p>Junte múltiplos PDFs em um só.</p>
+
+        <!-- Fluxos SEI -->
+        <div id="sei" class="section">
+          <h5>Fluxos SEI</h5>
+          <div class="cards">
+            <div class="span-3">
+              <div class="cardx service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" data-keywords="consultar empenho, contratos, empenho" onclick="abrirFormulario('Consultar empenho')">
+                <i class="ic fas fa-search"></i>
+                <h6>Consultar Empenho</h6>
+                <p>Verifique informações sobre empenhos e contratos.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-3">
+              <div class="cardx service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" data-keywords="assinatura externa, liberar assinatura" onclick="abrirFormulario('Liberar assinatura externa')">
+                <i class="ic fas fa-signature"></i>
+                <h6>Liberar Assinatura Externa</h6>
+                <p>Solicite liberação para assinatura externa de documentos.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-3">
+              <div class="cardx service-card" data-role="classe_b,classe_c,classe_d,classe_e,admin" data-keywords="acesso externo, liberar acesso" onclick="abrirFormulario('Liberar acesso externo')">
+                <i class="ic fas fa-key"></i>
+                <h6>Liberar Acesso Externo</h6>
+                <p>Conceda acesso externo ao processo.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-6">
+              <div class="cardx service-card" data-role="admin" data-keywords="ordenar documentos, alterar ordem" onclick="abrirFormulario('Alterar ordem de documentos')">
+                <i class="ic fas fa-sort"></i>
+                <h6>Alterar Ordem de Documentos</h6>
+                <p>Reorganize a ordem dos documentos de um processo.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-6">
+              <div class="cardx service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" data-keywords="anexo, inserir anexo, doc sei" onclick="abrirFormulario('Inserir anexo em doc SEI')">
+                <i class="ic fas fa-paperclip"></i>
+                <h6>Inserir Anexo em Doc SEI</h6>
+                <p>Adicione anexos a documentos existentes.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-6">
+              <div class="cardx service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" data-keywords="imagem, jpg, conversão" onclick="abrirFormulario('Inserir imagem em doc SEI')">
+                <i class="ic fas fa-camera"></i>
+                <h6>Inserir Imagem em Doc SEI</h6>
+                <p>Adicione imagens ou envie um PDF para conversão em JPG.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-6">
+              <div class="cardx service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" data-keywords="assinatura, doc sei" onclick="abrirFormulario('Assinatura em doc SEI')">
+                <i class="ic fas fa-pen-nib"></i>
+                <h6>Assinatura em Doc SEI</h6>
+                <p>Assinar documento SEI.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-6">
+              <div class="cardx service-card" data-role="classe_b,classe_c,classe_d,classe_e,admin" data-keywords="criar doc externo" onclick="abrirFormulario('Criar Doc SEI Externo')">
+                <i class="ic fas fa-file"></i>
+                <h6>Criar Doc SEI Externo</h6>
+                <p>Gerar documento do tipo Externo.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-6">
+              <div class="cardx service-card" data-role="classe_b,classe_c,classe_d,classe_e,admin" data-keywords="criar doc editável" onclick="abrirFormulario('Criar Doc SEI Editável')">
+                <i class="ic fas fa-file-alt"></i>
+                <h6>Criar Doc SEI Editável</h6>
+                <p>Gerar documento SEI do tipo Editável.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-3">
+              <div class="cardx service-card" data-role="admin" data-keywords="análise processo, sei" onclick="abrirFormulario('Analise de processo')">
+                <i class="ic fas fa-clipboard-check"></i>
+                <h6>Análise de processo</h6>
+                <p>Executar análise de processo SEI.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <!-- Ferramentas PDF -->
+        <div id="pdf" class="section">
+          <h5>Ferramentas PDF</h5>
+          <div class="cards">
+            <div class="span-4">
+              <div class="cardx service-card pdf-accent" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" data-keywords="unir pdf, merge" onclick="abrirFormulario('Unir PDFs')">
+                <i class="ic fas fa-file-pdf"></i>
+                <h6>Unir PDFs</h6>
+                <p>Junte vários arquivos PDF em um único documento.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-4">
+              <div class="cardx service-card pdf-accent" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" data-keywords="dividir pdf, split" onclick="abrirFormulario('Dividir PDF')">
+                <i class="ic fas fa-cut"></i>
+                <h6>Dividir PDF</h6>
+                <p>Separe páginas ou faixas em PDFs individuais.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-4">
+              <div class="cardx service-card pdf-accent" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" data-keywords="ocr, pesquisável" onclick="abrirFormulario('PDF pesquisável (OCR)')">
+                <i class="ic fas fa-search"></i>
+                <h6>PDF pesquisável (OCR)</h6>
+                <p>Crie uma camada de texto para busca.</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+            <div class="span-4">
+              <div class="cardx service-card pdf-accent" data-role="classe_b" data-keywords="pdf para jpg, imagem" onclick="abrirFormulario('PDF para JPG')">
+                <i class="ic fas fa-image"></i>
+                <h6>PDF para JPG</h6>
+                <p>Converta um PDF em imagens JPG (uma por página).</p>
+                <button class="btn btn-outline-light btn-sm btn-slim">Abrir</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outros -->
+        <div id="outros" class="section">
+          <h5>Outros</h5>
+          <div class="cards">
+            <!-- Espaço reservado para novos serviços -->
+          </div>
+        </div>
+
+      </section>
+    </main>
   </div>
 
-  <!-- Modal -->
-  <div class="modal fade" id="fluxoModal2" tabindex="-1">
+  <!-- Modal do Formulário -->
+  <div class="modal fade" id="fluxoModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-dark text-light">
-        <div class="modal-header">
-          <h5 class="modal-title" id="modalTitle2"></h5>
-          <button type="button" class="close text-light" data-dismiss="modal">&times;</button>
+      <div class="modal-content" style="background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:16px;">
+        <div class="modal-header" style="border-color:var(--border)">
+          <h5 class="modal-title" id="modalTitle"></h5>
+          <button type="button" class="close" data-dismiss="modal" style="color:#fff; opacity:.7;">
+            <span>&times;</span>
+          </button>
         </div>
         <div class="modal-body"></div>
       </div>
     </div>
   </div>
 
+  <!-- Alert/Toast container -->
+  <div class="alert-container" id="alertPlaceholder"></div>
+
+  <!-- WhatsApp -->
+  <a href="https://wa.me/5561996686541" class="whatsapp-float" target="_blank" title="Fale conosco no WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+  </a>
+
   <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="script2.js"></script>
+  <script>
+    // Mantém compatibilidade: a função abrirFormulario já usada no seu app
+    function abrirFormulario(nome){
+      $('#modalTitle').text(nome);
+      // Aqui você pode injetar o formulário correspondente (via fetch/axios ou HTML mesmo)
+      $('.modal-body').html('<div class="text-muted">Carregando formulário: <b>'+nome+'</b>…</div>');
+      $('#fluxoModal').modal('show');
+    }
+
+    // Busca por texto nos cards
+    (function initSearch(){
+      var input = document.getElementById('searchInput');
+      if(!input) return;
+      input.addEventListener('input', function(){
+        var q = this.value.toLowerCase();
+        document.querySelectorAll('.service-card').forEach(function(card){
+          var text = (card.innerText + ' ' + (card.getAttribute('data-keywords')||'')).toLowerCase();
+          card.parentElement.parentElement.style.display = text.includes(q) ? '' : 'none';
+        });
+      });
+    })();
+
+    // Autenticação + restrição por role (compatível com sua rota /verify-token)
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      if (!token) { alert('Você não está autenticado. Redirecionando para o login…'); location.href='login.html'; return; }
+      try {
+        const res = await fetch(`${window.location.origin}/verify-token`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token })});
+        const data = await res.json();
+        if (!data.valid) { localStorage.removeItem('token'); return location.href = 'login.html'; }
+        const userRole = data.userRole || data.role;
+        document.getElementById('rolePill').textContent = `Perfil: ${userRole}`;
+        // Restrições
+        document.querySelectorAll('.service-card').forEach((card) => {
+          const roleAttr = card.getAttribute('data-role');
+          if(!roleAttr) return;
+          const allowed = roleAttr.split(',').map(r=>r.trim());
+          if(!allowed.includes(userRole)){
+            card.classList.add('restrito');
+            card.removeAttribute('onclick');
+            card.setAttribute('data-toggle', 'tooltip');
+            card.setAttribute('title', 'Acesso restrito: serviço disponível apenas para níveis superiores');
+          }
+        });
+        $('[data-toggle="tooltip"]').tooltip();
+      } catch(e){
+        console.error(e);
+        alert('Erro ao verificar autenticação. Redirecionando para o login…');
+        localStorage.removeItem('token');
+        location.href='login.html';
+      }
+    });
+
+    // Logout
+    document.addEventListener('click', function(e){
+      if(e.target.closest('#logoutButton')){
+        localStorage.removeItem('token');
+        location.href='login.html';
+      }
+    });
+  </script>
 </body>
 </html>
