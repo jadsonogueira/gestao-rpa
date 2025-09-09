@@ -314,26 +314,7 @@ async function hasBinary(bin) {
   } catch { return false; }
 }
 
-async function makePdfSearchable(inBuffer, langs = 'por+eng') {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-'));
-  const inPath = path.join(tmpDir, 'input.pdf');
-  const outPath = path.join(tmpDir, 'output.pdf');
-  fs.writeFileSync(inPath, inBuffer);
 
-  try {
-    if (await hasBinary('ocrmypdf')) {
-      const cmd = `ocrmypdf --skip-text -l ${langs} --optimize 1 "${inPath}" "${outPath}"`;
-      await execP(cmd);
-      const out = fs.readFileSync(outPath);
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-      return out;
-    }
-
-    const hasPdftoppm = await hasBinary('pdftoppm');
-    const hasTesseract = await hasBinary('tesseract');
-    if (!hasPdftoppm || !hasTesseract) {
-      throw new Error('Faltam binários: ocrmypdf ou tesseract/pdftoppm.');
-    }
 
     const parsed = await pdfParse(inBuffer);
     const numPages = parsed.numpages || 1;
