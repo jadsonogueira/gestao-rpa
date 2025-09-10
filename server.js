@@ -315,36 +315,6 @@ async function hasBinary(bin) {
 }
 
 
-
-    const parsed = await pdfParse(inBuffer);
-    const numPages = parsed.numpages || 1;
-    const pagePdfBuffers = [];
-
-    for (let i = 1; i <= numPages; i++) {
-      const ppmPrefix = path.join(tmpDir, `page_${i}`);
-      await execP(`pdftoppm -tiff -f ${i} -l ${i} "${inPath}" "${ppmPrefix}"`);
-      const tiffPath = `${ppmPrefix}-1.tif`;
-      const pageOut = path.join(tmpDir, `ocr_page_${i}`);
-      await execP(`tesseract "${tiffPath}" "${pageOut}" -l ${langs} pdf`);
-      pagePdfBuffers.push(fs.readFileSync(`${pageOut}.pdf`));
-    }
-
-    const merged = await PDFDocument.create();
-    for (const buf of pagePdfBuffers) {
-      const part = await PDFDocument.load(buf, { ignoreEncryption: true });
-      const pages = await merged.copyPages(part, part.getPageIndices());
-      pages.forEach(p => merged.addPage(p));
-    }
-    const mergedBytes = await merged.save();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    return Buffer.from(mergedBytes);
-  } catch (e) {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    throw e;
-  }
-}
-
-
 // Verifica variáveis de ambiente obrigatórias
 if (
   !process.env.MONGODB_URL ||
