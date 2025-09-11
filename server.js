@@ -78,21 +78,26 @@ function normalizeLangs(input) {
   return s.split('+').map(t => t.trim()).filter(Boolean).join('+');
 }
 
+function toLangArray(input) {
+  if (Array.isArray(input)) return input.filter(Boolean).map(String);
+  return String(input || 'eng').split('+').map(s => s.trim()).filter(Boolean);
+}
+
 async function getWorker(langs = 'por+eng') {
-  const langStr = normalizeLangs(langs);      // "por+eng"
-  const langArr = langStr.split('+');         // ["por","eng"]  <- **ESSENCIAL**
+  const langArr = toLangArray(langs);
+  const primary = langArr[0] || 'eng';   // usa só o primeiro
 
   const worker = await createWorker({
     langPath: 'https://tessdata.projectnaptha.com/4.0.0',
     cachePath: '/tmp',
   });
 
-  // Nesta versão, passe ARRAY para loadLanguage/initialize:
-  await worker.loadLanguage(langArr);
-  await worker.initialize(langArr);
-
+  // ✅ inicializa com 1 idioma para eliminar a causa do erro
+  await worker.loadLanguage(primary);
+  await worker.initialize(primary);
   return worker;
 }
+
 
 
 /**
