@@ -67,41 +67,29 @@ const { createWorker } = require('tesseract.js');
 
 function normalizeLangs(input) {
   if (!input) return 'por+eng';
-
-  // Se vier array nativo
-  if (Array.isArray(input)) {
-    return input.map(s => String(s).trim()).filter(Boolean).join('+');
-  }
-
-  // Converte para string
+  if (Array.isArray(input)) return input.map(s => String(s).trim()).filter(Boolean).join('+');
   let s = String(input).trim();
-
-  // Se vier como string JSON de array: '["por","eng"]'
   if (s.startsWith('[') && s.endsWith(']')) {
     try {
       const arr = JSON.parse(s);
-      if (Array.isArray(arr)) {
-        return arr.map(x => String(x).trim()).filter(Boolean).join('+');
-      }
-    } catch { /* ignora e cai no fallback */ }
+      if (Array.isArray(arr)) return arr.map(x => String(x).trim()).filter(Boolean).join('+');
+    } catch {}
   }
-
-  // Caso normal: "por+eng", "por", etc.
   return s.split('+').map(t => t.trim()).filter(Boolean).join('+');
 }
 
-
 async function getWorker(langs = 'por+eng') {
-  const langStr = normalizeLangs(langs);
+  const langStr = normalizeLangs(langs);      // "por+eng"
+  const langArr = langStr.split('+');         // ["por","eng"]  <- **ESSENCIAL**
 
   const worker = await createWorker({
     langPath: 'https://tessdata.projectnaptha.com/4.0.0',
     cachePath: '/tmp',
   });
 
-  // carrega e inicializa de uma vez com "por+eng" (string)
-  await worker.loadLanguage(langStr);
-  await worker.initialize(langStr);
+  // Nesta versão, passe ARRAY para loadLanguage/initialize:
+  await worker.loadLanguage(langArr);
+  await worker.initialize(langArr);
 
   return worker;
 }
