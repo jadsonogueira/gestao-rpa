@@ -65,19 +65,47 @@ const execP = util.promisify(exec);
 const { PDFDocument } = require('pdf-lib');
 const { createWorker } = require('tesseract.js');
 
+function normalizeLangs(input) {
+  if (!input) return 'por+eng';
+
+  // Se vier array nativo
+  if (Array.isArray(input)) {
+    return input.map(s => String(s).trim()).filter(Boolean).join('+');
+  }
+
+  // Converte para string
+  let s = String(input).trim();
+
+  // Se vier como string JSON de array: '["por","eng"]'
+  if (s.startsWith('[') && s.endsWith(']')) {
+    try {
+      const arr = JSON.parse(s);
+      if (Array.isArray(arr)) {
+        return arr.map(x => String(x).trim()).filter(Boolean).join('+');
+      }
+    } catch { /* ignora e cai no fallback */ }
+  }
+
+  // Caso normal: "por+eng", "por", etc.
+  return s.split('+').map(t => t.trim()).filter(Boolean).join('+');
+}
+
+
 async function getWorker(langs = 'por+eng') {
+  const langStr = normalizeLangs(langs);
+
   const worker = await createWorker({
-    // baixa os dados de idioma via CDN (não depende de pacotes no host)
     langPath: 'https://tessdata.projectnaptha.com/4.0.0',
     cachePath: '/tmp',
   });
-  const langList = (langs || 'eng').split('+').map(s => s.trim()).filter(Boolean);
-  for (const lg of langList) {
-    await worker.loadLanguage(lg);
-  }
-  await worker.initialize(langList.join('+'));
+
+  // carrega e inicializa de uma vez com "por+eng" (string)
+  await worker.loadLanguage(langStr);
+  await worker.initialize(langStr);
+
   return worker;
 }
+
 
 /**
  * Torna um PDF pesquisável (OCR):
@@ -1107,7 +1135,10 @@ app.post('/pdf-make-searchable', upload.single('arquivoPdf'), async (req, res) =
       return res.status(400).send('Envie um "arquivoPdf" (application/pdf).');
     }
 
-    const langs = (req.body.lang || req.query.lang || process.env.OCR_LANGS || 'por+eng').trim();
+   const langs = normalizeLangs(
+  req.body.lang ?? req.query.lang ?? process.env.OCR_LANGS ?? 'por+eng'
+);
+
 
     // Opcional: comprimir antes se >4MB (você já tem esse helper)
     const inputBuffer = await compressPDFIfNeeded(req.file);
