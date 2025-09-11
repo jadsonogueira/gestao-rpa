@@ -1038,16 +1038,6 @@ app.post('/verify-token', (req, res) => {
   });
 });
 
-app.get('/usuarios', async (req, res) => {
-  try {
-    const usuarios = await User.find({}, { password: 0 }).sort({ username: 1 }); // exclui senha
-    res.json(usuarios);
-  } catch (err) {
-    console.error('Erro ao buscar usuários:', err);
-    res.status(500).send('Erro ao buscar usuários');
-  }
-});
-
 
 app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
   try {
