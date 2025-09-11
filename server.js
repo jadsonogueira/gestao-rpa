@@ -64,6 +64,8 @@ const util = require('util');
 const execP = util.promisify(exec);
 const { PDFDocument } = require('pdf-lib');
 const { createWorker } = require('tesseract.js');
+const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('pdf-lib');
+
 
 function normalizeLangs(input) {
   if (!input) return 'por+eng';
@@ -153,59 +155,81 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
       return Buffer.from(mergedBytes);
     }
 
-    // --- Caminho C: Tesseract.js (WASM) + pdftoppm
-    if (!hasPdftoppm) {
-      throw new Error('Nenhuma rota de OCR disponível: falta pdftoppm.');
-    }
-    console.log('[OCR] Usando tesseract.js (WASM) + pdftoppm');
+  // --- Caminho C: Tesseract.js (WASM) + pdftoppm
+if (!hasPdftoppm) {
+  throw new Error('Nenhuma rota de OCR disponível: falta pdftoppm.');
+}
+console.log('[OCR] Usando tesseract.js (WASM) + pdftoppm');
 
-    const parsed = await pdfParse(inBuffer);
-    const numPages = parsed.numpages || 1;
-    console.log(`[OCR] Páginas: ${numPages}`);
+const parsed = await pdfParse(inBuffer);
+const numPages = parsed.numpages || 1;
+console.log(`[OCR] Páginas: ${numPages}`);
 
-    const imgPaths = [];
-    for (let i = 1; i <= numPages; i++) {
-      const outPrefix = path.join(tmpDir, `page_${i}`);
-      await execP(`pdftoppm -png -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
-      imgPaths.push(`${outPrefix}-1.png`);
-    }
+const imgPaths = [];
+for (let i = 1; i <= numPages; i++) {
+  const outPrefix = path.join(tmpDir, `page_${i}`);
+  // Gera PNG por página
+  await execP(`pdftoppm -png -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
+  const pngPath = `${outPrefix}-1.png`;
+  if (!fs.existsSync(pngPath)) {
+    throw new Error(`pdftoppm não gerou a imagem esperada: ${pngPath}`);
+  }
+  imgPaths.push(pngPath);
+}
 
-    const worker = await getWorker(langs); // ✅ já inicializado
+const worker = await getWorker(langs); // já inicializado com 1 idioma
+const merged = await PDFDocument.create();
 
-    const merged = await PDFDocument.create();
-    for (const pngPath of imgPaths) {
-      const imageBytes = fs.readFileSync(pngPath);
-      const { data } = await worker.recognize(imageBytes);
+// ✔️ Embute uma fonte para o texto OCR (evita falhas do pdf-lib)
+const ocrFont = await merged.embedFont(StandardFonts.Helvetica);
 
-      const embeddedPng = await merged.embedPng(imageBytes);
-      const { width, height } = embeddedPng.size();
-      const page = merged.addPage([width, height]);
-      page.drawImage(embeddedPng, { x: 0, y: 0, width, height });
+for (const pngPath of imgPaths) {
+  // Usar caminho do arquivo economiza memória
+  const { data } = await worker.recognize(pngPath);
 
-      for (const w of (data.words || [])) {
-        const { x0, y0, x1, y1 } = w.bbox;
-        const h = Math.max(1, y1 - y0);
-        const yPdf = height - (y0 + h);
-        const size = Math.max(6, Math.min(72, h));
-        page.drawText(w.text, {
-          x: x0,
-          y: yPdf,
-          size,
-          opacity: 0.01, // invisível e pesquisável
-        });
-      }
-    }
+  const imageBytes = fs.readFileSync(pngPath);
+  const embeddedPng = await merged.embedPng(imageBytes);
+  const { width, height } = embeddedPng.size();
+  const page = merged.addPage([width, height]);
 
-    await worker.terminate();
-    const mergedBytes = await merged.save();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    return Buffer.from(mergedBytes);
-  } catch (e) {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    console.error('[OCR] Falhou:', e.message);
-    throw e;
+  // desenha a imagem da página
+  page.drawImage(embeddedPng, { x: 0, y: 0, width, height });
+
+  // desenha camada de texto invisível apenas se houver palavras + bbox
+  const words = Array.isArray(data?.words) ? data.words : [];
+  for (const w of words) {
+    const bb = w?.bbox;
+    const txt = (w?.text ?? '').trim();
+    if (!bb || !txt) continue; // evita undefined
+
+    const x0 = Number(bb.x0), y0 = Number(bb.y0), x1 = Number(bb.x1), y1 = Number(bb.y1);
+    if (![x0, y0, x1, y1].every(Number.isFinite)) continue;
+
+    const h = Math.max(1, y1 - y0);
+    const yPdf = height - (y0 + h);
+
+    // Tamanho mínimo/ máximo para estabilidade
+    const size = Math.max(6, Math.min(36, h));
+
+    // ⚠️ Algumas versões do pdf-lib não aceitam "opacity" no drawText.
+    // Para compatibilidade máxima, passamos apenas { font, size }.
+    // O texto continua "invisível" por ficar sobre a imagem; se quiser invisível mesmo,
+    // mantenha size pequeno. (Opcionalmente, se tua versão suportar, adiciona `opacity: 0.01`.)
+    page.drawText(txt, {
+      x: x0,
+      y: yPdf,
+      size,
+      font: ocrFont
+      // opacity: 0.01, // <- use só se tua versão do pdf-lib suportar
+    });
   }
 }
+
+await worker.terminate();
+const mergedBytes = await merged.save();
+fs.rmSync(tmpDir, { recursive: true, force: true });
+return Buffer.from(mergedBytes);
+
 
 
 // === Helper: otimiza/resize JPG mantendo nitidez ===
