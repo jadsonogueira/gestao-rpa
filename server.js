@@ -229,6 +229,13 @@ const mergedBytes = await merged.save();
 fs.rmSync(tmpDir, { recursive: true, force: true });
 return Buffer.from(mergedBytes);
 
+  } catch (e) {
+    // limpa o tmp mesmo em caso de erro
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    console.error('[OCR] Falhou:', e?.message || e);
+    throw e;
+  }
+} // <-- fecha a função makePdfSearchable
 
 
 // === Helper: otimiza/resize JPG mantendo nitidez ===
