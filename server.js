@@ -62,7 +62,6 @@ const os = require("os");
 const { exec: execShell } = require('child_process');
 const util = require('util');
 const execP = util.promisify(exec);
-const { PDFDocument } = require('pdf-lib');
 const { createWorker } = require('tesseract.js');
 const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('pdf-lib');
 
