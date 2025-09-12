@@ -239,7 +239,7 @@ return Buffer.from(mergedBytes);
 
 
 // === Helper: otimiza/resize JPG mantendo nitidez ===
-async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 82) {
+async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 85) {
   try {
     const tmpDir  = fs.mkdtempSync(path.join(os.tmpdir(), 'jpg-opt-'));
     const inPath  = path.join(tmpDir, 'in.jpg');
