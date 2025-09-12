@@ -165,17 +165,78 @@ const numPages = parsed.numpages || 1;
 console.log(`[OCR] Páginas: ${numPages}`);
 
 const imgPaths = [];
+const findFirstMatch = (dir, basePrefix, exts = ['png','jpg','ppm']) => {
+  const files = fs.readdirSync(dir);
+  const re = new RegExp(`^${basePrefix.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\\\$&')}-\\d+\\.(?:${exts.join('|')})$`, 'i');
+  return files.find(f => re.test(f)) || null;
+};
+
 for (let i = 1; i <= numPages; i++) {
-  const outPrefix = path.join(tmpDir, `page_${i}`);
-  // Gera PNG por página
-  await execP(`pdftoppm -png -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
-  const pngPath = `${outPrefix}-1.png`;
-  if (!fs.existsSync(pngPath)) {
-    throw new Error(`pdftoppm não gerou a imagem esperada: ${pngPath}`);
+  const basePrefix = `page_${i}`;
+  const outPrefix = path.join(tmpDir, basePrefix);
+
+  // 1) tenta PNG
+  try {
+    await execP(`pdftoppm -png -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
+  } catch (e) {
+    // se o binário falhar já aqui, tenta JPEG abaixo
   }
-  imgPaths.push(pngPath);
+
+  let fname = findFirstMatch(tmpDir, basePrefix, ['png','ppm']); // alguns geram .ppm
+  if (!fname) {
+    // 2) tenta JPEG (muito compatível)
+    try {
+      await execP(`pdftoppm -jpeg -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
+      fname = findFirstMatch(tmpDir, basePrefix, ['jpg','jpeg']);
+    } catch (e) {
+      // segue para erro final
+    }
+  }
+
+  if (!fname) {
+    // coleta um pouco de contexto para o log
+    const ls = fs.readdirSync(tmpDir).slice(0, 50).join(', ');
+    throw new Error(`pdftoppm não gerou a imagem para a página ${i}. Conteúdo de ${tmpDir}: [${ls}]`);
+  }
+
+  const imgPath = path.join(tmpDir, fname);
+  imgPaths.push(imgPath);
 }
 
+
+for (const imgPath of imgPaths) {
+  const { data } = await worker.recognize(imgPath);
+
+  const imageBytes = fs.readFileSync(imgPath);
+  // escolhe embed conforme extensão
+  const lower = imgPath.toLowerCase();
+  let embedded;
+  if (lower.endsWith('.png')) {
+    embedded = await merged.embedPng(imageBytes);
+  } else {
+    // jpg/jpeg/ppm -> usa JPEG (ppm convertido pelo pdftoppm -jpeg acima)
+    embedded = await merged.embedJpg(imageBytes);
+  }
+  const { width, height } = embedded.size();
+  const page = merged.addPage([width, height]);
+  page.drawImage(embedded, { x: 0, y: 0, width, height });
+
+  const words = Array.isArray(data?.words) ? data.words : [];
+  for (const w of words) {
+    const bb = w?.bbox;
+    const txt = (w?.text ?? '').trim();
+    if (!bb || !txt) continue;
+    const x0 = +bb.x0, y0 = +bb.y0, x1 = +bb.x1, y1 = +bb.y1;
+    if (![x0,y0,x1,y1].every(Number.isFinite)) continue;
+    const h = Math.max(1, y1 - y0);
+    const yPdf = height - (y0 + h);
+    const size = Math.max(6, Math.min(36, h));
+    page.drawText(txt, { x: x0, y: yPdf, size, font: ocrFont });
+  }
+}
+    
+
+    
 const worker = await getWorker(langs); // já inicializado com 1 idioma
 const merged = await PDFDocument.create();
 
