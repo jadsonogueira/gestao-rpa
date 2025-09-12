@@ -241,6 +241,7 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
     } finally {
       if (worker) { try { await worker.terminate(); } catch {} }
     }
+    const worker = await getWorker(langs); // já inicializado com 1 idioma
 
     const mergedBytes = await merged.save();
     fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -254,12 +255,11 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
 }
 
 
-    
-const worker = await getWorker(langs); // já inicializado com 1 idioma
 const merged = await PDFDocument.create();
 
 // ✔️ Embute uma fonte para o texto OCR (evita falhas do pdf-lib)
 const ocrFont = await merged.embedFont(StandardFonts.Helvetica);
+
 
 for (const pngPath of imgPaths) {
   // Usar caminho do arquivo economiza memória
