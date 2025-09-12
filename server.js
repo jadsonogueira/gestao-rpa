@@ -143,13 +143,13 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
         pagePdfBuffers.push(fs.readFileSync(`${pageOut}.pdf`));
       }
 
-      const merged = await PDFDocument.create();
+      const mergedB = await PDFDocument.create();
       for (const buf of pagePdfBuffers) {
         const part = await PDFDocument.load(buf, { ignoreEncryption: true });
-        const pages = await merged.copyPages(part, part.getPageIndices());
-        pages.forEach(p => merged.addPage(p));
+        const pages = await mergedB.copyPages(part, part.getPageIndices());
+        pages.forEach(p => mergedB.addPage(p));
       }
-      const mergedBytes = await merged.save();
+      const mergedBytes = await mergedB.save();
       fs.rmSync(tmpDir, { recursive: true, force: true });
       return Buffer.from(mergedBytes);
     }
@@ -164,6 +164,7 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
     const numPages = parsed.numpages || 1;
     console.log(`[OCR] Páginas: ${numPages}`);
 
+    // helper para achar qualquer sufixo -1 / -01 / -000001 etc. e várias extensões
     const findFirstMatch = (dir, basePrefix, exts = ['png', 'jpg', 'jpeg', 'ppm']) => {
       const files = fs.readdirSync(dir);
       const esc = basePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -199,7 +200,7 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
     const merged = await PDFDocument.create();
     const ocrFont = await merged.embedFont(StandardFonts.Helvetica);
 
-    // declara antes para evitar TDZ
+    // evita TDZ e garante finalize
     let worker;
     try {
       worker = await getWorker(langs);
@@ -234,13 +235,11 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
           const size = Math.max(6, Math.min(36, h));
 
           page.drawText(txt, { x: x0, y: yPdf, size, font: ocrFont });
-          // Se tua versão do pdf-lib aceitar, dá pra usar { opacity: 0.01 } aqui.
+          // Se sua versão do pdf-lib aceitar, pode usar { opacity: 0.01 } aqui.
         }
       }
     } finally {
-      if (worker) {
-        try { await worker.terminate(); } catch {}
-      }
+      if (worker) { try { await worker.terminate(); } catch {} }
     }
 
     const mergedBytes = await merged.save();
@@ -254,7 +253,6 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
   }
 }
 
-    
 
     
 const worker = await getWorker(langs); // já inicializado com 1 idioma
