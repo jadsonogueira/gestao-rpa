@@ -85,19 +85,38 @@ function toLangArray(input) {
 }
 
 async function getWorker(langs = 'por+eng') {
-  const langArr = toLangArray(langs);
-  const primary = langArr[0] || 'eng';   // usa só o primeiro
+  // Garanta que 'primary' seja sempre uma string simples: 'eng' ou 'por'
+  let primary;
+
+  try {
+    if (Array.isArray(langs)) {
+      primary = String(langs[0] || 'eng').trim();
+    } else {
+      // pode vir "por+eng" -> pega só o primeiro; ou algo não-string -> força string
+      primary = String(langs || 'eng')
+        .split('+')
+        .map(s => s.trim())
+        .filter(Boolean)[0] || 'eng';
+    }
+  } catch {
+    primary = 'eng';
+  }
+
+  // segurança extra
+  if (!primary || typeof primary !== 'string') primary = 'eng';
+
+  console.log(`[OCR] Inicializando Tesseract com idioma: ${primary}`);
 
   const worker = await createWorker({
     langPath: 'https://tessdata.projectnaptha.com/4.0.0',
     cachePath: '/tmp',
   });
 
-  // ✅ inicializa com 1 idioma para eliminar a causa do erro
   await worker.loadLanguage(primary);
   await worker.initialize(primary);
   return worker;
 }
+
 
 
 
