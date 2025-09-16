@@ -84,39 +84,21 @@ function toLangArray(input) {
   return String(input || 'eng').split('+').map(s => s.trim()).filter(Boolean);
 }
 
-async function getWorker(langs = 'por+eng') {
-  // Garanta que 'primary' seja sempre uma string simples: 'eng' ou 'por'
-  let primary;
-
-  try {
-    if (Array.isArray(langs)) {
-      primary = String(langs[0] || 'eng').trim();
-    } else {
-      // pode vir "por+eng" -> pega só o primeiro; ou algo não-string -> força string
-      primary = String(langs || 'eng')
-        .split('+')
-        .map(s => s.trim())
-        .filter(Boolean)[0] || 'eng';
-    }
-  } catch {
-    primary = 'eng';
-  }
-
-  // segurança extra
-  if (!primary || typeof primary !== 'string') primary = 'eng';
-
-  console.log(`[OCR] Inicializando Tesseract com idioma: ${primary}`);
-
+async function getWorker() {
+  // Força sempre português
   const worker = await createWorker({
     langPath: 'https://tessdata.projectnaptha.com/4.0.0',
     cachePath: '/tmp',
   });
 
-  await worker.loadLanguage(primary);
-  await worker.initialize(primary);
+  console.log('[OCR] Inicializando Tesseract com idioma fixo: por');
+  // Algumas versões do tesseract.js esperam array aqui; outras, string.
+  // Para máxima compatibilidade chamamos as duas etapas assim:
+  await worker.loadLanguage(['por']);   // aceita array
+  await worker.initialize('por');       // aceita string
+
   return worker;
 }
-
 
 
 
@@ -216,7 +198,7 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
 
     let worker;
     try {
-      worker = await getWorker(langs);
+    worker = await getWorker();
 
       for (const imgPath of imgPaths) {
         const { data } = await worker.recognize(imgPath);
@@ -356,7 +338,7 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
 
     let worker;
     try {
-      worker = await getWorker(langs);
+      worker = await getWorker();
 
       for (const imgPath of imgPaths) {
         const { data } = await worker.recognize(imgPath);
@@ -1320,7 +1302,7 @@ app.post('/pdf-make-searchable', upload.single('arquivoPdf'), async (req, res) =
     // Opcional: comprimir antes se >4MB (você já tem esse helper)
     const inputBuffer = await compressPDFIfNeeded(req.file);
 
-    const searchable = await makePdfSearchable(inputBuffer, langs);
+    const searchable = await makePdfSearchable(inputBuffer);
 
     const baseName = path.parse(req.file.originalname).name;
     const safeBase = sanitizeFilename(baseName);
