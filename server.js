@@ -46,6 +46,7 @@ exec('gs -version', (error, stdout, stderr) => {
     console.log(`Ghostscript:\n${stdout}`);
   }
 });
+
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -58,10 +59,11 @@ const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const os = require("os");
-const { promisify } = require('util');
+const { exec: execShell } = require('child_process');
+const util = require('util');
+const execP = util.promisify(exec);
 const { createWorker } = require('tesseract.js');
-const { PDFDocument, StandardFonts } = require('pdf-lib');
-const execP = promisify(exec);
+const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('pdf-lib');
 
 
 function normalizeLangs(input) {
@@ -82,27 +84,18 @@ function toLangArray(input) {
   return String(input || 'eng').split('+').map(s => s.trim()).filter(Boolean);
 }
 
-async function getWorker() {
+async function getWorker(langs = 'por+eng') {
+  const langArr = toLangArray(langs);
+  const primary = langArr[0] || 'eng';   // usa só o primeiro
+
   const worker = await createWorker({
     langPath: 'https://tessdata.projectnaptha.com/4.0.0',
     cachePath: '/tmp',
   });
 
-  console.log('[OCR] Inicializando Tesseract com idioma fixo: por');
-
-  // Algumas versões esperam array; outras, string.
-  // Tentamos com array e, se falhar, caímos para string:
-  try {
-    await worker.loadLanguage(['por']);
-  } catch {
-    await worker.loadLanguage('por');
-  }
-  try {
-    await worker.initialize(['por']);
-  } catch {
-    await worker.initialize('por');
-  }
-
+  // ✅ inicializa com 1 idioma para eliminar a causa do erro
+  await worker.loadLanguage(primary);
+  await worker.initialize(primary);
   return worker;
 }
 
@@ -114,348 +107,281 @@ async function getWorker() {
  * B) tesseract CLI + pdftoppm (se instalados)
  * C) tesseract.js (WASM) + pdftoppm (sempre disponível no Render Free)
  */
-
-
-// Função para verificar se um binário existe
-async function hasBinary(cmd) {
-  try {
-    await execP(`which ${cmd}`);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-
-/////////////////////////////////////////////////////////////////
-// Função para criar worker do Tesseract
-// Adicione estes imports apenas se não existirem no seu arquivo:
-// const { exec } = require('child_process');
-// const { promisify } = require('util');
-// const pdfParse = require('pdf-parse');
-// const { PDFDocument, StandardFonts } = require('pdf-lib');
-// const { createWorker } = require('tesseract.js');
-// const execP = promisify(exec);
-
-// Função para verificar se um binário existe
-async function hasBinary(cmd) {
-  try {
-    await execP(`which ${cmd}`);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// Função para criar worker do Tesseract
-async function getWorker(langs = 'por') {
-  const worker = await createWorker();
-  await worker.loadLanguage(langs);
-  await worker.initialize(langs);
-  return worker;
-}
-
-function findImageFile(dir, prefix, extensions) {
-  const files = fs.readdirSync(dir);
-  const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  
-  for (const ext of extensions) {
-    const pattern = new RegExp(`^${escapedPrefix}-\\d+\\.${ext}$`, 'i');
-    const found = files.find(f => pattern.test(f));
-    if (found) return found;
-  }
-  
-  return null;
-}
-
-async function processWithTesseractCLI(inPath, tmpDir, langs) {
-  const parsed = await pdfParse(fs.readFileSync(inPath));
-  const numPages = parsed.numpages || 1;
-  console.log(`[OCR] Processando ${numPages} páginas com Tesseract CLI`);
-
-  const pagePdfBuffers = [];
-  
-  for (let i = 1; i <= numPages; i++) {
-    const ppmPrefix = path.join(tmpDir, `page_${i}`);
-    const tiffPath = `${ppmPrefix}-1.tif`;
-    const pageOut = path.join(tmpDir, `ocr_page_${i}`);
-
-    try {
-      // Converte página para TIFF
-      await execP(`pdftoppm -tiff -f ${i} -l ${i} "${inPath}" "${ppmPrefix}"`);
-      
-      // Verifica se arquivo foi criado
-      if (!fs.existsSync(tiffPath)) {
-        throw new Error(`Arquivo TIFF não foi criado: ${tiffPath}`);
-      }
-
-      // Executa OCR
-      await execP(`tesseract "${tiffPath}" "${pageOut}" -l ${langs} pdf`);
-      
-      // Lê resultado
-      const pdfPath = `${pageOut}.pdf`;
-      if (!fs.existsSync(pdfPath)) {
-        throw new Error(`PDF OCR não foi criado: ${pdfPath}`);
-      }
-
-      pagePdfBuffers.push(fs.readFileSync(pdfPath));
-    } catch (error) {
-      console.error(`[OCR] Erro na página ${i}:`, error.message);
-      throw error;
-    }
-  }
-
-  // Mescla PDFs
-  const mergedPdf = await PDFDocument.create();
-  for (const buf of pagePdfBuffers) {
-    const srcPdf = await PDFDocument.load(buf, { ignoreEncryption: true });
-    const pages = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices());
-    pages.forEach(page => mergedPdf.addPage(page));
-  }
-
-  const mergedBytes = await mergedPdf.save();
-  return Buffer.from(mergedBytes);
-}
-
-async function processWithTesseractJS(inBuffer, inPath, tmpDir, langs) {
-  const parsed = await pdfParse(inBuffer);
-  const numPages = parsed.numpages || 1;
-  console.log(`[OCR] Processando ${numPages} páginas com Tesseract.js`);
-
-  // Converte páginas para imagens
-  const imgPaths = [];
-  for (let i = 1; i <= numPages; i++) {
-    const outPrefix = path.join(tmpDir, `page_${i}`);
-    
-    try {
-      // Tenta PNG primeiro
-      await execP(`pdftoppm -png -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
-      const pngFile = findImageFile(tmpDir, `page_${i}`, ['png']);
-      
-      if (pngFile) {
-        imgPaths.push(path.join(tmpDir, pngFile));
-        continue;
-      }
-    } catch (error) {
-      console.warn(`[OCR] Falha PNG página ${i}:`, error.message);
-    }
-
-    try {
-      // Tenta JPEG como fallback
-      await execP(`pdftoppm -jpeg -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
-      const jpgFile = findImageFile(tmpDir, `page_${i}`, ['jpg', 'jpeg']);
-      
-      if (jpgFile) {
-        imgPaths.push(path.join(tmpDir, jpgFile));
-        continue;
-      }
-    } catch (error) {
-      console.warn(`[OCR] Falha JPEG página ${i}:`, error.message);
-    }
-
-    throw new Error(`Não foi possível converter página ${i} para imagem`);
-  }
-
-  // Processa com Tesseract.js
-  const mergedPdf = await PDFDocument.create();
-  const ocrFont = await mergedPdf.embedFont(StandardFonts.Helvetica);
-  
-  let worker = null;
-  try {
-    worker = await getWorker(langs);
-
-    for (let i = 0; i < imgPaths.length; i++) {
-      const imgPath = imgPaths[i];
-      console.log(`[OCR] Processando imagem ${i + 1}/${imgPaths.length}`);
-
-      // Executa OCR
-      const { data } = await worker.recognize(imgPath);
-
-      // Embede imagem no PDF
-      const imgBytes = fs.readFileSync(imgPath);
-      const isJpeg = imgPath.toLowerCase().match(/\.(jpg|jpeg)$/);
-      const embeddedImg = isJpeg 
-        ? await mergedPdf.embedJpg(imgBytes)
-        : await mergedPdf.embedPng(imgBytes);
-
-      const { width, height } = embeddedImg.size();
-      const page = mergedPdf.addPage([width, height]);
-      page.drawImage(embeddedImg, { x: 0, y: 0, width, height });
-
-      // Adiciona texto OCR
-      if (data?.words) {
-        for (const word of data.words) {
-          if (!word?.bbox || !word?.text?.trim()) continue;
-
-          const { x0, y0, x1, y1 } = word.bbox;
-          if (![x0, y0, x1, y1].every(Number.isFinite)) continue;
-
-          const textHeight = Math.max(6, Math.min(24, y1 - y0));
-          const yPdf = height - (y0 + textHeight);
-
-          page.drawText(word.text.trim(), {
-            x: x0,
-            y: yPdf,
-            size: textHeight,
-            font: ocrFont,
-            opacity: 0 // Texto invisível para busca
-          });
-        }
-      }
-    }
-  } finally {
-    if (worker) {
-      try {
-        await worker.terminate();
-      } catch (error) {
-        console.warn('[OCR] Erro ao finalizar worker:', error.message);
-      }
-    }
-  }
-
-  const mergedBytes = await mergedPdf.save();
-  return Buffer.from(mergedBytes);
-}
-
-async function makePdfSearchable(inBuffer, langs = 'por') {
+async function makePdfSearchable(inBuffer, langs = 'por+eng') {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-'));
   const inPath = path.join(tmpDir, 'input.pdf');
   fs.writeFileSync(inPath, inBuffer);
 
-  console.log('[OCR] Iniciando processamento...');
-  console.log('[OCR] Tamanho do buffer:', inBuffer.length);
-  console.log('[OCR] Diretório temporário:', tmpDir);
-
   try {
-    // --- Caminho A: OCRmyPDF (mais eficiente)
+    // --- Caminho A: OCRmyPDF
     if (await hasBinary('ocrmypdf')) {
       console.log('[OCR] Usando ocrmypdf');
       const outPath = path.join(tmpDir, 'output.pdf');
       const cmd = `ocrmypdf --skip-text -l ${langs} --optimize 1 "${inPath}" "${outPath}"`;
-      
-      try {
-        await execP(cmd);
-        const out = fs.readFileSync(outPath);
-        fs.rmSync(tmpDir, { recursive: true, force: true });
-        return out;
-      } catch (error) {
-        console.warn('[OCR] OCRmyPDF falhou:', error.message);
-        // Continua para próxima opção
-      }
+      await execP(cmd);
+      const out = fs.readFileSync(outPath);
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      return out;
     }
 
     // --- Caminho B: Tesseract CLI + pdftoppm
     const hasPdftoppm = await hasBinary('pdftoppm');
     const hasTesseract = await hasBinary('tesseract');
-    
     if (hasPdftoppm && hasTesseract) {
       console.log('[OCR] Usando tesseract CLI + pdftoppm');
-      const result = await processWithTesseractCLI(inPath, tmpDir, langs);
+      const parsed = await pdfParse(inBuffer);
+      const numPages = parsed.numpages || 1;
+      console.log(`[OCR] Páginas: ${numPages}`);
+
+      const pagePdfBuffers = [];
+      for (let i = 1; i <= numPages; i++) {
+        const ppmPrefix = path.join(tmpDir, `page_${i}`);
+        await execP(`pdftoppm -tiff -f ${i} -l ${i} "${inPath}" "${ppmPrefix}"`);
+        const tiffPath = `${ppmPrefix}-1.tif`;
+        const pageOut = path.join(tmpDir, `ocr_page_${i}`);
+        await execP(`tesseract "${tiffPath}" "${pageOut}" -l ${langs} pdf`);
+        pagePdfBuffers.push(fs.readFileSync(`${pageOut}.pdf`));
+      }
+
+      const mergedB = await PDFDocument.create();
+      for (const buf of pagePdfBuffers) {
+        const part = await PDFDocument.load(buf, { ignoreEncryption: true });
+        const pages = await mergedB.copyPages(part, part.getPageIndices());
+        pages.forEach(p => mergedB.addPage(p));
+      }
+      const mergedBytes = await mergedB.save();
       fs.rmSync(tmpDir, { recursive: true, force: true });
-      return result;
+      return Buffer.from(mergedBytes);
     }
 
     // --- Caminho C: Tesseract.js (WASM) + pdftoppm
-    if (hasPdftoppm) {
-      console.log('[OCR] Usando tesseract.js (WASM) + pdftoppm');
-      const result = await processWithTesseractJS(inBuffer, inPath, tmpDir, langs);
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-      return result;
+    if (!hasPdftoppm) throw new Error('Nenhuma rota de OCR disponível: falta pdftoppm.');
+    console.log('[OCR] Usando tesseract.js (WASM) + pdftoppm');
+
+    const parsed = await pdfParse(inBuffer);
+    const numPages = parsed.numpages || 1;
+    console.log(`[OCR] Páginas: ${numPages}`);
+
+    const findFirstMatch = (dir, basePrefix, exts = ['png', 'jpg', 'jpeg', 'ppm']) => {
+      const files = fs.readdirSync(dir);
+      const esc = basePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`^${esc}-\\d+\\.(?:${exts.join('|')})$`, 'i');
+      return files.find(f => re.test(f)) || null;
+    };
+
+    const imgPaths = [];
+    for (let i = 1; i <= numPages; i++) {
+      const basePrefix = `page_${i}`;
+      const outPrefix = path.join(tmpDir, basePrefix);
+
+      try { await execP(`pdftoppm -png -f ${i} -l ${i} "${inPath}" "${outPrefix}"`); } catch {}
+      let fname = findFirstMatch(tmpDir, basePrefix, ['png', 'ppm']);
+
+      if (!fname) {
+        try {
+          await execP(`pdftoppm -jpeg -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
+          fname = findFirstMatch(tmpDir, basePrefix, ['jpg', 'jpeg']);
+        } catch {}
+      }
+
+      if (!fname) {
+        const ls = fs.readdirSync(tmpDir).slice(0, 100).join(', ');
+        throw new Error(`pdftoppm não gerou imagem para a página ${i}. Dir: [${ls}]`);
+      }
+
+      imgPaths.push(path.join(tmpDir, fname));
     }
 
-    throw new Error('Nenhuma rota de OCR disponível. Instale ocrmypdf, tesseract ou pdftoppm.');
+    const merged = await PDFDocument.create();
+    const ocrFont = await merged.embedFont(StandardFonts.Helvetica);
 
-  } catch (error) {
-    console.error('[OCR] Erro:', error.message);
-    throw error;
-  } finally {
-    // Limpa diretório temporário
+    let worker;
     try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch (cleanupError) {
-      console.warn('[OCR] Erro ao limpar diretório temporário:', cleanupError.message);
-    }
-  }
-}
+      worker = await getWorker(langs);
 
-///////////////////////////////////////////////////////////////////////
+      for (const imgPath of imgPaths) {
+        const { data } = await worker.recognize(imgPath);
 
-  
-  // Processa com Tesseract.js
-  const mergedPdf = await PDFDocument.create();
-  const ocrFont = await mergedPdf.embedFont(StandardFonts.Helvetica);
-  
-  let worker = null;
-  try {
-    worker = await getWorker(langs);
+        const bytes = fs.readFileSync(imgPath);
+        const lower = imgPath.toLowerCase();
+        const embedded = lower.endsWith('.png')
+          ? await merged.embedPng(bytes)
+          : await merged.embedJpg(bytes);
 
-    for (let i = 0; i < imgPaths.length; i++) {
-      const imgPath = imgPaths[i];
-      console.log(`[OCR] Processando imagem ${i + 1}/${imgPaths.length}`);
+        const { width, height } = embedded.size();
+        const page = merged.addPage([width, height]);
+        page.drawImage(embedded, { x: 0, y: 0, width, height });
 
-      // Executa OCR
-      const { data } = await worker.recognize(imgPath);
+        const words = Array.isArray(data?.words) ? data.words : [];
+        for (const w of words) {
+          const bb = w?.bbox;
+          const txt = (w?.text ?? '').trim();
+          if (!bb || !txt) continue;
 
-      // Embede imagem no PDF
-      const imgBytes = fs.readFileSync(imgPath);
-      const isJpeg = imgPath.toLowerCase().match(/\.(jpg|jpeg)$/);
-      const embeddedImg = isJpeg 
-        ? await mergedPdf.embedJpg(imgBytes)
-        : await mergedPdf.embedPng(imgBytes);
-
-      const { width, height } = embeddedImg.size();
-      const page = mergedPdf.addPage([width, height]);
-      page.drawImage(embeddedImg, { x: 0, y: 0, width, height });
-
-      // Adiciona texto OCR
-      if (data?.words) {
-        for (const word of data.words) {
-          if (!word?.bbox || !word?.text?.trim()) continue;
-
-          const { x0, y0, x1, y1 } = word.bbox;
+          const x0 = +bb.x0, y0 = +bb.y0, x1 = +bb.x1, y1 = +bb.y1;
           if (![x0, y0, x1, y1].every(Number.isFinite)) continue;
 
-          const textHeight = Math.max(6, Math.min(24, y1 - y0));
-          const yPdf = height - (y0 + textHeight);
+          const h = Math.max(1, y1 - y0);
+          const yPdf = height - (y0 + h);
+          const size = Math.max(6, Math.min(36, h));
 
-          page.drawText(word.text.trim(), {
-            x: x0,
-            y: yPdf,
-            size: textHeight,
-            font: ocrFont,
-            opacity: 0 // Texto invisível para busca
-          });
+          page.drawText(txt, { x: x0, y: yPdf, size, font: ocrFont });
         }
       }
+    } finally {
+      if (worker) { try { await worker.terminate(); } catch {} }
     }
-  } finally {
-    if (worker) {
-      try {
-        await worker.terminate();
-      } catch (error) {
-        console.warn('[OCR] Erro ao finalizar worker:', error.message);
+
+    const mergedBytes = await merged.save();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return Buffer.from(mergedBytes);
+
+  } catch (e) {
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    console.error('[OCR] Falhou:', e?.message || e);
+    throw e;
+  }
+}
+
+
+
+async function makePdfSearchable(inBuffer, langs = 'por+eng') {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-'));
+  const inPath = path.join(tmpDir, 'input.pdf');
+  fs.writeFileSync(inPath, inBuffer);
+
+  try {
+    // --- Caminho A: OCRmyPDF
+    if (await hasBinary('ocrmypdf')) {
+      console.log('[OCR] Usando ocrmypdf');
+      const outPath = path.join(tmpDir, 'output.pdf');
+      const cmd = `ocrmypdf --skip-text -l ${langs} --optimize 1 "${inPath}" "${outPath}"`;
+      await execP(cmd);
+      const out = fs.readFileSync(outPath);
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      return out;
+    }
+
+    // --- Caminho B: Tesseract CLI + pdftoppm
+    const hasPdftoppm = await hasBinary('pdftoppm');
+    const hasTesseract = await hasBinary('tesseract');
+    if (hasPdftoppm && hasTesseract) {
+      console.log('[OCR] Usando tesseract CLI + pdftoppm');
+      const parsed = await pdfParse(inBuffer);
+      const numPages = parsed.numpages || 1;
+      console.log(`[OCR] Páginas: ${numPages}`);
+
+      const pagePdfBuffers = [];
+      for (let i = 1; i <= numPages; i++) {
+        const ppmPrefix = path.join(tmpDir, `page_${i}`);
+        await execP(`pdftoppm -tiff -f ${i} -l ${i} "${inPath}" "${ppmPrefix}"`);
+        const tiffPath = `${ppmPrefix}-1.tif`;
+        const pageOut = path.join(tmpDir, `ocr_page_${i}`);
+        await execP(`tesseract "${tiffPath}" "${pageOut}" -l ${langs} pdf`);
+        pagePdfBuffers.push(fs.readFileSync(`${pageOut}.pdf`));
       }
+
+      const mergedB = await PDFDocument.create();
+      for (const buf of pagePdfBuffers) {
+        const part = await PDFDocument.load(buf, { ignoreEncryption: true });
+        const pages = await mergedB.copyPages(part, part.getPageIndices());
+        pages.forEach(p => mergedB.addPage(p));
+      }
+      const mergedBytes = await mergedB.save();
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      return Buffer.from(mergedBytes);
     }
+
+    // --- Caminho C: Tesseract.js (WASM) + pdftoppm (robusto)
+    if (!hasPdftoppm) {
+      throw new Error('Nenhuma rota de OCR disponível: falta pdftoppm.');
+    }
+    console.log('[OCR] Usando tesseract.js (WASM) + pdftoppm');
+
+    const parsed = await pdfParse(inBuffer);
+    const numPages = parsed.numpages || 1;
+    console.log(`[OCR] Páginas: ${numPages}`);
+
+    const findFirstMatch = (dir, basePrefix, exts = ['png', 'jpg', 'jpeg', 'ppm']) => {
+      const files = fs.readdirSync(dir);
+      const esc = basePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`^${esc}-\\d+\\.(?:${exts.join('|')})$`, 'i');
+      return files.find(f => re.test(f)) || null;
+    };
+
+    const imgPaths = [];
+    for (let i = 1; i <= numPages; i++) {
+      const basePrefix = `page_${i}`;
+      const outPrefix = path.join(tmpDir, basePrefix);
+
+      try { await execP(`pdftoppm -png -f ${i} -l ${i} "${inPath}" "${outPrefix}"`); } catch {}
+      let fname = findFirstMatch(tmpDir, basePrefix, ['png', 'ppm']);
+
+      if (!fname) {
+        try {
+          await execP(`pdftoppm -jpeg -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
+          fname = findFirstMatch(tmpDir, basePrefix, ['jpg', 'jpeg']);
+        } catch {}
+      }
+
+      if (!fname) {
+        const ls = fs.readdirSync(tmpDir).slice(0, 100).join(', ');
+        throw new Error(`pdftoppm não gerou imagem para a página ${i}. Dir: [${ls}]`);
+      }
+
+      imgPaths.push(path.join(tmpDir, fname));
+    }
+
+    const merged = await PDFDocument.create();
+    const ocrFont = await merged.embedFont(StandardFonts.Helvetica);
+
+    let worker;
+    try {
+      worker = await getWorker(langs);
+
+      for (const imgPath of imgPaths) {
+        const { data } = await worker.recognize(imgPath);
+
+        const bytes = fs.readFileSync(imgPath);
+        const lower = imgPath.toLowerCase();
+        const embedded = lower.endsWith('.png')
+          ? await merged.embedPng(bytes)
+          : await merged.embedJpg(bytes);
+
+        const { width, height } = embedded.size();
+        const page = merged.addPage([width, height]);
+        page.drawImage(embedded, { x: 0, y: 0, width, height });
+
+        const words = Array.isArray(data?.words) ? data.words : [];
+        for (const w of words) {
+          const bb = w?.bbox;
+          const txt = (w?.text ?? '').trim();
+          if (!bb || !txt) continue;
+
+          const x0 = +bb.x0, y0 = +bb.y0, x1 = +bb.x1, y1 = +bb.y1;
+          if (![x0, y0, x1, y1].every(Number.isFinite)) continue;
+
+          const h = Math.max(1, y1 - y0);
+          const yPdf = height - (y0 + h);
+          const size = Math.max(6, Math.min(36, h));
+
+          page.drawText(txt, { x: x0, y: yPdf, size, font: ocrFont });
+        }
+      }
+    } finally {
+      if (worker) { try { await worker.terminate(); } catch {} }
+    }
+
+    const mergedBytes = await merged.save();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    return Buffer.from(mergedBytes);
+
+  } catch (e) {
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    console.error('[OCR] Falhou:', e?.message || e);
+    throw e;
   }
-
-  const mergedBytes = await mergedPdf.save();
-  return Buffer.from(mergedBytes);
 }
-
-function findImageFile(dir, prefix, extensions) {
-  const files = fs.readdirSync(dir);
-  const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  
-  for (const ext of extensions) {
-    const pattern = new RegExp(`^${escapedPrefix}-\\d+\\.${ext}$`, 'i');
-    const found = files.find(f => pattern.test(f));
-    if (found) return found;
-  }
-  
-  return null;
-}
-
-module.exports = { makePdfSearchable };
 
 // === Helper: otimiza/resize JPG mantendo nitidez ===
 async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 85) {
@@ -1003,7 +929,7 @@ function spToUtcIso(localStr) {
   }
 
   const y  = +m[1], mo = +m[2], d = +m[3], hh = +m[4], mi = +m[5];
-  const ms = Date.UTC(y, mo - 1, d, hh + 3, mi, 0); // SP (-03:00) -> UTC
+  const ms = Date.UTC(y, mo - 1, d, hh - 1, mi, 0); // SP (-03:00) -> UTC
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
@@ -1236,16 +1162,13 @@ if (agIso) {
     }
 
   
-if (attachments.length > 0) {
-   const totalBytes = attachments
-     .map(a => a.content.length)
-     .reduce((sum, n) => sum + n, 0);
-   console.log(`Total de bytes nos attachments (raw): ${totalBytes}`);
-   console.log(`Total estimado com Base64 (~4/3): ${Math.round(totalBytes * 4/3)}`);
-   console.log('Attachments nomes:', (mailOptions.attachments || []).map(a => a.filename));
- } else {
-   console.log('Sem anexos.');
-}
+
+    const totalBytes = attachments
+      .map(a => a.content.length)
+      .reduce((sum, n) => sum + n, 0);
+        console.log(`Total de bytes nos attachments (raw): ${totalBytes}`);
+      console.log(`Total estimado com Base64 (~4/3): ${Math.round(totalBytes * 4/3)}`);
+         console.log('Attachments nomes:', (mailOptions.attachments || []).map(a => a.filename));
 
     
     // Envia o e-mail
@@ -1378,7 +1301,7 @@ app.post('/pdf-make-searchable', upload.single('arquivoPdf'), async (req, res) =
     // Opcional: comprimir antes se >4MB (você já tem esse helper)
     const inputBuffer = await compressPDFIfNeeded(req.file);
 
-    const searchable = await makePdfSearchable(inputBuffer);
+    const searchable = await makePdfSearchable(inputBuffer, langs);
 
     const baseName = path.parse(req.file.originalname).name;
     const safeBase = sanitizeFilename(baseName);
