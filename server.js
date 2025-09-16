@@ -46,7 +46,6 @@ exec('gs -version', (error, stdout, stderr) => {
     console.log(`Ghostscript:\n${stdout}`);
   }
 });
-
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -59,13 +58,12 @@ const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const os = require("os");
-const { exec: execShell } = require('child_process');
-const util = require('util');
-const execP = util.promisify(exec);
-const execP = promisify(exec);
+const { exec } = require('child_process');
+const { promisify } = require('util');
 const { createWorker } = require('tesseract.js');
-const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('pdf-lib');
+const { PDFDocument, StandardFonts } = require('pdf-lib');
 
+const execP = promisify(exec);
 
 function normalizeLangs(input) {
   if (!input) return 'por+eng';
@@ -117,16 +115,7 @@ async function getWorker() {
  * B) tesseract CLI + pdftoppm (se instalados)
  * C) tesseract.js (WASM) + pdftoppm (sempre disponível no Render Free)
  */
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { exec } = require('child_process');
-const { promisify } = require('util');
-const pdfParse = require('pdf-parse');
-const { PDFDocument, StandardFonts } = require('pdf-lib');
-const { createWorker } = require('tesseract.js');
 
-const execP = promisify(exec);
 
 // Função para verificar se um binário existe
 async function hasBinary(cmd) {
