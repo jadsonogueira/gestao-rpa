@@ -799,7 +799,7 @@ function spToUtcIso(localStr) {
   }
 
   const y  = +m[1], mo = +m[2], d = +m[3], hh = +m[4], mi = +m[5];
-  const ms = Date.UTC(y, mo - 1, d, hh - 1, mi, 0); // SP (-03:00) -> UTC
+  const ms = Date.UTC(y, mo - 1, d, hh + 3, mi, 0); // SP (-03:00) -> UTC
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
