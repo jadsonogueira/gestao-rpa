@@ -116,7 +116,7 @@ async function getWorker() {
  * B) tesseract CLI + pdftoppm (se instalados)
  * C) tesseract.js (WASM) + pdftoppm (sempre disponível no Render Free)
  */
-async function makePdfSearchable(inBuffer, langs = 'por+eng') {
+async function makePdfSearchable(inBuffer, langs = 'por') {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-'));
   const inPath = path.join(tmpDir, 'input.pdf');
   fs.writeFileSync(inPath, inBuffer);
@@ -1032,13 +1032,16 @@ if (agIso) {
     }
 
   
-
-    const totalBytes = attachments
-      .map(a => a.content.length)
-      .reduce((sum, n) => sum + n, 0);
-        console.log(`Total de bytes nos attachments (raw): ${totalBytes}`);
-      console.log(`Total estimado com Base64 (~4/3): ${Math.round(totalBytes * 4/3)}`);
-         console.log('Attachments nomes:', (mailOptions.attachments || []).map(a => a.filename));
+if (attachments.length > 0) {
+   const totalBytes = attachments
+     .map(a => a.content.length)
+     .reduce((sum, n) => sum + n, 0);
+   console.log(`Total de bytes nos attachments (raw): ${totalBytes}`);
+   console.log(`Total estimado com Base64 (~4/3): ${Math.round(totalBytes * 4/3)}`);
+   console.log('Attachments nomes:', (mailOptions.attachments || []).map(a => a.filename));
+ } else {
+   console.log('Sem anexos.');
+}
 
     
     // Envia o e-mail
