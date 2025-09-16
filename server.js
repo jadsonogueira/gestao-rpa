@@ -58,7 +58,6 @@ const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const os = require("os");
-const { exec } = require('child_process');
 const { promisify } = require('util');
 const { createWorker } = require('tesseract.js');
 const { PDFDocument, StandardFonts } = require('pdf-lib');
