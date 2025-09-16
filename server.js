@@ -62,8 +62,8 @@ const { exec } = require('child_process');
 const { promisify } = require('util');
 const { createWorker } = require('tesseract.js');
 const { PDFDocument, StandardFonts } = require('pdf-lib');
-
 const execP = promisify(exec);
+
 
 function normalizeLangs(input) {
   if (!input) return 'por+eng';
