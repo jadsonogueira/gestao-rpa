@@ -156,7 +156,7 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
         await execP(`pdftoppm -tiff -f ${i} -l ${i} "${inPath}" "${ppmPrefix}"`);
         const tiffPath = `${ppmPrefix}-1.tif`;
         const pageOut = path.join(tmpDir, `ocr_page_${i}`);
-        await execP(`tesseract "${tiffPath}" "${pageOut}" -l ${langs} pdf`);
+        await execP(`pdftoppm -png -r 300 -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
         pagePdfBuffers.push(fs.readFileSync(`${pageOut}.pdf`));
       }
 
