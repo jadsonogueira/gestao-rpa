@@ -84,22 +84,33 @@ function toLangArray(input) {
   if (Array.isArray(input)) return input.filter(Boolean).map(String);
   return String(input || 'eng').split('+').map(s => s.trim()).filter(Boolean);
 }
-
 async function getWorker(langs = 'por+eng') {
-  const langArr = toLangArray(langs);
-  const primary = langArr[0] || 'eng';   // usa só o primeiro
-
+  console.log(`[OCR] Criando worker para: ${langs}`);
+  
   const worker = await createWorker({
     langPath: 'https://tessdata.projectnaptha.com/4.0.0',
     cachePath: '/tmp',
   });
 
-  // ✅ inicializa com 1 idioma para eliminar a causa do erro
-  await worker.loadLanguage(primary);
-  await worker.initialize(primary);
+  try {
+    // Usa apenas português (mais simples e confiável)
+    await worker.loadLanguage('por');
+    await worker.initialize('por');
+    console.log('[OCR] Worker inicializado com português');
+  } catch (error) {
+    console.warn('[OCR] Fallback para inglês:', error.message);
+    try {
+      await worker.loadLanguage('eng');
+      await worker.initialize('eng');
+      console.log('[OCR] Worker inicializado com inglês');
+    } catch (fallbackError) {
+      await worker.terminate();
+      throw new Error(`Falha ao inicializar Tesseract: ${fallbackError.message}`);
+    }
+  }
+
   return worker;
 }
-
 
 
 /**
