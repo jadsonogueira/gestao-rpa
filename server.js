@@ -84,35 +84,37 @@ function toLangArray(input) {
   if (Array.isArray(input)) return input.filter(Boolean).map(String);
   return String(input || 'eng').split('+').map(s => s.trim()).filter(Boolean);
 }
-async function getWorker(langs = 'por+eng') {
-  console.log(`[OCR] Criando worker para: ${langs}`);
-  
-  const worker = await createWorker({
-    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
-    cachePath: '/tmp',
-  });
 
+
+
+
+async function getWorker(langs = 'por') {
+  console.log(`[OCR] Criando worker Tesseract.js`);
+  
+  const worker = await createWorker();
+  
   try {
-    // Usa apenas português (mais simples e confiável)
+    console.log('[OCR] Carregando idioma português...');
     await worker.loadLanguage('por');
     await worker.initialize('por');
-    console.log('[OCR] Worker inicializado com português');
+    console.log('[OCR] Worker inicializado com sucesso');
   } catch (error) {
-    console.warn('[OCR] Fallback para inglês:', error.message);
+    console.warn('[OCR] Erro com português, tentando inglês:', error.message);
     try {
       await worker.loadLanguage('eng');
       await worker.initialize('eng');
       console.log('[OCR] Worker inicializado com inglês');
     } catch (fallbackError) {
-      await worker.terminate();
-      throw new Error(`Falha ao inicializar Tesseract: ${fallbackError.message}`);
+      console.error('[OCR] Falha total na inicialização:', fallbackError.message);
+      try {
+        await worker.terminate();
+      } catch {}
+      throw new Error('Não foi possível inicializar o Tesseract.js');
     }
   }
 
   return worker;
 }
-
-
 /**
  * Torna um PDF pesquisável (OCR):
  * A) ocrmypdf (se instalado)
