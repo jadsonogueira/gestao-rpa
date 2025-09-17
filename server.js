@@ -59,11 +59,12 @@ const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const os = require("os");
+const util = require('util');
 const execP = util.promisify(exec);
 const { createWorker } = require('tesseract.js');
 const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('pdf-lib');
 const { exec: execShell } = require('child_process');
-const util = require('util');
+
 
 
 function normalizeLangs(input) {
