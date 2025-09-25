@@ -64,6 +64,23 @@ const execP = util.promisify(exec);
 const { createWorker } = require('tesseract.js');
 const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('pdf-lib');
 const { exec: execShell } = require('child_process');
+const net = require('net'); // <— novo, no topo junto com os outros requires
+
+// ---- Transporter global (Gmail SMTP explícito) ----
+const is465 = process.env.SMTP_PORT === '465';
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: is465,
+  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  requireTLS: !is465,
+  pool: true,
+  maxConnections: 2,
+  maxMessages: 50,
+  connectionTimeout: 15000,
+  socketTimeout: 20000
+});
+
 
 
 
@@ -368,6 +385,37 @@ app.use(cors({
   exposedHeaders: ['Content-Disposition']
 }));
 app.use(express.urlencoded({ extended: true }));
+
+
+app.use(express.json());
+
+// TCP: testa rede/porta até o Gmail
+app.get('/debug/smtp', (req, res) => {
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = Number(process.env.SMTP_PORT || 587);
+  const s = new net.Socket();
+  const timer = setTimeout(() => { s.destroy(); res.status(504).send(`Timeout conectando em ${host}:${port}`); }, 8000);
+  s.connect(port, host, () => { clearTimeout(timer); s.destroy(); res.send(`Conectou no TCP em ${host}:${port}`); });
+  s.on('error', (e) => { clearTimeout(timer); res.status(500).send(`Falha TCP em ${host}:${port} -> ${e.message}`); });
+});
+
+// Envio de teste
+app.get('/debug/send', async (req, res) => {
+  try {
+    const info = await transporter.sendMail({
+      from: `"RPDNIT" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER,
+      subject: 'SMTP debug',
+      text: 'Teste OK'
+    });
+    res.send('Enviado: ' + info.messageId);
+  } catch (err) {
+    console.error('[SEND DEBUG ERROR]', err);
+    res.status(500).send(err.message || 'Erro ao enviar');
+  }
+});
+
+
 
 // -----------------------------------------------------
 // Função para remover acentos e caracteres especiais do nome do arquivo
@@ -903,28 +951,6 @@ if (agIso) {
       mailContent += `Número: ${dados.numero || ''}\n`;
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
-
-
-    
-    // Configura o transporte de e-mail
- // Configura o transporte de e-mail (Gmail via SMTP explícito)
-const is465 = process.env.SMTP_PORT === '465';
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: is465, // true SOMENTE se porta 465
-  auth: {
-    user: process.env.EMAIL_USER, // seu Gmail
-    pass: process.env.EMAIL_PASS  // senha de app (16 chars)
-  },
-  requireTLS: !is465,             // força STARTTLS quando 587
-  pool: true,
-  maxConnections: 2,
-  maxMessages: 50,
-  connectionTimeout: 15000,
-  socketTimeout: 20000
-});
 
 
     const mailOptions = {
