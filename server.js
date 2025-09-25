@@ -461,7 +461,7 @@ async function sendEmailWithFallback(mailOptions) {
     return { messageId: 'sent-via-resend' };
   }
 }
-
+}
 
 
 // -----------------------------------------------------
