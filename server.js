@@ -59,32 +59,71 @@ const AdmZip = require('adm-zip');
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const os = require("os");
-const { exec: execShell } = require('child_process');
 const util = require('util');
 const execP = util.promisify(exec);
-const { PDFDocument } = require('pdf-lib');
 const { createWorker } = require('tesseract.js');
+const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('pdf-lib');
+const { exec: execShell } = require('child_process');
 
-async function getWorker(langs = 'por+eng') {
-  const worker = await createWorker({
-    // baixa os dados de idioma via CDN (não depende de pacotes no host)
-    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
-    cachePath: '/tmp',
-  });
-  const langList = (langs || 'eng').split('+').map(s => s.trim()).filter(Boolean);
-  for (const lg of langList) {
-    await worker.loadLanguage(lg);
+
+
+function normalizeLangs(input) {
+  if (!input) return 'por+eng';
+  if (Array.isArray(input)) return input.map(s => String(s).trim()).filter(Boolean).join('+');
+  let s = String(input).trim();
+  if (s.startsWith('[') && s.endsWith(']')) {
+    try {
+      const arr = JSON.parse(s);
+      if (Array.isArray(arr)) return arr.map(x => String(x).trim()).filter(Boolean).join('+');
+    } catch {}
   }
-  await worker.initialize(langList.join('+'));
-  return worker;
+  return s.split('+').map(t => t.trim()).filter(Boolean).join('+');
 }
 
+function toLangArray(input) {
+  if (Array.isArray(input)) return input.filter(Boolean).map(String);
+  return String(input || 'eng').split('+').map(s => s.trim()).filter(Boolean);
+}
+
+
+
+
+async function getWorker(langs = 'por') {
+  console.log(`[OCR] Criando worker Tesseract.js`);
+  
+  const worker = await createWorker();
+  
+  try {
+    console.log('[OCR] Carregando idioma português...');
+    await worker.loadLanguage('por');
+    await worker.initialize('por');
+    console.log('[OCR] Worker inicializado com sucesso');
+  } catch (error) {
+    console.warn('[OCR] Erro com português, tentando inglês:', error.message);
+    try {
+      await worker.loadLanguage('eng');
+      await worker.initialize('eng');
+      console.log('[OCR] Worker inicializado com inglês');
+    } catch (fallbackError) {
+      console.error('[OCR] Falha total na inicialização:', fallbackError.message);
+      try {
+        await worker.terminate();
+      } catch {}
+      throw new Error('Não foi possível inicializar o Tesseract.js');
+    }
+  }
+
+  return worker;
+}
 /**
  * Torna um PDF pesquisável (OCR):
  * A) ocrmypdf (se instalado)
  * B) tesseract CLI + pdftoppm (se instalados)
  * C) tesseract.js (WASM) + pdftoppm (sempre disponível no Render Free)
  */
+
+
+
 async function makePdfSearchable(inBuffer, langs = 'por+eng') {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-'));
   const inPath = path.join(tmpDir, 'input.pdf');
@@ -117,22 +156,22 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
         await execP(`pdftoppm -tiff -f ${i} -l ${i} "${inPath}" "${ppmPrefix}"`);
         const tiffPath = `${ppmPrefix}-1.tif`;
         const pageOut = path.join(tmpDir, `ocr_page_${i}`);
-        await execP(`tesseract "${tiffPath}" "${pageOut}" -l ${langs} pdf`);
+        await execP(`pdftoppm -png -r 300 -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
         pagePdfBuffers.push(fs.readFileSync(`${pageOut}.pdf`));
       }
 
-      const merged = await PDFDocument.create();
+      const mergedB = await PDFDocument.create();
       for (const buf of pagePdfBuffers) {
         const part = await PDFDocument.load(buf, { ignoreEncryption: true });
-        const pages = await merged.copyPages(part, part.getPageIndices());
-        pages.forEach(p => merged.addPage(p));
+        const pages = await mergedB.copyPages(part, part.getPageIndices());
+        pages.forEach(p => mergedB.addPage(p));
       }
-      const mergedBytes = await merged.save();
+      const mergedBytes = await mergedB.save();
       fs.rmSync(tmpDir, { recursive: true, force: true });
       return Buffer.from(mergedBytes);
     }
 
-    // --- Caminho C: Tesseract.js (WASM) + pdftoppm
+    // --- Caminho C: Tesseract.js (WASM) + pdftoppm (robusto)
     if (!hasPdftoppm) {
       throw new Error('Nenhuma rota de OCR disponível: falta pdftoppm.');
     }
@@ -142,53 +181,89 @@ async function makePdfSearchable(inBuffer, langs = 'por+eng') {
     const numPages = parsed.numpages || 1;
     console.log(`[OCR] Páginas: ${numPages}`);
 
+    const findFirstMatch = (dir, basePrefix, exts = ['png', 'jpg', 'jpeg', 'ppm']) => {
+      const files = fs.readdirSync(dir);
+      const esc = basePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`^${esc}-\\d+\\.(?:${exts.join('|')})$`, 'i');
+      return files.find(f => re.test(f)) || null;
+    };
+
     const imgPaths = [];
     for (let i = 1; i <= numPages; i++) {
-      const outPrefix = path.join(tmpDir, `page_${i}`);
-      await execP(`pdftoppm -png -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
-      imgPaths.push(`${outPrefix}-1.png`);
-    }
+      const basePrefix = `page_${i}`;
+      const outPrefix = path.join(tmpDir, basePrefix);
 
-    const worker = await getWorker(langs); // ✅ já inicializado
+      try { await execP(`pdftoppm -png -f ${i} -l ${i} "${inPath}" "${outPrefix}"`); } catch {}
+      let fname = findFirstMatch(tmpDir, basePrefix, ['png', 'ppm']);
+
+      if (!fname) {
+        try {
+          await execP(`pdftoppm -jpeg -f ${i} -l ${i} "${inPath}" "${outPrefix}"`);
+          fname = findFirstMatch(tmpDir, basePrefix, ['jpg', 'jpeg']);
+        } catch {}
+      }
+
+      if (!fname) {
+        const ls = fs.readdirSync(tmpDir).slice(0, 100).join(', ');
+        throw new Error(`pdftoppm não gerou imagem para a página ${i}. Dir: [${ls}]`);
+      }
+
+      imgPaths.push(path.join(tmpDir, fname));
+    }
 
     const merged = await PDFDocument.create();
-    for (const pngPath of imgPaths) {
-      const imageBytes = fs.readFileSync(pngPath);
-      const { data } = await worker.recognize(imageBytes);
+    const ocrFont = await merged.embedFont(StandardFonts.Helvetica);
 
-      const embeddedPng = await merged.embedPng(imageBytes);
-      const { width, height } = embeddedPng.size();
-      const page = merged.addPage([width, height]);
-      page.drawImage(embeddedPng, { x: 0, y: 0, width, height });
+    let worker;
+    try {
+      worker = await getWorker(langs);
 
-      for (const w of (data.words || [])) {
-        const { x0, y0, x1, y1 } = w.bbox;
-        const h = Math.max(1, y1 - y0);
-        const yPdf = height - (y0 + h);
-        const size = Math.max(6, Math.min(72, h));
-        page.drawText(w.text, {
-          x: x0,
-          y: yPdf,
-          size,
-          opacity: 0.01, // invisível e pesquisável
-        });
+      for (const imgPath of imgPaths) {
+        const { data } = await worker.recognize(imgPath);
+
+        const bytes = fs.readFileSync(imgPath);
+        const lower = imgPath.toLowerCase();
+        const embedded = lower.endsWith('.png')
+          ? await merged.embedPng(bytes)
+          : await merged.embedJpg(bytes);
+
+        const { width, height } = embedded.size();
+        const page = merged.addPage([width, height]);
+        page.drawImage(embedded, { x: 0, y: 0, width, height });
+
+        const words = Array.isArray(data?.words) ? data.words : [];
+        for (const w of words) {
+          const bb = w?.bbox;
+          const txt = (w?.text ?? '').trim();
+          if (!bb || !txt) continue;
+
+          const x0 = +bb.x0, y0 = +bb.y0, x1 = +bb.x1, y1 = +bb.y1;
+          if (![x0, y0, x1, y1].every(Number.isFinite)) continue;
+
+          const h = Math.max(1, y1 - y0);
+          const yPdf = height - (y0 + h);
+          const size = Math.max(6, Math.min(36, h));
+
+          page.drawText(txt, { x: x0, y: yPdf, size, font: ocrFont });
+        }
       }
+    } finally {
+      if (worker) { try { await worker.terminate(); } catch {} }
     }
 
-    await worker.terminate();
     const mergedBytes = await merged.save();
     fs.rmSync(tmpDir, { recursive: true, force: true });
     return Buffer.from(mergedBytes);
+
   } catch (e) {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    console.error('[OCR] Falhou:', e.message);
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    console.error('[OCR] Falhou:', e?.message || e);
     throw e;
   }
 }
 
-
 // === Helper: otimiza/resize JPG mantendo nitidez ===
-async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 82) {
+async function optimizeJpegBuffer(inputBuffer, maxWidth = 1500, quality = 85) {
   try {
     const tmpDir  = fs.mkdtempSync(path.join(os.tmpdir(), 'jpg-opt-'));
     const inPath  = path.join(tmpDir, 'in.jpg');
@@ -312,55 +387,6 @@ async function hasBinary(bin) {
     await execP(process.platform === 'win32' ? `where ${bin}` : `which ${bin}`);
     return true;
   } catch { return false; }
-}
-
-async function makePdfSearchable(inBuffer, langs = 'por+eng') {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-'));
-  const inPath = path.join(tmpDir, 'input.pdf');
-  const outPath = path.join(tmpDir, 'output.pdf');
-  fs.writeFileSync(inPath, inBuffer);
-
-  try {
-    if (await hasBinary('ocrmypdf')) {
-      const cmd = `ocrmypdf --skip-text -l ${langs} --optimize 1 "${inPath}" "${outPath}"`;
-      await execP(cmd);
-      const out = fs.readFileSync(outPath);
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-      return out;
-    }
-
-    const hasPdftoppm = await hasBinary('pdftoppm');
-    const hasTesseract = await hasBinary('tesseract');
-    if (!hasPdftoppm || !hasTesseract) {
-      throw new Error('Faltam binários: ocrmypdf ou tesseract/pdftoppm.');
-    }
-
-    const parsed = await pdfParse(inBuffer);
-    const numPages = parsed.numpages || 1;
-    const pagePdfBuffers = [];
-
-    for (let i = 1; i <= numPages; i++) {
-      const ppmPrefix = path.join(tmpDir, `page_${i}`);
-      await execP(`pdftoppm -tiff -f ${i} -l ${i} "${inPath}" "${ppmPrefix}"`);
-      const tiffPath = `${ppmPrefix}-1.tif`;
-      const pageOut = path.join(tmpDir, `ocr_page_${i}`);
-      await execP(`tesseract "${tiffPath}" "${pageOut}" -l ${langs} pdf`);
-      pagePdfBuffers.push(fs.readFileSync(`${pageOut}.pdf`));
-    }
-
-    const merged = await PDFDocument.create();
-    for (const buf of pagePdfBuffers) {
-      const part = await PDFDocument.load(buf, { ignoreEncryption: true });
-      const pages = await merged.copyPages(part, part.getPageIndices());
-      pages.forEach(p => merged.addPage(p));
-    }
-    const mergedBytes = await merged.save();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    return Buffer.from(mergedBytes);
-  } catch (e) {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    throw e;
-  }
 }
 
 
@@ -760,6 +786,54 @@ app.post('/send-email', upload.any(), async (req, res) => {
     }
 
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
+
+    
+// === Agendamento para o Power Automate (sempre envia "Agendamento:") ===
+const { envio, quando, quandoUtc } = req.body;
+
+// Converte "YYYY-MM-DDTHH:MM" OU "YYYY-MM-DD HH:MM" (24h)
+// OU "YYYY-MM-DD HH:MM AM/PM" assumindo America/Sao_Paulo (-03:00) -> ISO UTC (...:SSZ)
+function spToUtcIso(localStr) {
+  if (!localStr) return null;
+
+  // 24h com 'T' ou espaço
+  let m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})$/.exec(localStr);
+  if (!m) {
+    // 12h com AM/PM
+    const m12 = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(localStr);
+    if (!m12) return null;
+    let hh = (+m12[4]) % 12;
+    if (/pm/i.test(m12[6])) hh += 12;
+    m = [null, m12[1], m12[2], m12[3], String(hh).padStart(2,'0'), m12[5]];
+  }
+
+  const y  = +m[1], mo = +m[2], d = +m[3], hh = +m[4], mi = +m[5];
+  const ms = Date.UTC(y, mo - 1, d, hh + 3, mi, 0); // SP (-03:00) -> UTC
+  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
+// Enviamos SEMPRE "Agendamento:" para o Flow
+let agIso = null;
+if (envio === 'agendar') {
+  // tenta parsear o input; se não der, usa quandoUtc do front
+  agIso = spToUtcIso(quando)
+       || (quandoUtc && (() => {
+            const d = new Date(quandoUtc);
+            return isNaN(d) ? null : d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+          })());
+} else {
+  // imediato -> agora + 5s (buffer p/ nunca cair no passado)
+  agIso = new Date(Date.now() + 5 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
+if (agIso) {
+  mailContent += `Agendamento: ${agIso}\n`;
+}
+// === fim bloco de agendamento ===
+
+
+
+    
     mailContent += `Requerente: ${usuario?.username || 'Desconhecido'}\n`;
     mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
 
@@ -1018,16 +1092,6 @@ app.post('/verify-token', (req, res) => {
   });
 });
 
-app.get('/usuarios', async (req, res) => {
-  try {
-    const usuarios = await User.find({}, { password: 0 }).sort({ username: 1 }); // exclui senha
-    res.json(usuarios);
-  } catch (err) {
-    console.error('Erro ao buscar usuários:', err);
-    res.status(500).send('Erro ao buscar usuários');
-  }
-});
-
 
 app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
   try {
@@ -1108,7 +1172,10 @@ app.post('/pdf-make-searchable', upload.single('arquivoPdf'), async (req, res) =
       return res.status(400).send('Envie um "arquivoPdf" (application/pdf).');
     }
 
-    const langs = (req.body.lang || req.query.lang || process.env.OCR_LANGS || 'por+eng').trim();
+   const langs = normalizeLangs(
+  req.body.lang ?? req.query.lang ?? process.env.OCR_LANGS ?? 'por+eng'
+);
+
 
     // Opcional: comprimir antes se >4MB (você já tem esse helper)
     const inputBuffer = await compressPDFIfNeeded(req.file);
