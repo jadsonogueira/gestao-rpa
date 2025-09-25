@@ -907,10 +907,25 @@ if (agIso) {
 
     
     // Configura o transporte de e-mail
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    });
+ // Configura o transporte de e-mail (Gmail via SMTP explícito)
+const is465 = process.env.SMTP_PORT === '465';
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: is465, // true SOMENTE se porta 465
+  auth: {
+    user: process.env.EMAIL_USER, // seu Gmail
+    pass: process.env.EMAIL_PASS  // senha de app (16 chars)
+  },
+  requireTLS: !is465,             // força STARTTLS quando 587
+  pool: true,
+  maxConnections: 2,
+  maxMessages: 50,
+  connectionTimeout: 15000,
+  socketTimeout: 20000
+});
+
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
