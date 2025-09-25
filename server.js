@@ -1138,14 +1138,19 @@ if (agIso) {
 
     
     // Envia o e-mail
-   try {
-  const info = await sendEmailWithFallback(mailOptions);
-  return res.send('E-mail enviado com sucesso: ' + (info?.messageId || 'ok'));
-} catch (error) {
-  console.error('Erro ao enviar o e-mail:', error);
-  return res.status(500).send('Erro ao enviar o e-mail: ' + (error.message || error));
-}
-});
+    try {
+      const info = await sendEmailWithFallback(mailOptions);
+      return res.send('E-mail enviado com sucesso: ' + (info?.messageId || 'ok'));
+    } catch (error) {
+      console.error('Erro ao enviar o e-mail:', error);
+      return res.status(500).send('Erro ao enviar o e-mail: ' + (error.message || error));
+    }
+
+  } catch (err) { // <-- ESTE catch fecha o try externo aberto no início da rota
+    console.error('Erro ao processar o envio de e-mail:', err);
+    return res.status(500).send('Erro no servidor');
+  }
+}); // <-- fecha a rota /send-email
 
 // Rota para a página principal
 app.get('/', (req, res) => {
