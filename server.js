@@ -998,13 +998,33 @@ if (agIso) {
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
 
+// antes:
+const mailOptions = {
+  from: process.env.EMAIL_USER,
+  to: 'jadson.pena@dnit.gov.br',
+  subject: `${fluxo}`,
+  text: mailContent,
+};
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: 'jadson.pena@dnit.gov.br',
-      subject: `${fluxo}`,
-      text: mailContent,
-    };
+// depois (suporta Resend sandbox OU domínio verificado)
+const useResend = !!process.env.RESEND_API_KEY;
+
+// Se tiver RESEND_FROM (domínio verificado) usa ele; senão, se for usar Resend, cai no sandbox
+const fromAddress =
+  process.env.RESEND_FROM
+  || (useResend ? 'onboarding@resend.dev' : process.env.EMAIL_USER);
+
+const mailOptions = {
+  from: fromAddress,
+  to: 'jadson.pena@dnit.gov.br',
+  subject: `${fluxo}`,
+  text: mailContent,
+  // Para responder para seu Gmail mesmo usando sandbox/ domínio diferente:
+  replyTo: process.env.EMAIL_USER,
+};
+
+
+    
 
     // Verifica se há arquivos enviados
     if (req.files && req.files.length > 0) {
