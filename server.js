@@ -461,7 +461,6 @@ async function sendEmailWithFallback(mailOptions) {
     return { messageId: 'sent-via-resend' };
   }
 }
-}
 
 
 // -----------------------------------------------------
@@ -1146,7 +1145,7 @@ if (agIso) {
   console.error('Erro ao enviar o e-mail:', error);
   return res.status(500).send('Erro ao enviar o e-mail: ' + (error.message || error));
 }
-
+});
 
 // Rota para a página principal
 app.get('/', (req, res) => {
