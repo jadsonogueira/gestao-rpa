@@ -84,6 +84,9 @@ const transporter = nodemailer.createTransport({
 
 
 
+
+
+
 function normalizeLangs(input) {
   if (!input) return 'por+eng';
   if (Array.isArray(input)) return input.map(s => String(s).trim()).filter(Boolean).join('+');
@@ -414,6 +417,50 @@ app.get('/debug/send', async (req, res) => {
     res.status(500).send(err.message || 'Erro ao enviar');
   }
 });
+
+// -----------------------------------------------------
+
+async function sendEmailWithFallback(mailOptions) {
+  // 1) tenta SMTP
+  try {
+    return await transporter.sendMail(mailOptions);
+  } catch (e) {
+    const isConn = e?.code === 'ETIMEDOUT' || e?.command === 'CONN' || /ECONN/.test(e?.code || '');
+    if (!isConn) throw e; // erro de auth/format -> propaga
+
+    // 2) fallback: Resend API (HTTPS)
+    if (!process.env.RESEND_API_KEY) throw e;
+
+    const to = Array.isArray(mailOptions.to) ? mailOptions.to.join(',') : mailOptions.to;
+    const payload = {
+      from: mailOptions.from,
+      to,
+      subject: mailOptions.subject,
+      text: mailOptions.text,
+      attachments: (mailOptions.attachments || []).map(a => ({
+        filename: a.filename,
+        content: a.content.toString('base64'),
+        encoding: 'base64',
+        contentType: a.contentType || undefined
+      }))
+    };
+
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!resp.ok) {
+      const txt = await resp.text().catch(()=> '');
+      throw new Error(`Resend falhou: ${resp.status} ${txt}`);
+    }
+    return { messageId: 'sent-via-resend' };
+  }
+}
 
 
 
@@ -1092,19 +1139,14 @@ if (agIso) {
 
     
     // Envia o e-mail
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error('Erro ao enviar o e-mail:', error);
-        return res.status(500).send('Erro ao enviar o e-mail');
-      }
-      res.send('E-mail enviado com sucesso');
-    });
-  } catch (err) {
-    console.error('Erro ao processar o envio de e-mail:', err);
-    res.status(500).send('Erro no servidor');
-  }
+   try {
+  const info = await sendEmailWithFallback(mailOptions);
+  return res.send('E-mail enviado com sucesso: ' + (info?.messageId || 'ok'));
+} catch (error) {
+  console.error('Erro ao enviar o e-mail:', error);
+  return res.status(500).send('Erro ao enviar o e-mail: ' + (error.message || error));
+}
 
-});
 
 // Rota para a página principal
 app.get('/', (req, res) => {
