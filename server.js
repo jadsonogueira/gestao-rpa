@@ -64,8 +64,6 @@ const execP = util.promisify(exec);
 const { createWorker } = require('tesseract.js');
 const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('pdf-lib');
 const { exec: execShell } = require('child_process');
-const { sendWithSendGrid } = require('./email/sendgrid');
-
 
 
 
@@ -1057,6 +1055,9 @@ const provider = (process.env.EMAIL_PROVIDER || 'gmail').toLowerCase();
 
 if (provider === 'sendgrid') {
   // -------- Envio via SendGrid (sem SMTP) --------
+
+  const { sendWithSendGrid } = require('./email/sendgrid');
+
   try {
     // Mapear Buffers -> Base64 (exigência da API do SendGrid)
     const sgAttachments = attachments.map(a => ({
