@@ -1084,7 +1084,7 @@ if (provider === 'sendgrid') {
 console.log('[EMAIL] provider=%s from=%s to=%s',
   (process.env.EMAIL_PROVIDER || 'gmail'),
   process.env.FROM_EMAIL,
-  'SEU_DESTINO_AQUI' // troque pelo e-mail que você está testando
+  'jadsonpena@gmail.com // troque pelo e-mail que você está testando
 );
 
 
