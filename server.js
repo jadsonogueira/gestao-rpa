@@ -1081,8 +1081,16 @@ if (provider === 'sendgrid') {
          'application/octet-stream')
     }));
 
+console.log('[EMAIL] provider=%s from=%s to=%s',
+  (process.env.EMAIL_PROVIDER || 'gmail'),
+  process.env.FROM_EMAIL,
+  'SEU_DESTINO_AQUI' // troque pelo e-mail que você está testando
+);
+
+
+    
     await sendWithSendGrid({
-      to: 'jadson.pena@dnit.gov.br',
+      to: 'jadsonpena@gmail.com',
       subject: `${fluxo}`,
       text: mailContent,
       // HTML simples legível (escapado e preservando quebras)
