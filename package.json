@@ -14,6 +14,7 @@
     "node": "20.x"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.0",
     "adm-zip": "^0.5.16",
     "axios": "^1.8.1",
     "bcryptjs": "^2.4.3",
