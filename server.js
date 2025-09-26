@@ -1114,7 +1114,7 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: 'jadson.pena@dnit.gov.br',
+    to: 'jadsonpena@gmail.com',
     subject: `${fluxo}`,
     text: mailContent,
     attachments // aqui os anexos seguem como Buffer, igual antes
