@@ -1111,7 +1111,14 @@ if (provider === 'sendgrid') {
   });
 }
 
+} catch (err) {
+  console.error('Erro ao processar o envio de e-mail:', err);
+  return res.status(500).send('Erro no servidor');
+}
+});
 
+
+    
 // Rota para a página principal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
