@@ -485,15 +485,14 @@ async function hasBinary(bin) {
 
 
 // Verifica variáveis de ambiente obrigatórias
-if (
-  !process.env.MONGODB_URL ||
-  !process.env.JWT_SECRET ||
-  !process.env.EMAIL_USER ||
-  !process.env.EMAIL_PASS
-) {
-  console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
+const hasSMTP = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+const hasResend = !!process.env.RESEND_API_KEY;
+
+if (!process.env.MONGODB_URL || !process.env.JWT_SECRET || (!hasSMTP && !hasResend)) {
+  console.error('Erro: defina SMTP (EMAIL_USER/EMAIL_PASS) ou RESEND_API_KEY.');
   process.exit(1);
 }
+
 
 // Conexão com MongoDB
 mongoose
@@ -997,9 +996,6 @@ if (agIso) {
       mailContent += `Número: ${dados.numero || ''}\n`;
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
-
-
-const useResend = !!process.env.RESEND_API_KEY;
 
 // Se tiver RESEND_FROM (domínio verificado) usa ele; senão, se for usar Resend, cai no sandbox
 const useResend = !!process.env.RESEND_API_KEY;
