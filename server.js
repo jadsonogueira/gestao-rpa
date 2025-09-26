@@ -64,26 +64,6 @@ const execP = util.promisify(exec);
 const { createWorker } = require('tesseract.js');
 const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('pdf-lib');
 const { exec: execShell } = require('child_process');
-const net = require('net'); // <— novo, no topo junto com os outros requires
-
-// ---- Transporter global (Gmail SMTP explícito) ----
-const is465 = process.env.SMTP_PORT === '465';
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: is465,
-  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-  requireTLS: !is465,
-  pool: true,
-  maxConnections: 2,
-  maxMessages: 50,
-  connectionTimeout: 15000,
-  socketTimeout: 20000
-});
-
-
-
-
 
 
 
@@ -389,80 +369,6 @@ app.use(cors({
 }));
 app.use(express.urlencoded({ extended: true }));
 
-
-app.use(express.json());
-
-// TCP: testa rede/porta até o Gmail
-app.get('/debug/smtp', (req, res) => {
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = Number(process.env.SMTP_PORT || 587);
-  const s = new net.Socket();
-  const timer = setTimeout(() => { s.destroy(); res.status(504).send(`Timeout conectando em ${host}:${port}`); }, 8000);
-  s.connect(port, host, () => { clearTimeout(timer); s.destroy(); res.send(`Conectou no TCP em ${host}:${port}`); });
-  s.on('error', (e) => { clearTimeout(timer); res.status(500).send(`Falha TCP em ${host}:${port} -> ${e.message}`); });
-});
-
-// Envio de teste
-app.get('/debug/send', async (req, res) => {
-  try {
-    const info = await transporter.sendMail({
-      from: `"RPDNIT" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
-      subject: 'SMTP debug',
-      text: 'Teste OK'
-    });
-    res.send('Enviado: ' + info.messageId);
-  } catch (err) {
-    console.error('[SEND DEBUG ERROR]', err);
-    res.status(500).send(err.message || 'Erro ao enviar');
-  }
-});
-
-// -----------------------------------------------------
-
-async function sendEmailWithFallback(mailOptions) {
-  // 1) tenta SMTP
-  try {
-    return await transporter.sendMail(mailOptions);
-  } catch (e) {
-    const isConn = e?.code === 'ETIMEDOUT' || e?.command === 'CONN' || /ECONN/.test(e?.code || '');
-    if (!isConn) throw e; // erro de auth/format -> propaga
-
-    // 2) fallback: Resend API (HTTPS)
-    if (!process.env.RESEND_API_KEY) throw e;
-
-    const to = Array.isArray(mailOptions.to) ? mailOptions.to.join(',') : mailOptions.to;
-    const payload = {
-      from: mailOptions.from,
-      to,
-      subject: mailOptions.subject,
-      text: mailOptions.text,
-      attachments: (mailOptions.attachments || []).map(a => ({
-        filename: a.filename,
-        content: a.content.toString('base64'),
-        encoding: 'base64',
-        contentType: a.contentType || undefined
-      }))
-    };
-
-    const resp = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!resp.ok) {
-      const txt = await resp.text().catch(()=> '');
-      throw new Error(`Resend falhou: ${resp.status} ${txt}`);
-    }
-    return { messageId: 'sent-via-resend' };
-  }
-}
-
-
 // -----------------------------------------------------
 // Função para remover acentos e caracteres especiais do nome do arquivo
 function sanitizeFilename(filename) {
@@ -485,14 +391,15 @@ async function hasBinary(bin) {
 
 
 // Verifica variáveis de ambiente obrigatórias
-const hasSMTP = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
-const hasResend = !!process.env.RESEND_API_KEY;
-
-if (!process.env.MONGODB_URL || !process.env.JWT_SECRET || (!hasSMTP && !hasResend)) {
-  console.error('Erro: defina SMTP (EMAIL_USER/EMAIL_PASS) ou RESEND_API_KEY.');
+if (
+  !process.env.MONGODB_URL ||
+  !process.env.JWT_SECRET ||
+  !process.env.EMAIL_USER ||
+  !process.env.EMAIL_PASS
+) {
+  console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
   process.exit(1);
 }
-
 
 // Conexão com MongoDB
 mongoose
@@ -901,7 +808,7 @@ function spToUtcIso(localStr) {
   }
 
   const y  = +m[1], mo = +m[2], d = +m[3], hh = +m[4], mi = +m[5];
-  const ms = Date.UTC(y, mo - 1, d, hh + 3, mi, 0); // SP (-03:00) -> UTC
+  const ms = Date.UTC(y, mo - 1, d, hh - 1, mi, 0); // SP (-03:00) -> UTC
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
@@ -997,21 +904,20 @@ if (agIso) {
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
 
-// Se tiver RESEND_FROM (domínio verificado) usa ele; senão, se for usar Resend, cai no sandbox
-const useResend = !!process.env.RESEND_API_KEY;
-const fromAddress = process.env.RESEND_FROM || (useResend ? 'onboarding@resend.dev' : process.env.EMAIL_USER);
-
-const mailOptions = {
-  from: fromAddress,
-  to: 'jadson.pena@dnit.gov.br',
-  subject: `${fluxo}`,
-  text: mailContent,
-  replyTo: process.env.EMAIL_USER, // opcional
-};
-
-
 
     
+    // Configura o transporte de e-mail
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: 'jadson.pena@dnit.gov.br',
+      subject: `${fluxo}`,
+      text: mailContent,
+    };
 
     // Verifica se há arquivos enviados
     if (req.files && req.files.length > 0) {
@@ -1145,19 +1051,19 @@ const mailOptions = {
 
     
     // Envia o e-mail
-    try {
-      const info = await sendEmailWithFallback(mailOptions);
-      return res.send('E-mail enviado com sucesso: ' + (info?.messageId || 'ok'));
-    } catch (error) {
-      console.error('Erro ao enviar o e-mail:', error);
-      return res.status(500).send('Erro ao enviar o e-mail: ' + (error.message || error));
-    }
-
-  } catch (err) { // <-- ESTE catch fecha o try externo aberto no início da rota
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Erro ao enviar o e-mail:', error);
+        return res.status(500).send('Erro ao enviar o e-mail');
+      }
+      res.send('E-mail enviado com sucesso');
+    });
+  } catch (err) {
     console.error('Erro ao processar o envio de e-mail:', err);
-    return res.status(500).send('Erro no servidor');
+    res.status(500).send('Erro no servidor');
   }
-}); // <-- fecha a rota /send-email
+
+});
 
 // Rota para a página principal
 app.get('/', (req, res) => {
