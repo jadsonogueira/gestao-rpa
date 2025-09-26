@@ -925,7 +925,7 @@ if (agIso) {
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: 'jadson.pena@dnit.gov.br',
+      to: 'jadsonpena@gmail.com',
       subject: `${fluxo}`,
       text: mailContent,
     };
