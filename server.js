@@ -998,15 +998,7 @@ if (agIso) {
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
 
-// antes:
-const mailOptions = {
-  from: process.env.EMAIL_USER,
-  to: 'jadson.pena@dnit.gov.br',
-  subject: `${fluxo}`,
-  text: mailContent,
-};
 
-// depois (suporta Resend sandbox OU domínio verificado)
 const useResend = !!process.env.RESEND_API_KEY;
 
 // Se tiver RESEND_FROM (domínio verificado) usa ele; senão, se for usar Resend, cai no sandbox
