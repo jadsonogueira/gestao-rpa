@@ -391,15 +391,25 @@ async function hasBinary(bin) {
 
 
 // Verifica variáveis de ambiente obrigatórias
-if (
-  !process.env.MONGODB_URL ||
-  !process.env.JWT_SECRET ||
-  !process.env.SENDGRID_API_KEY ||
-  !process.env.FROM_EMAIL
-) {
-  console.error('Erro: defina MONGODB_URL, JWT_SECRET, SENDGRID_API_KEY e FROM_EMAIL nas variáveis de ambiente.');
+// Verifica variáveis de ambiente obrigatórias (condicionais por provider)
+if (!process.env.MONGODB_URL || !process.env.JWT_SECRET) {
+  console.error('Erro: defina MONGODB_URL e JWT_SECRET nas variáveis de ambiente.');
   process.exit(1);
 }
+
+const provider = (process.env.EMAIL_PROVIDER || 'gmail').toLowerCase();
+if (provider === 'sendgrid') {
+  if (!process.env.SENDGRID_API_KEY || !process.env.FROM_EMAIL) {
+    console.error('Erro: para EMAIL_PROVIDER=sendgrid, defina SENDGRID_API_KEY e FROM_EMAIL.');
+    process.exit(1);
+  }
+} else {
+  // usando Gmail/Nodemailer
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('[AVISO] Usando Gmail: defina EMAIL_USER e EMAIL_PASS. (SMTP pode falhar no Render Free)');
+  }
+}
+
 
 
 // Conexão com MongoDB
