@@ -396,12 +396,13 @@ async function hasBinary(bin) {
 if (
   !process.env.MONGODB_URL ||
   !process.env.JWT_SECRET ||
-  !process.env.EMAIL_USER ||
-  !process.env.EMAIL_PASS
+  !process.env.SENDGRID_API_KEY ||
+  !process.env.FROM_EMAIL
 ) {
-  console.error('Erro: Variáveis de ambiente não configuradas corretamente.');
+  console.error('Erro: defina MONGODB_URL, JWT_SECRET, SENDGRID_API_KEY e FROM_EMAIL nas variáveis de ambiente.');
   process.exit(1);
 }
+
 
 // Conexão com MongoDB
 mongoose
@@ -1037,35 +1038,78 @@ if (agIso) {
     }   // <-- fecha o if (req.files && req.files.length > 0)
 
 
-    // Se houver anexos, adiciona ao e-mail
-    if (attachments.length > 0) {
-      mailOptions.attachments = attachments;
-    }
+// Se houver anexos, adiciona ao e-mail **(mantém apenas na RAM; envio decide abaixo)**
+// (não monte mais mailOptions aqui — vamos decidir o provedor primeiro)
+if (!Array.isArray(attachments)) {
+  // garantia
+  attachments = [];
+}
 
-  
+// ===== LOG de tamanho e nomes (mantém seus logs) =====
+const totalBytes = attachments.reduce((sum, a) => sum + (a.content?.length || 0), 0);
+console.log(`Total de bytes nos attachments (raw): ${totalBytes}`);
+console.log(`Total estimado com Base64 (~4/3): ${Math.round(totalBytes * 4/3)}`);
+console.log('Attachments nomes:', attachments.map(a => a.filename));
 
-    const totalBytes = attachments
-      .map(a => a.content.length)
-      .reduce((sum, n) => sum + n, 0);
-        console.log(`Total de bytes nos attachments (raw): ${totalBytes}`);
-      console.log(`Total estimado com Base64 (~4/3): ${Math.round(totalBytes * 4/3)}`);
-         console.log('Attachments nomes:', (mailOptions.attachments || []).map(a => a.filename));
+// ===== Escolha do provedor por variável de ambiente =====
+// Default: GMAIL (comportamento atual). Só usa SendGrid se EMAIL_PROVIDER=sendgrid
+const provider = (process.env.EMAIL_PROVIDER || 'gmail').toLowerCase();
 
-    
-    // Envia o e-mail
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error('Erro ao enviar o e-mail:', error);
-        return res.status(500).send('Erro ao enviar o e-mail');
-      }
-      res.send('E-mail enviado com sucesso');
+if (provider === 'sendgrid') {
+  // -------- Envio via SendGrid (sem SMTP) --------
+  try {
+    // Mapear Buffers -> Base64 (exigência da API do SendGrid)
+    const sgAttachments = attachments.map(a => ({
+      filename: a.filename,
+      contentBase64: Buffer.isBuffer(a.content) ? a.content.toString('base64') : String(a.content || ''),
+      contentType:
+        a.contentType ||
+        (a.filename && /\.pdf$/i.test(a.filename)  ? 'application/pdf' :
+         a.filename && /\.png$/i.test(a.filename)  ? 'image/png' :
+         a.filename && /\.jpe?g$/i.test(a.filename) ? 'image/jpeg' :
+         'application/octet-stream')
+    }));
+
+    await sendWithSendGrid({
+      to: 'jadson.pena@dnit.gov.br',
+      subject: `${fluxo}`,
+      text: mailContent,
+      // HTML simples legível (escapado e preservando quebras)
+      html: `<pre>${mailContent.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</pre>`,
+      attachments: sgAttachments
     });
+
+    console.log('[EMAIL] Enviado via SendGrid.');
+    return res.send('E-mail enviado com sucesso');
   } catch (err) {
-    console.error('Erro ao processar o envio de e-mail:', err);
-    res.status(500).send('Erro no servidor');
+    console.error('Erro ao enviar via SendGrid:', err?.response?.body || err?.message || err);
+    return res.status(500).send('Erro ao enviar o e-mail (SendGrid).');
   }
 
-});
+} else {
+  // -------- Envio via Gmail/Nodemailer (COMPORTAMENTO ATUAL) --------
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  });
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: 'jadson.pena@dnit.gov.br',
+    subject: `${fluxo}`,
+    text: mailContent,
+    attachments // aqui os anexos seguem como Buffer, igual antes
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Erro ao enviar o e-mail:', error);
+      return res.status(500).send('Erro ao enviar o e-mail');
+    }
+    return res.send('E-mail enviado com sucesso');
+  });
+}
+
 
 // Rota para a página principal
 app.get('/', (req, res) => {
