@@ -1002,18 +1002,17 @@ if (agIso) {
 const useResend = !!process.env.RESEND_API_KEY;
 
 // Se tiver RESEND_FROM (domínio verificado) usa ele; senão, se for usar Resend, cai no sandbox
-const fromAddress =
-  process.env.RESEND_FROM
-  || (useResend ? 'onboarding@resend.dev' : process.env.EMAIL_USER);
+const useResend = !!process.env.RESEND_API_KEY;
+const fromAddress = process.env.RESEND_FROM || (useResend ? 'onboarding@resend.dev' : process.env.EMAIL_USER);
 
 const mailOptions = {
   from: fromAddress,
   to: 'jadson.pena@dnit.gov.br',
   subject: `${fluxo}`,
   text: mailContent,
-  // Para responder para seu Gmail mesmo usando sandbox/ domínio diferente:
-  replyTo: process.env.EMAIL_USER,
+  replyTo: process.env.EMAIL_USER, // opcional
 };
+
 
 
     
