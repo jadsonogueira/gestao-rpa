@@ -369,7 +369,7 @@ async function compressPDFIfNeeded(file) {
 // Importa a classe PDFImage do pdf-image
 const PDFImage = require("pdf-image").PDFImage;
 
-const app = express();
+
 app.use(cors({
   exposedHeaders: ['Content-Disposition']
 }));
