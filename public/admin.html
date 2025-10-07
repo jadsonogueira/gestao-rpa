@@ -7,85 +7,33 @@
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
   <style>
-    body {
-      background-color: #f8f9fa;
-    }
-    .navbar-brand i {
-      margin-right: 10px;
-    }
-    .container-max {
-      max-width: 960px;
-      margin: auto;
-      padding-top: 30px;
-    }
-    .table td, .table th {
-      vertical-align: middle;
-    }
-    .section-title {
-      margin-top: 40px;
-    }
+    body { background-color: #f8f9fa; }
+    .navbar-brand i { margin-right: 10px; }
+    .container-max { max-width: 1100px; margin: auto; padding-top: 30px; }
+    .table td, .table th { vertical-align: middle; }
+    .section-title { margin-top: 40px; }
+    .muted { color:#666; }
+    .badge { padding:.25rem .5rem; border-radius: 12px; }
+    .toolbar .form-control { min-width: 180px; }
+    .table-wrap { overflow-x:auto; }
   </style>
 </head>
-<script>
-  document.addEventListener("DOMContentLoaded", async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      showAlert("⛔ Acesso restrito. Faça login primeiro.", "danger");
-      return setTimeout(() => window.location.href = "/login.html", 2000);
-    }
-
-    try {
-      const res = await fetch("/verify-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-
-      const result = await res.json();
-
-      if (!result.valid || result.role !== "admin") {
-        showAlert("⛔ Acesso negado. Área exclusiva para administradores.", "danger");
-        localStorage.removeItem("token");
-        return setTimeout(() => window.location.href = "/", 3000);
-      }
-
-      carregarUsuariosExternos();
-      carregarContratos();
-
-    } catch (err) {
-      console.error("Erro ao verificar token:", err);
-      showAlert("⛔ Erro na verificação da sessão.", "danger");
-      setTimeout(() => window.location.href = "/login.html", 2000);
-    }
-  });
-</script>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand" href="/">
-      <i class="fas fa-road"></i> AppDNIT
-    </a>
+    <a class="navbar-brand" href="/"><i class="fas fa-road"></i> AppDNIT</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ml-auto">
+        <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a></li>
+        <li class="nav-item"><a href="/login.html" class="nav-link"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+        <li class="nav-item"><a href="/" class="nav-link"><i class="fas fa-user-plus"></i> Cadastro</a></li>
+        <li class="nav-item"><a href="/admin.html" class="nav-link"><i class="fas fa-tools"></i> Administração</a></li>
         <li class="nav-item">
-          <a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a>
-        </li>
-        <li class="nav-item">
-          <a href="/login.html" class="nav-link"><i class="fas fa-sign-in-alt"></i> Login</a>
-        </li>
-        <li class="nav-item">
-          <a href="/" class="nav-link"><i class="fas fa-user-plus"></i> Cadastro</a>
-        </li>
-        <li class="nav-item">
-          <a href="/admin.html" class="nav-link"><i class="fas fa-tools"></i> Administração</a>
-        </li>
-        <li class="nav-item">
-          <button class="btn btn-outline-light ml-lg-3" onclick="logout()">
+          <button class="btn btn-outline-light ml-lg-3" id="btnLogout">
             <i class="fas fa-sign-out-alt"></i> Sair
           </button>
         </li>
@@ -94,17 +42,61 @@
   </div>
 </nav>
 
-<script>
-  function logout() {
-    window.location.href = "/";
-  }
-</script>
-
 <div class="container container-max">
   <div id="alertPlaceholder"></div>
 
+  <!-- ===================== SEÇÃO: PROCESSOS SEI ===================== -->
+  <h2 class="section-title">Processos SEI</h2>
+
+  <div class="toolbar mb-3 d-flex flex-wrap align-items-end gap-2">
+    <div class="mr-2 mb-2">
+      <label class="mb-1" for="fSearch">Buscar (assunto/título)</label>
+      <input id="fSearch" class="form-control" placeholder="Ex.: assinatura, vistoria..." />
+    </div>
+    <div class="mr-2 mb-2">
+      <label class="mb-1" for="fUnit">Unidade</label>
+      <input id="fUnit" class="form-control" placeholder="Ex.: UL Brasília" />
+    </div>
+    <div class="mr-2 mb-2">
+      <label class="mb-1" for="fStatus">Status</label>
+      <input id="fStatus" class="form-control" placeholder="Ex.: Aguardando assinatura" />
+    </div>
+    <div class="mr-2 mb-2">
+      <label class="mb-1" for="fContract">Contrato</label>
+      <input id="fContract" class="form-control" placeholder="Ex.: 12 00101/2022" />
+    </div>
+
+    <div class="mb-2">
+      <button id="btnFilter" class="btn btn-primary mr-2"><i class="fas fa-search"></i> Filtrar</button>
+      <button id="btnClear" class="btn btn-secondary"><i class="fas fa-eraser"></i> Limpar</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table table-bordered table-hover" id="processosTable">
+      <thead class="thead-light">
+        <tr>
+          <th style="min-width:180px;">SEI</th>
+          <th>Assunto/Título</th>
+          <th style="min-width:160px;">Unidade</th>
+          <th style="min-width:160px;">Status</th>
+          <th style="min-width:180px;">Contratos</th>
+          <th style="min-width:180px;">Atualizado</th>
+          <th style="min-width:180px;">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyProc"></tbody>
+    </table>
+  </div>
+  <div class="d-flex align-items-center mb-4">
+    <button id="prevProc" class="btn btn-light mr-2">◀</button>
+    <span id="pageInfoProc" class="mr-2 muted"></span>
+    <button id="nextProc" class="btn btn-light">▶</button>
+  </div>
+
+  <!-- ===================== SEÇÃO: USUÁRIO EXTERNO ===================== -->
   <h2 class="section-title">Cadastro de Usuário Externo</h2>
-  <form id="formUsuarioExterno">
+  <form id="formUsuarioExterno" class="mb-3">
     <div class="form-group">
       <label for="idExterno">ID</label>
       <input type="text" id="idExterno" class="form-control" placeholder="Ex: USR010" required>
@@ -132,11 +124,12 @@
     <tbody></tbody>
   </table>
 
+  <!-- ===================== SEÇÃO: CONTRATOS ===================== -->
   <h4 class="section-title">Contratos SEI Cadastrados</h4>
   <form id="formContrato" class="mb-3">
     <div class="form-group">
       <label for="numeroContrato">Número do Contrato SEI</label>
-      <input type="text" id="numeroContrato" class="form-control" placeholder="Ex: 12 00121" required>
+      <input type="text" id="numeroContrato" class="form-control" placeholder="Ex: 12 00121/2022" required>
     </div>
     <button type="submit" class="btn btn-success">Cadastrar Contrato</button>
   </form>
@@ -153,6 +146,7 @@
 </div>
 
 <script>
+  // =================== helpers base ===================
   const apiUrl = window.location.origin;
 
   const showAlert = (message, type = 'success') => {
@@ -163,6 +157,136 @@
       </div>`;
   };
 
+  document.getElementById('btnLogout').addEventListener('click', () => {
+    localStorage.removeItem('token');
+    window.location.href = "/login.html";
+  });
+
+  // =================== segurança (token admin) ===================
+  async function ensureAdmin() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showAlert("⛔ Acesso restrito. Faça login primeiro.", "danger");
+      setTimeout(() => window.location.href = "/login.html", 1500);
+      throw new Error('sem token');
+    }
+    const res = await fetch("/verify-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    const result = await res.json();
+    if (!result.valid || result.role !== "admin") {
+      showAlert("⛔ Acesso negado. Área exclusiva para administradores.", "danger");
+      localStorage.removeItem("token");
+      setTimeout(() => window.location.href = "/", 1500);
+      throw new Error('sem permissão');
+    }
+  }
+
+  // =================== Processos SEI: listagem e filtros ===================
+  let pageProc = 1;
+  let pagesProc = 1;
+  const limitProc = 20;
+
+  async function carregarProcessos() {
+    const params = new URLSearchParams({ page: pageProc, limit: limitProc });
+
+    const s = document.getElementById('fSearch').value.trim();
+    const u = document.getElementById('fUnit').value.trim();
+    const st= document.getElementById('fStatus').value.trim();
+    const c = document.getElementById('fContract').value.trim();
+
+    if (s)  params.set('search', s);
+    if (u)  params.set('unit', u);
+    if (st) params.set('status', st);
+    if (c)  params.set('contract', c);
+
+    const tbody = document.getElementById('tbodyProc');
+    tbody.innerHTML = `<tr><td colspan="7">Carregando…</td></tr>`;
+
+    try {
+      const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`);
+      if (!res.ok) {
+        tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (${res.status})</td></tr>`;
+        return;
+      }
+      const data = await res.json();
+      pagesProc = data.pages || 1;
+
+      if (!data.items || !data.items.length) {
+        tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
+        document.getElementById('pageInfoProc').textContent = `Página ${data.page || 1} de ${data.pages || 1} — 0 itens`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      data.items.forEach(p => {
+        const sei = p.seiNumber || '';
+        const assunto = p.subject || p.title || '';
+        const unidade = p.unit || '';
+        const status = p.status || '';
+        const contratos = (p.contracts || []).join(', ');
+        const updated = p.updatedAtSEI ? new Date(p.updatedAtSEI).toLocaleString() : '-';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${sei}</td>
+          <td>${assunto}</td>
+          <td>${unidade}</td>
+          <td><span class="badge badge-info">${status || '-'}</span></td>
+          <td>${contratos}</td>
+          <td>${updated}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${sei}">
+              <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" data-action="trello" data-sei="${sei}">
+              <i class="fab fa-trello"></i> Trello
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('pageInfoProc').textContent =
+        `Página ${data.page} de ${data.pages} — ${data.total} itens`;
+
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar</td></tr>`;
+      console.error(e);
+    }
+  }
+
+  // ações placeholder
+  document.getElementById('processosTable').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const sei = btn.dataset.sei;
+    if (action === 'whatsapp') {
+      alert(`(placeholder) Gerar mensagem WhatsApp para o processo ${sei}`);
+    } else if (action === 'trello') {
+      alert(`(placeholder) Enviar/atualizar cartão Trello para o processo ${sei}`);
+    }
+  });
+
+  document.getElementById('btnFilter').addEventListener('click', () => { pageProc = 1; carregarProcessos(); });
+  document.getElementById('btnClear').addEventListener('click', () => {
+    document.getElementById('fSearch').value = '';
+    document.getElementById('fUnit').value = '';
+    document.getElementById('fStatus').value = '';
+    document.getElementById('fContract').value = '';
+    pageProc = 1; carregarProcessos();
+  });
+  document.getElementById('prevProc').addEventListener('click', () => {
+    if (pageProc > 1) { pageProc--; carregarProcessos(); }
+  });
+  document.getElementById('nextProc').addEventListener('click', () => {
+    if (pageProc < pagesProc) { pageProc++; carregarProcessos(); }
+  });
+
+  // =================== Usuários externos ===================
   async function carregarUsuariosExternos() {
     try {
       const res = await fetch(`${apiUrl}/usuarios-externos`);
@@ -193,7 +317,9 @@
       alert('Erro ao remover usuário.');
     }
   }
+  window.removerUsuarioExterno = removerUsuarioExterno;
 
+  // =================== Contratos ===================
   async function carregarContratos() {
     try {
       const res = await fetch(`${apiUrl}/contratos`);
@@ -223,7 +349,9 @@
       alert('Erro ao remover contrato.');
     }
   }
+  window.removerContrato = removerContrato;
 
+  // =================== Form handlers ===================
   document.getElementById('formUsuarioExterno').addEventListener('submit', async (e) => {
     e.preventDefault();
     const idExterno = document.getElementById('idExterno').value.trim();
@@ -270,14 +398,18 @@
     }
   });
 
-  function logout() {
-    window.location.href = "/";
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    carregarUsuariosExternos();
-    carregarContratos();
-  });
+  // =================== bootstrap: única entrada ===================
+  (async () => {
+    try {
+      await ensureAdmin();
+      // carrega as 3 seções
+      carregarProcessos();
+      carregarUsuariosExternos();
+      carregarContratos();
+    } catch (e) {
+      // ensureAdmin já trata redirecionamento/alertas
+    }
+  })();
 </script>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
