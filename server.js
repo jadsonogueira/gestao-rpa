@@ -67,6 +67,17 @@ const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('
 const { exec: execShell } = require('child_process');
 
 
+// perto do topo você já tem: const express = require('express'); const app = express();
+app.use(express.json({ limit: '20mb' }));
+
+try {
+  const ingestRoutes = require('./routes/ingest');
+  app.use('/api/ingest', ingestRoutes);
+} catch (e) {
+  console.warn('Rota /api/ingest não carregada:', e.message);
+}
+
+
 function normalizeLangs(input) {
   if (!input) return 'por+eng';
   if (Array.isArray(input)) return input.map(s => String(s).trim()).filter(Boolean).join('+');
