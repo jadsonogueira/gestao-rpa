@@ -1,22 +1,39 @@
-// routes/ingest.js
-import express from "express";
-import Process from "../models/Process.js";
-import Measurement from "../models/Measurement.js";
-import Document from "../models/Document.js";
-import { requireApiKey } from "../middleware/apiKey.js";
-import { normalizeSeiNumber } from "../utils/sei.js";
+// routes/ingest.js (CommonJS)
+const express = require('express');
+const mongoose = require('mongoose');
+const { normalizeSeiNumber } = require('../utils/sei');
+const Process = require('../models/Process');
+const Measurement = require('../models/Measurement');
+const Document = require('../models/Document');
 
 const router = express.Router();
-router.post("/upload", requireApiKey, async (req, res) => {
+
+// middleware simples de token via header x-app-token
+function requireApiKey(req, res, next) {
+  const incoming = req.header('x-app-token');
+  if (!incoming || incoming !== process.env.INGEST_TOKEN) {
+    return res.status(401).json({ ok: false, error: 'unauthorized' });
+  }
+  next();
+}
+
+/**
+ * Espera um array JSON ou { items: [...] }
+ * Cada item pode conter Process + Documentos + Medições
+ */
+router.post('/upload', requireApiKey, async (req, res) => {
   try {
     const payload = Array.isArray(req.body) ? req.body : (req.body.items || []);
     if (!Array.isArray(payload) || !payload.length) {
-      return res.status(400).json({ ok: false, error: "Payload vazio ou inválido" });
+      return res.status(400).json({ ok: false, error: 'Payload vazio ou inválido' });
     }
 
-    const procOps = [], measOps = [], docOps = [];
+    const procOps = [];
+    const measOps = [];
+    const docOps  = [];
+
     for (const item of payload) {
-      const rawSei = item.seiNumber || item.processo || item.Processo || "";
+      const rawSei = item.seiNumber || item.processo || item.Processo || '';
       const { seiNumber, seiNumberNorm } = normalizeSeiNumber(rawSei);
 
       procOps.push({
@@ -25,10 +42,10 @@ router.post("/upload", requireApiKey, async (req, res) => {
           update: {
             $set: {
               seiNumber, seiNumberNorm,
-              title: item.title || item.Assunto || item.subject || "",
-              subject: item.subject || item.Assunto || "",
-              unit: item.unit || item.Unidade || "",
-              status: item.status || "",
+              title:   item.title   || item.Assunto || item.subject || '',
+              subject: item.subject || item.Assunto || '',
+              unit:    item.unit    || item.Unidade || '',
+              status:  item.status  || '',
               contracts: item.contracts || item.Contratos || [],
               updatedAtSEI: item.updatedAt ? new Date(item.updatedAt) : null,
               createdAtSEI: item.createdAt ? new Date(item.createdAt) : null,
@@ -39,18 +56,23 @@ router.post("/upload", requireApiKey, async (req, res) => {
         }
       });
 
-      for (const d of item.documents || item.Documentos || []) {
+      // Documentos
+      for (const d of (item.documents || item.Documentos || [])) {
         docOps.push({
           updateOne: {
-            filter: { seiDocNumber: String(d.seiDocNumber || d.Numero || d.Id), version: Number(d.version || 1) },
+            filter: {
+              seiDocNumber: String(d.seiDocNumber || d.Numero || d.Id),
+              version: Number(d.version || 1)
+            },
             update: {
               $set: {
                 seiDocNumber: String(d.seiDocNumber || d.Numero || d.Id),
-                name: d.name || d.Nome || "",
-                type: d.type || d.Tipo || "",
+                name: d.name || d.Nome || '',
+                type: d.type || d.Tipo || '',
                 version: Number(d.version || 1),
-                url: d.url || "",
+                url: d.url || '',
                 hash: d.hash || null,
+                processSei: seiNumber, // referência rápida
                 updatedAtSEI: d.updatedAt ? new Date(d.updatedAt) : null,
                 lastSyncedAt: new Date()
               }
@@ -60,25 +82,27 @@ router.post("/upload", requireApiKey, async (req, res) => {
         });
       }
 
-      for (const m of item.measurements || item.Medicoes || []) {
+      // Medições
+      for (const m of (item.measurements || item.Medicoes || [])) {
+        const contractNumber = m.contractNumber || m.Contrato;
+        const medicaoNumber  = Number(m.medicaoNumber || m.Medicao);
+        if (!contractNumber || !Number.isFinite(medicaoNumber)) continue;
+
         measOps.push({
           updateOne: {
-            filter: {
-              contractNumber: m.contractNumber || m.Contrato,
-              medicaoNumber: Number(m.medicaoNumber || m.Medicao)
-            },
+            filter: { contractNumber, medicaoNumber },
             update: {
               $set: {
-                contractNumber: m.contractNumber || m.Contrato,
-                medicaoNumber: Number(m.medicaoNumber || m.Medicao),
+                contractNumber, medicaoNumber,
                 periodStart: m.periodStart ? new Date(m.periodStart) : null,
-                periodEnd: m.periodEnd ? new Date(m.periodEnd) : null,
-                status: m.status || "",
+                periodEnd:   m.periodEnd   ? new Date(m.periodEnd)   : null,
+                status: m.status || '',
                 totals: {
-                  bruto: Number(m?.totals?.bruto || m?.Bruto || 0),
-                  deducoes: Number(m?.totals?.deducoes || m?.Deducoes || 0),
-                  liquido: Number(m?.totals?.liquido || m?.Liquido || 0),
+                  bruto:     Number(m?.totals?.bruto    || m?.Bruto    || 0),
+                  deducoes:  Number(m?.totals?.deducoes || m?.Deducoes || 0),
+                  liquido:   Number(m?.totals?.liquido  || m?.Liquido  || 0)
                 },
+                processSei: seiNumber,
                 updatedAtSEI: m.updatedAt ? new Date(m.updatedAt) : null,
                 lastSyncedAt: new Date()
               }
@@ -107,4 +131,4 @@ router.post("/upload", requireApiKey, async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
