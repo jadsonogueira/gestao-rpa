@@ -46,7 +46,7 @@ exec('gs -version', (error, stdout, stderr) => {
     console.log(`Ghostscript:\n${stdout}`);
   }
 });
-
+const app = express();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -63,14 +63,6 @@ const execP = util.promisify(exec);
 const { createWorker } = require('tesseract.js');
 const { PDFDocument, StandardFonts /*, rgb (se quiser usar cor) */ } = require('pdf-lib');
 const { exec: execShell } = require('child_process');
-
-// server.js (trecho)
-import express from "express";
-import ingestRoutes from "./routes/ingest.js";
-
-const app = express();
-app.use(express.json({ limit: "20mb" })); // ajuste se precisar
-app.use("/api/ingest", ingestRoutes);
 
 
 function normalizeLangs(input) {
