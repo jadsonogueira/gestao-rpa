@@ -73,6 +73,7 @@ app.use(express.json({ limit: '20mb' }));
 try {
   const ingestRoutes = require('./routes/ingest');
   app.use('/api/ingest', ingestRoutes);
+  console.log('Rota /api/ingest carregada com sucesso.');
 } catch (e) {
   console.warn('Rota /api/ingest não carregada:', e.message);
 }
