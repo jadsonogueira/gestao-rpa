@@ -8,7 +8,7 @@ const Document = require('../models/Document');
 
 const router = express.Router();
 
-// middleware simples de token via header x-app-token
+// Token simples via header
 function requireApiKey(req, res, next) {
   const incoming = req.header('x-app-token');
   if (!incoming || incoming !== process.env.INGEST_TOKEN) {
@@ -17,6 +17,10 @@ function requireApiKey(req, res, next) {
   next();
 }
 
+// helpers
+const clean = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
+
+// ====== /upload (JSON válido) ======
 /**
  * Espera um array JSON ou { items: [...] }
  * Cada item pode conter Process + Documentos + Medições
@@ -36,17 +40,27 @@ router.post('/upload', requireApiKey, async (req, res) => {
       const rawSei = item.seiNumber || item.processo || item.Processo || '';
       const { seiNumber, seiNumberNorm } = normalizeSeiNumber(rawSei);
 
+      // ---- Processos (inclui seus novos campos) ----
       procOps.push({
         updateOne: {
           filter: { seiNumber },
           update: {
             $set: {
               seiNumber, seiNumberNorm,
+
+              // << seus campos >>
+              assignedTo: clean(item.Atribuicao ?? item.atribuicao ?? item.assignedTo),
+              note:       clean(item.Anotacao   ?? item.anotacao   ?? item.note),
+              type:       clean(item.Tipo       ?? item.tipo       ?? item.type),
+              spec:       clean(item.Especificacao ?? item.especificacao ?? item.spec),
+
+              // legados/gerais (se vierem)
               title:   item.title   || item.Assunto || item.subject || '',
               subject: item.subject || item.Assunto || '',
               unit:    item.unit    || item.Unidade || '',
               status:  item.status  || '',
               contracts: item.contracts || item.Contratos || [],
+
               updatedAtSEI: item.updatedAt ? new Date(item.updatedAt) : null,
               createdAtSEI: item.createdAt ? new Date(item.createdAt) : null,
               lastSyncedAt: new Date()
@@ -56,7 +70,7 @@ router.post('/upload', requireApiKey, async (req, res) => {
         }
       });
 
-      // Documentos
+      // ---- Documentos (se existir no payload) ----
       for (const d of (item.documents || item.Documentos || [])) {
         docOps.push({
           updateOne: {
@@ -72,7 +86,7 @@ router.post('/upload', requireApiKey, async (req, res) => {
                 version: Number(d.version || 1),
                 url: d.url || '',
                 hash: d.hash || null,
-                processSei: seiNumber, // referência rápida
+                processSei: seiNumber,
                 updatedAtSEI: d.updatedAt ? new Date(d.updatedAt) : null,
                 lastSyncedAt: new Date()
               }
@@ -82,7 +96,7 @@ router.post('/upload', requireApiKey, async (req, res) => {
         });
       }
 
-      // Medições
+      // ---- Medições (se existir no payload) ----
       for (const m of (item.measurements || item.Medicoes || [])) {
         const contractNumber = m.contractNumber || m.Contrato;
         const medicaoNumber  = Number(m.medicaoNumber || m.Medicao);
@@ -98,9 +112,9 @@ router.post('/upload', requireApiKey, async (req, res) => {
                 periodEnd:   m.periodEnd   ? new Date(m.periodEnd)   : null,
                 status: m.status || '',
                 totals: {
-                  bruto:     Number(m?.totals?.bruto    || m?.Bruto    || 0),
-                  deducoes:  Number(m?.totals?.deducoes || m?.Deducoes || 0),
-                  liquido:   Number(m?.totals?.liquido  || m?.Liquido  || 0)
+                  bruto:     Number(m?.totals?.bruto    ?? m?.Bruto    ?? 0),
+                  deducoes:  Number(m?.totals?.deducoes ?? m?.Deducoes ?? 0),
+                  liquido:   Number(m?.totals?.liquido  ?? m?.Liquido  ?? 0)
                 },
                 processSei: seiNumber,
                 updatedAtSEI: m.updatedAt ? new Date(m.updatedAt) : null,
@@ -130,5 +144,90 @@ router.post('/upload', requireApiKey, async (req, res) => {
     res.status(500).json({ ok: false, error: e.message });
   }
 });
+
+// ====== /upload-flex (texto "solto": {..},{..},{..}) ======
+
+function coerceToArray(input) {
+  if (Array.isArray(input)) return input;
+  if (input && typeof input === 'object') return [input];
+  if (typeof input !== 'string') throw new Error('payload inválido');
+
+  const txt = input.trim();
+
+  // 1) tenta JSON direto
+  try {
+    const parsed = JSON.parse(txt);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {}
+
+  // 2) NDJSON (um por linha)
+  const lines = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length > 1 && lines.every(l => l.startsWith('{') && l.endsWith('}'))) {
+    const arr = [];
+    for (const l of lines) { try { arr.push(JSON.parse(l)); } catch {} }
+    if (arr.length) return arr;
+  }
+
+  // 3) sequência "{...}, {...}, {...}" (caso do PA)
+  const wrapped = `[${txt.replace(/,\s*$/, '')}]`;
+  const parsed = JSON.parse(wrapped);
+  if (Array.isArray(parsed)) return parsed;
+
+  throw new Error('formato não reconhecido');
+}
+
+/**
+ * POST /api/ingest/upload-flex
+ * Headers:
+ *  - x-app-token: <INGEST_TOKEN>
+ * Content-Type: text/plain
+ * Body: texto no formato “{...},{...}”
+ */
+router.post(
+  '/upload-flex',
+  requireApiKey,
+  express.text({ type: '*/*', limit: '30mb' }),
+  async (req, res) => {
+    try {
+      const items = coerceToArray(req.body);
+      if (!items.length) return res.status(400).json({ ok:false, error:'vazio' });
+
+      const ops = items.map((item) => {
+        const rawSei = item.seiNumber || item.processo || item.Processo || '';
+        const { seiNumber, seiNumberNorm } = normalizeSeiNumber(rawSei);
+
+        return {
+          updateOne: {
+            filter: { seiNumber },
+            update: {
+              $set: {
+                seiNumber, seiNumberNorm,
+                // seus campos
+                assignedTo: clean(item.Atribuicao ?? item.atribuicao ?? item.assignedTo),
+                note:       clean(item.Anotacao   ?? item.anotacao   ?? item.note),
+                type:       clean(item.Tipo       ?? item.tipo       ?? item.type),
+                spec:       clean(item.Especificacao ?? item.especificacao ?? item.spec),
+                // extras (se vierem)
+                title:   item.title   || item.Assunto || item.subject || '',
+                subject: item.subject || item.Assunto || '',
+                unit:    item.unit    || item.Unidade || '',
+                status:  item.status  || '',
+                contracts: item.contracts || item.Contratos || [],
+                lastSyncedAt: new Date()
+              }
+            },
+            upsert: true
+          }
+        };
+      });
+
+      if (ops.length) await Process.bulkWrite(ops, { ordered:false });
+      res.json({ ok:true, counts: { processes: ops.length } });
+    } catch (e) {
+      console.error('upload-flex erro:', e.message);
+      res.status(400).json({ ok:false, error: e.message });
+    }
+  }
+);
 
 module.exports = router;
