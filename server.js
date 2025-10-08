@@ -78,6 +78,13 @@ try {
   console.warn('Rota /api/ingest não carregada:', e.message);
 }
 
+try {
+  const processesRoutes = require('./routes/processes');
+  app.use('/api/processes', processesRoutes);
+  console.log('Rota /api/processes carregada com sucesso.');
+} catch (e) {
+  console.warn('Rota /api/processes não carregada:', e.message);
+}
 
 
 
