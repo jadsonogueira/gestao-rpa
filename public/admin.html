@@ -74,18 +74,17 @@
 
   <div class="table-wrap">
     <table class="table table-bordered table-hover" id="processosTable">
-     <thead class="thead-light">
-  <tr>
-    <th style="min-width:160px;">SEI</th>
-    <th style="min-width:160px;">Atribuição</th>
-    <th style="min-width:160px;">Tipo</th>
-    <th style="min-width:220px;">Especificação</th>
-    <th style="min-width:220px;">Anotação</th>
-    <th style="min-width:160px;">Atualizado</th>
-    <th style="min-width:140px;">Ações</th>
-  </tr>
-</thead>
-
+      <thead class="thead-light">
+        <tr>
+          <th style="min-width:160px;">SEI</th>
+          <th style="min-width:160px;">Atribuição</th>
+          <th style="min-width:160px;">Tipo</th>
+          <th style="min-width:220px;">Especificação</th>
+          <th style="min-width:220px;">Anotação</th>
+          <th style="min-width:160px;">Atualizado</th>
+          <th style="min-width:140px;">Ações</th>
+        </tr>
+      </thead>
       <tbody id="tbodyProc"></tbody>
     </table>
   </div>
@@ -193,10 +192,10 @@
   async function carregarProcessos() {
     const params = new URLSearchParams({ page: pageProc, limit: limitProc });
 
-    const s = document.getElementById('fSearch').value.trim();
-    const u = document.getElementById('fUnit').value.trim();
-    const st= document.getElementById('fStatus').value.trim();
-    const c = document.getElementById('fContract').value.trim();
+    const s  = document.getElementById('fSearch').value.trim();
+    const u  = document.getElementById('fUnit').value.trim();
+    const st = document.getElementById('fStatus').value.trim();
+    const c  = document.getElementById('fContract').value.trim();
 
     if (s)  params.set('search', s);
     if (u)  params.set('unit', u);
@@ -217,33 +216,36 @@
 
       if (!data.items || !data.items.length) {
         tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
-        document.getElementById('pageInfoProc').textContent = `Página ${data.page || 1} de ${data.pages || 1} — 0 itens`;
+        document.getElementById('pageInfoProc').textContent =
+          `Página ${data.page || 1} de ${data.pages || 1} — 0 itens`;
         return;
       }
 
       tbody.innerHTML = '';
       data.items.forEach(p => {
-        const sei = p.seiNumber || '';
-        const assunto = p.subject || p.title || '';
-        const unidade = p.unit || '';
-        const status = p.status || '';
-        const contratos = (p.contracts || []).join(', ');
-        const updated = p.updatedAtSEI ? new Date(p.updatedAtSEI).toLocaleString() : '-';
+        const sei    = p.seiNumber || '';
+        const atrib  = p.assignedTo || '';
+        const tipo   = p.type || '';
+        const espec  = p.spec || '';
+        const nota   = p.note || '';
+        const updated = p.updatedAtSEI
+          ? new Date(p.updatedAtSEI).toLocaleString('pt-BR')
+          : (p.lastSyncedAt ? new Date(p.lastSyncedAt).toLocaleString('pt-BR') : '-');
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${sei}</td>
-          <td>${assunto}</td>
-          <td>${unidade}</td>
-          <td><span class="badge badge-info">${status || '-'}</span></td>
-          <td>${contratos}</td>
+          <td>${atrib}</td>
+          <td>${tipo}</td>
+          <td>${espec}</td>
+          <td>${nota}</td>
           <td>${updated}</td>
           <td>
             <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${sei}">
-              <i class="fab fa-whatsapp"></i> WhatsApp
+              <i class="fab fa-whatsapp"></i>
             </button>
             <button class="btn btn-sm btn-outline-secondary" data-action="trello" data-sei="${sei}">
-              <i class="fab fa-trello"></i> Trello
+              <i class="fab fa-trello"></i>
             </button>
           </td>
         `;
@@ -294,11 +296,15 @@
       const lista = await res.json();
       const tbody = document.querySelector('#usuariosTable tbody');
       tbody.innerHTML = '';
+      if (!Array.isArray(lista) || !lista.length) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-muted">Nenhum usuário externo cadastrado.</td></tr>`;
+        return;
+      }
       lista.forEach(usuario => {
         tbody.innerHTML += `
           <tr>
-            <td>${usuario.nome}</td>
-            <td>${usuario.empresa}</td>
+            <td>${usuario.nome || ''}</td>
+            <td>${usuario.empresa || ''}</td>
             <td>
               <button class="btn btn-danger btn-sm" onclick="removerUsuarioExterno('${usuario._id}')">Remover</button>
             </td>
@@ -327,10 +333,14 @@
       const contratos = await res.json();
       const tbody = document.querySelector('#contratosTable tbody');
       tbody.innerHTML = '';
+      if (!Array.isArray(contratos) || !contratos.length) {
+        tbody.innerHTML = `<tr><td colspan="2" class="text-muted">Nenhum contrato cadastrado.</td></tr>`;
+        return;
+      }
       contratos.forEach(c => {
         tbody.innerHTML += `
           <tr>
-            <td>${c.numero}</td>
+            <td>${c.numero || ''}</td>
             <td>
               <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}')">Remover</button>
             </td>
@@ -403,12 +413,11 @@
   (async () => {
     try {
       await ensureAdmin();
-      // carrega as 3 seções
       carregarProcessos();
       carregarUsuariosExternos();
       carregarContratos();
     } catch (e) {
-      // ensureAdmin já trata redirecionamento/alertas
+      /* ensureAdmin já trata redirecionamento/alertas */
     }
   })();
 </script>
