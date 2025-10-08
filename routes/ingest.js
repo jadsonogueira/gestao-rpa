@@ -152,7 +152,13 @@ function coerceToArray(input) {
   if (input && typeof input === 'object') return [input];
   if (typeof input !== 'string') throw new Error('payload inválido');
 
-  const txt = input.trim();
+  // 🔹 decodifica se veio URL-encoded (%7B, %22, etc.)
+  let txt = input.trim();
+  const looksUrlEncoded =
+    /%(?:[0-9A-Fa-f]{2})/.test(txt) || txt.includes('%7B') || txt.includes('%22');
+  if (looksUrlEncoded) {
+    try { txt = decodeURIComponent(txt.replace(/\+/g, ' ')); } catch {}
+  }
 
   // 1) tenta JSON direto
   try {
@@ -168,7 +174,7 @@ function coerceToArray(input) {
     if (arr.length) return arr;
   }
 
-  // 3) sequência "{...}, {...}, {...}" (caso do PA)
+  // 3) sequência "{...}, {...}, {...}" (seu caso)
   const wrapped = `[${txt.replace(/,\s*$/, '')}]`;
   const parsed = JSON.parse(wrapped);
   if (Array.isArray(parsed)) return parsed;
