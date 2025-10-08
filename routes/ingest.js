@@ -147,18 +147,40 @@ router.post('/upload', requireApiKey, async (req, res) => {
 
 // ====== /upload-flex (texto "solto": {..},{..},{..}) ======
 
+function preClean(raw) {
+  let s = String(raw ?? '');
+
+  // tenta decodificar se veio %7B%22...
+  try {
+    if (/%[0-9A-Fa-f]{2}/.test(s)) {
+      const dec = decodeURIComponent(s);
+      // só troca se decodificar “aumentar” a quantidade de chaves/aspas (sinal de que estava URL-encoded)
+      if ((dec.match(/{/g)||[]).length >= (s.match(/{/g)||[]).length) s = dec;
+    }
+  } catch {}
+
+  // normaliza aspas “inteligentes” para ASCII
+  s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+
+  // normaliza CRLF para LF
+  s = s.replace(/\r\n?/g, '\n');
+
+  // remove caracteres de controle NÃO escapados (ENTER, TAB etc.) que quebram o JSON
+  // Obs.: não mexe nos que já estão escapados (\n, \t)
+  s = s.replace(/(?<!\\)[\u0000-\u001F]/g, ' ');
+
+  // remove vírgulas finais soltas
+  s = s.replace(/,\s*$/,'').trim();
+  return s;
+}
+
 function coerceToArray(input) {
   if (Array.isArray(input)) return input;
   if (input && typeof input === 'object') return [input];
   if (typeof input !== 'string') throw new Error('payload inválido');
 
-  // 🔹 decodifica se veio URL-encoded (%7B, %22, etc.)
-  let txt = input.trim();
-  const looksUrlEncoded =
-    /%(?:[0-9A-Fa-f]{2})/.test(txt) || txt.includes('%7B') || txt.includes('%22');
-  if (looksUrlEncoded) {
-    try { txt = decodeURIComponent(txt.replace(/\+/g, ' ')); } catch {}
-  }
+  const txt0 = input.trim();
+  const txt  = preClean(txt0);
 
   // 1) tenta JSON direto
   try {
@@ -166,18 +188,28 @@ function coerceToArray(input) {
     return Array.isArray(parsed) ? parsed : [parsed];
   } catch {}
 
-  // 2) NDJSON (um por linha)
-  const lines = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  // 2) NDJSON (um objeto por linha)
+  const lines = txt.split(/\n/).map(l => l.trim()).filter(Boolean);
   if (lines.length > 1 && lines.every(l => l.startsWith('{') && l.endsWith('}'))) {
     const arr = [];
     for (const l of lines) { try { arr.push(JSON.parse(l)); } catch {} }
     if (arr.length) return arr;
   }
 
-  // 3) sequência "{...}, {...}, {...}" (seu caso)
-  const wrapped = `[${txt.replace(/,\s*$/, '')}]`;
-  const parsed = JSON.parse(wrapped);
-  if (Array.isArray(parsed)) return parsed;
+  // 3) sequência "{...},{...},{...}" (caso do PA) → embrulha em []
+  try {
+    const wrapped = `[${txt}]`;
+    const arr = JSON.parse(wrapped);
+    if (Array.isArray(arr)) return arr;
+  } catch (e) {
+    // log útil para depurar onde quebrou
+    const pos = (e && typeof e.message === 'string' && e.message.match(/position (\d+)/i)) ? Number(RegExp.$1) : null;
+    if (Number.isFinite(pos)) {
+      const ctx = txt.slice(Math.max(0,pos-40), Math.min(txt.length,pos+40));
+      console.error('upload-flex JSON error near position', pos, 'context:', ctx);
+    }
+    throw e;
+  }
 
   throw new Error('formato não reconhecido');
 }
