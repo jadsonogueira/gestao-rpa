@@ -78,6 +78,16 @@ try {
   console.warn('Rota /api/ingest não carregada:', e.message);
 }
 
+// parser de texto "solto" (Opção A)
+try {
+  const ingestFlexRoutes = require('./routes/ingest-flex');
+  app.use('/api/ingest', ingestFlexRoutes); // cria /api/ingest/upload-flex
+  console.log('Rota /api/ingest/upload-flex pronta.');
+} catch (e) {
+  console.warn('Rota /api/ingest/upload-flex não carregada:', e.message);
+}
+
+
 
 function normalizeLangs(input) {
   if (!input) return 'por+eng';
