@@ -221,51 +221,89 @@ function coerceToArray(input) {
  * Content-Type: text/plain
  * Body: texto no formato “{...},{...}”
  */
+// ====== /upload-flex (aceita objeto direto ou lista) ======
 router.post(
   '/upload-flex',
   requireApiKey,
   express.text({ type: '*/*', limit: '30mb' }),
   async (req, res) => {
     try {
-      const items = coerceToArray(req.body);
-      if (!items.length) return res.status(400).json({ ok:false, error:'vazio' });
+      // 1) transforma qualquer entrada (texto, array, objeto) em array de objetos
+      const raw = req.body;
+      let arr = [];
 
-      const ops = items.map((item) => {
-        const rawSei = item.seiNumber || item.processo || item.Processo || '';
+      // se já for objeto JSON (por causa de body-parser)
+      if (typeof raw === 'object' && raw !== null) {
+        arr = Array.isArray(raw) ? raw : [raw];
+      } else if (typeof raw === 'string') {
+        const txt = preClean(raw);
+        // tenta parsear direto como objeto único
+        const parsed = safeJSON(txt);
+        if (parsed) {
+          arr = Array.isArray(parsed) ? parsed : [parsed];
+        } else {
+          // tenta formato {..},{..}
+          const wrapped = safeJSON(`[${txt}]`);
+          if (wrapped && Array.isArray(wrapped)) arr = wrapped;
+        }
+      }
+
+      if (!arr.length) {
+        return res.status(400).json({ ok: false, error: 'Formato inválido ou vazio' });
+      }
+
+      // 2) converte cada item no formato do schema
+      const ops = [];
+      for (const item of arr) {
+        const rawSei = item.Processo || item.processo || item.seiNumber || '';
         const { seiNumber, seiNumberNorm } = normalizeSeiNumber(rawSei);
 
-        return {
-          updateOne: {
-            filter: { seiNumber },
-            update: {
-              $set: {
-                seiNumber, seiNumberNorm,
-                // seus campos
-                assignedTo: clean(item.Atribuicao ?? item.atribuicao ?? item.assignedTo),
-                note:       clean(item.Anotacao   ?? item.anotacao   ?? item.note),
-                type:       clean(item.Tipo       ?? item.tipo       ?? item.type),
-                spec:       clean(item.Especificacao ?? item.especificacao ?? item.spec),
-                // extras (se vierem)
-                title:   item.title   || item.Assunto || item.subject || '',
-                subject: item.subject || item.Assunto || '',
-                unit:    item.unit    || item.Unidade || '',
-                status:  item.status  || '',
-                contracts: item.contracts || item.Contratos || [],
-                lastSyncedAt: new Date()
-              }
-            },
-            upsert: true
-          }
+        const mapped = {
+          seiNumber,
+          seiNumberNorm,
+          assignedTo: clean(item.Atribuicao ?? item.atribuicao ?? ''),
+          note: clean(item.Anotacao ?? item.anotacao ?? ''),
+          type: clean(item.Tipo ?? item.tipo ?? ''),
+          spec: clean(item.Especificacao ?? item.especificacao ?? ''),
+          title: clean(item.title ?? item.Assunto ?? ''),
+          subject: clean(item.subject ?? item.Assunto ?? ''),
+          unit: clean(item.unit ?? item.Unidade ?? ''),
+          status: clean(item.status ?? ''),
+          contracts: item.contracts || item.Contratos || [],
+          lastSyncedAt: new Date(),
         };
-      });
 
-      if (ops.length) await Process.bulkWrite(ops, { ordered:false });
-      res.json({ ok:true, counts: { processes: ops.length } });
+        // só grava se tiver um SEI ou algum conteúdo relevante
+        if (
+          mapped.seiNumber ||
+          mapped.title ||
+          mapped.subject ||
+          mapped.note ||
+          mapped.type ||
+          mapped.spec
+        ) {
+          ops.push({
+            updateOne: {
+              filter: { seiNumber },
+              update: { $set: mapped },
+              upsert: true,
+            },
+          });
+        }
+      }
+
+      if (!ops.length) {
+        return res.status(400).json({ ok: false, error: 'Nenhum item útil encontrado' });
+      }
+
+      await Process.bulkWrite(ops, { ordered: false });
+      res.json({ ok: true, counts: { processes: ops.length } });
     } catch (e) {
       console.error('upload-flex erro:', e.message);
-      res.status(400).json({ ok:false, error: e.message });
+      res.status(400).json({ ok: false, error: e.message });
     }
   }
 );
+
 
 module.exports = router;
