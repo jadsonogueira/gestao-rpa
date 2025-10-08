@@ -16,6 +16,7 @@
     .badge { padding:.25rem .5rem; border-radius: 12px; }
     .toolbar .form-control { min-width: 180px; }
     .table-wrap { overflow-x:auto; }
+    td.wrap { white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -50,8 +51,8 @@
 
   <div class="toolbar mb-3 d-flex flex-wrap align-items-end gap-2">
     <div class="mr-2 mb-2">
-      <label class="mb-1" for="fSearch">Buscar (assunto/título)</label>
-      <input id="fSearch" class="form-control" placeholder="Ex.: assinatura, vistoria..." />
+      <label class="mb-1" for="fSearch">Buscar (especificação/anotação)</label>
+      <input id="fSearch" class="form-control" placeholder="Ex.: passarela, vistoria..." />
     </div>
     <div class="mr-2 mb-2">
       <label class="mb-1" for="fUnit">Unidade</label>
@@ -59,7 +60,7 @@
     </div>
     <div class="mr-2 mb-2">
       <label class="mb-1" for="fStatus">Status</label>
-      <input id="fStatus" class="form-control" placeholder="Ex.: Aguardando assinatura" />
+      <input id="fStatus" class="form-control" placeholder="Ex.: Aguardando" />
     </div>
     <div class="mr-2 mb-2">
       <label class="mb-1" for="fContract">Contrato</label>
@@ -78,7 +79,7 @@
         <tr>
           <th style="min-width:160px;">SEI</th>
           <th style="min-width:160px;">Atribuição</th>
-          <th style="min-width:160px;">Tipo</th>
+          <th style="min-width:160px;">Tipo/Tags</th>
           <th style="min-width:220px;">Especificação</th>
           <th style="min-width:220px;">Anotação</th>
           <th style="min-width:160px;">Atualizado</th>
@@ -184,6 +185,11 @@
     }
   }
 
+  // =================== helpers de exibição ===================
+  const asText    = (v) => (v == null ? '' : String(v));
+  const decodePlus = (s) => asText(s).replace(/\+/g, ' ');
+  const joinTags   = (tags) => Array.isArray(tags) ? tags.join(', ') : '';
+
   // =================== Processos SEI: listagem e filtros ===================
   let pageProc = 1;
   let pagesProc = 1;
@@ -214,7 +220,18 @@
       const data = await res.json();
       pagesProc = data.pages || 1;
 
-      if (!data.items || !data.items.length) {
+      let items = Array.isArray(data.items) ? data.items : [];
+      // filtro adicional no cliente (busca em spec/note/title/subject)
+      const q = s.toLowerCase();
+      if (q) {
+        items = items.filter(p => {
+          const espec = asText(p.spec || p.title).toLowerCase();
+          const nota  = asText(p.note || p.subject).toLowerCase();
+          return espec.includes(q) || nota.includes(q);
+        });
+      }
+
+      if (!items.length) {
         tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
         document.getElementById('pageInfoProc').textContent =
           `Página ${data.page || 1} de ${data.pages || 1} — 0 itens`;
@@ -222,12 +239,13 @@
       }
 
       tbody.innerHTML = '';
-      data.items.forEach(p => {
-        const sei    = p.seiNumber || '';
-        const atrib  = p.assignedTo || '';
-        const tipo   = p.type || '';
-        const espec  = p.spec || '';
-        const nota   = p.note || '';
+      items.forEach(p => {
+        const sei   = asText(p.seiNumber);
+        const atrib = decodePlus(p.assignedTo || (p.meta && p.meta.atribuicao));
+        const tipo  = decodePlus(p.type) || joinTags(p.tags);
+        const espec = decodePlus(p.spec || p.title);
+        const nota  = decodePlus(p.note || p.subject);
+
         const updated = p.updatedAtSEI
           ? new Date(p.updatedAtSEI).toLocaleString('pt-BR')
           : (p.lastSyncedAt ? new Date(p.lastSyncedAt).toLocaleString('pt-BR') : '-');
@@ -237,8 +255,8 @@
           <td>${sei}</td>
           <td>${atrib}</td>
           <td>${tipo}</td>
-          <td>${espec}</td>
-          <td>${nota}</td>
+          <td class="wrap">${espec}</td>
+          <td class="wrap">${nota}</td>
           <td>${updated}</td>
           <td>
             <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${sei}">
@@ -361,53 +379,6 @@
     }
   }
   window.removerContrato = removerContrato;
-
-  // =================== Form handlers ===================
-  document.getElementById('formUsuarioExterno').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const idExterno = document.getElementById('idExterno').value.trim();
-    const nome = document.getElementById('nome').value.trim();
-    const empresa = document.getElementById('empresa').value.trim();
-    try {
-      const res = await fetch(`${apiUrl}/usuarios-externos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([{ idExterno, nome, empresa }])
-      });
-      if (res.ok) {
-        showAlert('✅ Usuário cadastrado com sucesso!');
-        e.target.reset();
-        carregarUsuariosExternos();
-      } else {
-        const msg = await res.text();
-        showAlert(`❌ ${msg}`, 'danger');
-      }
-    } catch (err) {
-      showAlert('❌ Erro na conexão com o servidor', 'danger');
-    }
-  });
-
-  document.getElementById('formContrato').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const numero = document.getElementById('numeroContrato').value.trim();
-    try {
-      const res = await fetch(`${apiUrl}/contratos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ numero })
-      });
-      if (res.ok) {
-        showAlert('✅ Contrato cadastrado com sucesso!');
-        e.target.reset();
-        carregarContratos();
-      } else {
-        const msg = await res.text();
-        showAlert(`❌ ${msg}`, 'danger');
-      }
-    } catch (err) {
-      showAlert('❌ Erro na conexão com o servidor', 'danger');
-    }
-  });
 
   // =================== bootstrap: única entrada ===================
   (async () => {
