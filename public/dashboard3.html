@@ -2,121 +2,484 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>AppDNIT - Dashboard</title>
+  <title>RPDNIT - Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Incluindo os estilos e scripts necessários -->
+  <meta name="theme-color" content="#121212">
+  
+  <!-- Bootstrap -->
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
+
   <style>
-    /* Estilos atualizados */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Partículas animadas de fundo */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      animation: float 20s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.4;
+      }
+      50% {
+        transform: translateY(-100vh) translateX(30vw) rotate(360deg);
+        opacity: 0.6;
+      }
+      90% {
+        opacity: 0.2;
+      }
+    }
+
+    /* Navbar moderna */
+    .navbar {
+      background: rgba(17, 24, 39, 0.95) !important;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      position: relative;
+      z-index: 100;
+      animation: slideDown 0.6s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        transform: translateY(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.4rem;
+      color: #fff !important;
+      transition: all 0.3s ease;
+    }
+
+    .navbar-brand:hover {
+      transform: scale(1.05);
+      color: #60a5fa !important;
+    }
+
+    .navbar-brand i {
+      color: #60a5fa;
+      margin-right: 8px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.15);
+      }
+    }
+
+    .nav-link {
+      color: rgba(255, 255, 255, 0.85) !important;
+      transition: all 0.3s ease;
+      position: relative;
+      padding: 8px 16px !important;
+    }
+
+    .nav-link:hover {
+      color: #60a5fa !important;
+      transform: translateY(-2px);
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: #60a5fa;
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+    }
+
+    .nav-link:hover::after {
+      width: 80%;
+    }
+
+    .btn-outline-light {
+      border: 2px solid #60a5fa;
+      color: #60a5fa !important;
+      transition: all 0.3s ease;
+    }
+
+    .btn-outline-light:hover {
+      background: #60a5fa;
+      color: #111827 !important;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(96, 165, 250, 0.4);
+    }
+
+    /* Container principal */
+    .container {
+      position: relative;
+      z-index: 10;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Título da página */
+    h3 {
+      color: #fff;
+      font-weight: 700;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 1s ease-out 0.3s both;
+    }
+
+    .text-muted {
+      color: rgba(255, 255, 255, 0.7) !important;
+      animation: fadeIn 1s ease-out 0.5s both;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    /* Cards de serviço modernos */
     .service-card {
-      transition: transform 0.2s, box-shadow 0.2s;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       cursor: pointer;
       height: 100%;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      position: relative;
+      overflow: hidden;
+      animation: cardAppear 0.6s ease-out backwards;
     }
-    
+
+    @keyframes cardAppear {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* Delay progressivo para cada card */
+    .col-md-4:nth-child(1) .service-card,
+    .col-md-6:nth-child(1) .service-card { animation-delay: 0.1s; }
+    .col-md-4:nth-child(2) .service-card,
+    .col-md-6:nth-child(2) .service-card { animation-delay: 0.2s; }
+    .col-md-4:nth-child(3) .service-card,
+    .col-md-6:nth-child(3) .service-card { animation-delay: 0.3s; }
+    .col-md-4:nth-child(4) .service-card,
+    .col-md-6:nth-child(4) .service-card { animation-delay: 0.4s; }
+    .col-md-4:nth-child(5) .service-card,
+    .col-md-6:nth-child(5) .service-card { animation-delay: 0.5s; }
+    .col-md-4:nth-child(6) .service-card,
+    .col-md-6:nth-child(6) .service-card { animation-delay: 0.6s; }
+    .col-md-4:nth-child(7) .service-card,
+    .col-md-6:nth-child(7) .service-card { animation-delay: 0.7s; }
+    .col-md-4:nth-child(8) .service-card,
+    .col-md-6:nth-child(8) .service-card { animation-delay: 0.8s; }
+    .col-md-4:nth-child(9) .service-card { animation-delay: 0.9s; }
+    .col-md-4:nth-child(10) .service-card { animation-delay: 1s; }
+    .col-md-4:nth-child(11) .service-card { animation-delay: 1.1s; }
+    .col-md-4:nth-child(12) .service-card { animation-delay: 1.2s; }
+    .col-md-4:nth-child(13) .service-card { animation-delay: 1.3s; }
+
+    .service-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .service-card:hover::before {
+      left: 100%;
+    }
+
     .service-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transform: translateY(-10px) scale(1.02);
+      box-shadow: 0 15px 40px rgba(96, 165, 250, 0.3);
+      border-color: rgba(96, 165, 250, 0.5);
     }
 
     .service-icon {
-      font-size: 2rem;
+      font-size: 3rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       margin-bottom: 1rem;
-      color: #007bff;
+      transition: all 0.3s ease;
     }
 
-    .loading-spinner {
-      display: inline-block;
-      width: 1rem;
-      height: 1rem;
-      margin-right: 0.5rem;
+    .service-card:hover .service-icon {
+      transform: scale(1.2) rotate(5deg);
     }
 
-    .navbar-brand img {
-      height: 30px;
-      margin-right: 10px;
-    }
-
-    .navbar {
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .user-profile {
-      display: flex;
-      align-items: center;
-      margin-right: 1rem;
-    }
-
-    .user-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      margin-right: 0.5rem;
-      background-color: #e9ecef;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .alert-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1050;
-      max-width: 350px;
-    }
-
-    .modal-header {
-      background-color: #f8f9fa;
-      border-bottom: 1px solid #dee2e6;
-    }
-
-    .modal-footer {
-      background-color: #f8f9fa;
-      border-top: 1px solid #dee2e6;
-    }
-
-    .form-group label {
-      font-weight: 500;
-      color: #495057;
-    }
-
-    .form-control:focus {
-      border-color: #80bdff;
-      box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    .card-title {
+      color: #1f2937;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
     }
 
     .service-description {
-      color: #6c757d;
+      color: #6b7280;
       font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Cards restritos */
+    .service-card.restrito {
+      filter: grayscale(0.8) blur(1px);
+      opacity: 0.5;
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+
+    .service-card.restrito::after {
+      content: '🔒';
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 1.5rem;
+    }
+
+    /* Cards PDF com destaque especial */
+    .pdf-service {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 197, 253, 0.15) 100%);
+      border: 2px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .pdf-service:hover {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(147, 197, 253, 0.25) 100%);
+      border-color: rgba(59, 130, 246, 0.6);
+    }
+
+    .pdf-service .service-icon {
+      background: linear-gradient(135deg, #3b82f6 0%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Modal moderno */
+    .modal-content {
+      border-radius: 16px;
+      border: none;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: modalSlideIn 0.4s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 16px 16px 0 0;
+      border: none;
+    }
+
+    .modal-header .close {
+      color: white;
+      opacity: 0.9;
+      transition: all 0.3s ease;
+    }
+
+    .modal-header .close:hover {
+      opacity: 1;
+      transform: rotate(90deg);
+    }
+
+    /* Overlay de carregamento */
+    #loadingOverlay {
+      background: linear-gradient(135deg, rgba(30, 60, 114, 0.95) 0%, rgba(126, 34, 206, 0.95) 100%);
+      backdrop-filter: blur(10px);
+    }
+
+    #loadingOverlay .spinner-border {
+      animation: spin 1s linear infinite, pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Botão WhatsApp flutuante */
+    .whatsapp-float {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+      z-index: 1000;
+      transition: all 0.3s ease;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .whatsapp-float:hover {
+      transform: scale(1.1) translateY(-5px);
+      box-shadow: 0 12px 35px rgba(37, 211, 102, 0.6);
+      text-decoration: none;
+      color: white;
+    }
+
+    /* Alert container */
+    .alert-container {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 1050;
+      max-width: 350px;
+      animation: slideInRight 0.5s ease-out;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .service-icon {
+        font-size: 2.5rem;
+      }
+
+      h3 {
+        font-size: 1.5rem;
+      }
+
+      .whatsapp-float {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+        bottom: 20px;
+        right: 20px;
+      }
     }
   </style>
 </head>
-<body class="bg-light">
+<body>
+  <!-- Partículas animadas -->
+  <div class="particles" id="particles"></div>
+
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-light bg-white">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <a class="navbar-brand" href="#">
-        <i class="fas fa-road mr-2"></i>
-        AppDNIT
+      <a class="navbar-brand" href="/">
+        <i class="fas fa-road"></i> RPDNIT
       </a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
+
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ml-auto">
           <li class="nav-item">
-            <div class="user-profile">
-              <div class="user-avatar">
-                <i class="fas fa-user"></i>
-              </div>
-              <span class="d-none d-md-inline">Usuário</span>
-            </div>
+            <a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a>
           </li>
           <li class="nav-item">
-            <button id="logoutButton" class="btn btn-outline-secondary">
-              <i class="fas fa-sign-out-alt mr-1"></i>Sair
+            <a href="/login.html" class="nav-link"><i class="fas fa-sign-in-alt"></i> Login</a>
+          </li>
+          <li class="nav-item">
+            <a href="/" class="nav-link"><i class="fas fa-user-plus"></i> Cadastro</a>
+          </li>
+          <li class="nav-item">
+            <a href="/admin.html" class="nav-link"><i class="fas fa-tools"></i> Administração</a>
+          </li>
+          <li class="nav-item">
+            <button class="btn btn-outline-light ml-lg-3" onclick="logout()">
+              <i class="fas fa-sign-out-alt"></i> Sair
             </button>
           </li>
         </ul>
@@ -124,7 +487,7 @@
     </div>
   </nav>
 
-  <!-- Container de Alertas -->
+  <!-- Alert Container -->
   <div class="alert-container" id="alertPlaceholder"></div>
 
   <!-- Conteúdo Principal -->
@@ -139,7 +502,7 @@
     <div class="row">
       <!-- Consultar Empenho -->
       <div class="col-md-4 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Consultar empenho')">
+        <div class="card service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Consultar empenho')">
           <div class="card-body text-center">
             <i class="fas fa-search service-icon"></i>
             <h5 class="card-title">Consultar Empenho</h5>
@@ -150,7 +513,7 @@
 
       <!-- Liberar Assinatura Externa -->
       <div class="col-md-4 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Liberar assinatura externa')">
+        <div class="card service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Liberar assinatura externa')">
           <div class="card-body text-center">
             <i class="fas fa-signature service-icon"></i>
             <h5 class="card-title">Liberar Assinatura Externa</h5>
@@ -161,7 +524,7 @@
 
       <!-- Liberar Acesso Externo -->
       <div class="col-md-4 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Liberar acesso externo')">
+        <div class="card service-card" data-role="classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Liberar acesso externo')">
           <div class="card-body text-center">
             <i class="fas fa-key service-icon"></i>
             <h5 class="card-title">Liberar Acesso Externo</h5>
@@ -172,7 +535,7 @@
 
       <!-- Alterar Ordem de Documentos -->
       <div class="col-md-6 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Alterar ordem de documentos')">
+        <div class="card service-card" data-role="admin" onclick="abrirFormulario('Alterar ordem de documentos')">
           <div class="card-body text-center">
             <i class="fas fa-sort service-icon"></i>
             <h5 class="card-title">Alterar Ordem de Documentos</h5>
@@ -183,11 +546,110 @@
 
       <!-- Inserir Anexo em Doc SEI -->
       <div class="col-md-6 mb-4">
-        <div class="card service-card" onclick="abrirFormulario('Inserir anexo em doc SEI')">
+        <div class="card service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Inserir anexo em doc SEI')">
           <div class="card-body text-center">
             <i class="fas fa-paperclip service-icon"></i>
             <h5 class="card-title">Inserir Anexo em Doc SEI</h5>
             <p class="service-description">Adicione anexos a documentos existentes</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Inserir Imagem em Doc SEI -->
+      <div class="col-md-6 mb-4">
+        <div class="card service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Inserir imagem em doc SEI')">
+          <div class="card-body text-center">
+            <i class="fas fa-camera service-icon"></i>
+            <h5 class="card-title">Inserir Imagem em Doc SEI</h5>
+            <p class="service-description">Adicione imagens ou envie um PDF para conversão em JPG</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assinatura em Doc SEI -->
+      <div class="col-md-6 mb-4">
+        <div class="card service-card" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Assinatura em doc SEI')">
+          <div class="card-body text-center">
+            <i class="fas fa-signature service-icon"></i>
+            <h5 class="card-title">Assinatura em Doc SEI</h5>
+            <p class="service-description">Assinar Doc SEI</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Criar Doc SEI Externo -->
+      <div class="col-md-6 mb-4">
+        <div class="card service-card" data-role="classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Criar Doc SEI Externo')">
+          <div class="card-body text-center">
+            <i class="fas fa-file service-icon"></i>
+            <h5 class="card-title">Criar Doc SEI Externo</h5>
+            <p class="service-description">Crie um documento SEI do tipo EXTERNO</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Criar Doc SEI Editável -->
+      <div class="col-md-6 mb-4">
+        <div class="card service-card" data-role="classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Criar Doc SEI Editável')">
+          <div class="card-body text-center">
+            <i class="fas fa-file service-icon"></i>
+            <h5 class="card-title">Criar Doc SEI Editável</h5>
+            <p class="service-description">Crie um documento SEI do tipo Editável</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Analise de processo -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card" data-role="admin" onclick="abrirFormulario('Analise de processo')">
+          <div class="card-body text-center">
+            <i class="fas fa-chart-line service-icon"></i>
+            <h5 class="card-title">Análise de Processo</h5>
+            <p class="service-description">Analise de processo SEI</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Unir PDFs -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card pdf-service" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Unir PDFs')">
+          <div class="card-body text-center">
+            <i class="fas fa-file-pdf service-icon"></i>
+            <h5 class="card-title">Unir PDFs</h5>
+            <p class="service-description">Junte múltiplos arquivos PDF em um único documento</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Dividir PDF -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card pdf-service" data-role="classe_a,classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('Dividir PDF')">
+          <div class="card-body text-center">
+            <i class="fas fa-cut service-icon"></i>
+            <h5 class="card-title">Dividir PDF</h5>
+            <p class="service-description">Separe páginas ou faixas de páginas em PDFs individuais</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PDF pesquisável (OCR) -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card pdf-service" data-role="admin" onclick="abrirFormulario('PDF pesquisável (OCR)')">
+          <div class="card-body text-center">
+            <i class="fas fa-search service-icon"></i>
+            <h5 class="card-title">PDF Pesquisável (OCR)</h5>
+            <p class="service-description">Converta PDF para pesquisável (camada de texto)</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PDF para JPG -->
+      <div class="col-md-4 mb-4">
+        <div class="card service-card pdf-service" data-role="classe_b,classe_c,classe_d,classe_e,admin" onclick="abrirFormulario('PDF para JPG')">
+          <div class="card-body text-center">
+            <i class="fas fa-image service-icon"></i>
+            <h5 class="card-title">PDF para JPG</h5>
+            <p class="service-description">Converta um arquivo PDF em imagens JPG (uma por página)</p>
           </div>
         </div>
       </div>
@@ -201,25 +663,130 @@
         <div class="modal-header">
           <h5 class="modal-title" id="modalTitle"></h5>
           <button type="button" class="close" data-dismiss="modal">
-            <span aria-hidden="true">&times;</span>
+            <span>&times;</span>
           </button>
         </div>
-        <div class="modal-body">
-          <div class="alert alert-info" role="alert">
-            <i class="fas fa-info-circle mr-2"></i>
-            <span id="modalInfo">Por favor, preencha todos os campos obrigatórios.</span>
-          </div>
-          <form id="fluxoForm" enctype="multipart/form-data">
-            <!-- Campos do formulário serão adicionados dinamicamente -->
-          </form>
-        </div>
+        <div class="modal-body"></div>
       </div>
     </div>
   </div>
 
+  <!-- Overlay de Carregamento -->
+  <div id="loadingOverlay" 
+       style="display: none; 
+              position: fixed; 
+              top: 0; left: 0; 
+              width: 100%; height: 100%; 
+              z-index: 9999; 
+              align-items: center; 
+              justify-content: center;">
+    <div style="color: #fff; font-size: 1.5rem; text-align: center;">
+      <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+        <span class="sr-only">Carregando...</span>
+      </div>
+      <p class="mt-3">Processando, por favor aguarde...</p>
+    </div>
+  </div>
+
+  <!-- Botão flutuante de suporte via WhatsApp -->
+  <a href="https://wa.me/5561996686541" 
+     class="whatsapp-float" 
+     target="_blank" 
+     title="Fale conosco no WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+  </a>
+
   <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="script.js"></script>
+
+  <script>
+    // Gera partículas animadas
+    const particlesContainer = document.getElementById('particles');
+    const particleCount = 40;
+
+    for (let i = 0; i < particleCount; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      
+      const size = Math.random() * 80 + 30;
+      particle.style.width = size + 'px';
+      particle.style.height = size + 'px';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.top = Math.random() * 100 + '%';
+      particle.style.animationDelay = Math.random() * 20 + 's';
+      particle.style.animationDuration = (Math.random() * 15 + 15) + 's';
+      
+      particlesContainer.appendChild(particle);
+    }
+
+    // Função de logout
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = "/";
+    }
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Você não está autenticado. Redirecionando para o login...');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${window.location.origin}/verify-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+
+        const data = await res.json();
+        if (!data.valid) {
+          localStorage.removeItem('token');
+          return window.location.href = 'login.html';
+        }
+
+        const userRole = data.userRole || data.role;
+
+        // Aplica restrição com base no atributo data-role
+        document.querySelectorAll('.card.service-card').forEach(card => {
+          const roleAttr = card.getAttribute('data-role');
+          if (!roleAttr) return;
+
+          const allowedRoles = roleAttr.split(',').map(r => r.trim());
+
+          if (!allowedRoles.includes(userRole)) {
+            card.classList.add('restrito');
+            card.removeAttribute('onclick');
+            card.setAttribute('data-toggle', 'tooltip');
+            card.setAttribute('title', 'Acesso restrito: serviço disponível apenas para níveis superiores');
+          }
+        });
+
+        // Inicializar tooltips Bootstrap
+        $('[data-toggle="tooltip"]').tooltip();
+      } catch (err) {
+        console.error('Erro ao verificar token:', err);
+        alert('Erro ao verificar autenticação. Redirecionando para o login...');
+        localStorage.removeItem('token');
+        window.location.href = 'login.html';
+      }
+    });
+  </script>
+
+  <script>
+    const logoutBtn = document.getElementById('logoutButton');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('token');
+        window.location.href = 'login.html';
+      });
+    }
+  </script>
 </body>
 </html>
