@@ -98,6 +98,7 @@ function mapProcessFields(src) {
   if (!out.seiNumber && (src.processo || src.Processo)) out.seiNumber = String(src.processo || src.Processo);
   if (!out.title && (src.Especificacao || src.especificacao)) out.title = String(src.Especificacao || src.especificacao);
   if (!out.subject && (src.Anotacao || src.anotacao)) out.subject = String(src.Anotacao || src.anotacao);
+  if (!out.unit && (src.Atribuicao || src.Atribuicao)) out.unit = String(src.Atribuicao || src.Atribuicao);
 
   // tags: aceita string ou array
   let tags = src.tags ?? src.Tipo ?? src.tipo;
