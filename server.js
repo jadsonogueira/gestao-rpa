@@ -493,7 +493,7 @@ const processSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 }, { collection: 'processes' }); // IMPORTANT: usa a collection appdnit.processes
 
-const Process = mongoose.model('Process', processSchema);
+const Process = mongoose.models.Process || mongoose.model('Process', processSchema);
 
 // GET /api/processes?page=&limit=&search=&unit=&status=&contract=
 app.get('/api/processes', async (req, res) => {
