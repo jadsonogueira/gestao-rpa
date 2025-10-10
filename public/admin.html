@@ -17,6 +17,7 @@
     .toolbar .form-control { min-width: 180px; }
     .table-wrap { overflow-x:auto; }
     td.wrap { white-space: pre-wrap; }
+    .btn[disabled] { pointer-events: none; opacity: .6; }
   </style>
 </head>
 <body>
@@ -90,9 +91,9 @@
     </table>
   </div>
   <div class="d-flex align-items-center mb-4">
-    <button id="prevProc" class="btn btn-light mr-2">◀</button>
+    <button id="prevProc" class="btn btn-light mr-2" title="Página anterior">◀</button>
     <span id="pageInfoProc" class="mr-2 muted"></span>
-    <button id="nextProc" class="btn btn-light">▶</button>
+    <button id="nextProc" class="btn btn-light" title="Próxima página">▶</button>
   </div>
 
   <!-- ===================== SEÇÃO: USUÁRIO EXTERNO ===================== -->
@@ -152,8 +153,8 @@
 
   const showAlert = (message, type = 'success') => {
     document.getElementById('alertPlaceholder').innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
-        ${message}
+      <div class="alert alert-\${type} alert-dismissible fade show mt-3" role="alert">
+        \${message}
         <button type="button" class="close" data-dismiss="alert">&times;</button>
       </div>`;
   };
@@ -165,7 +166,7 @@
 
   function authHeaders() {
     const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return token ? { Authorization: \`Bearer \${token}\` } : {};
   }
 
   // =================== segurança (token admin) ===================
@@ -176,7 +177,7 @@
       setTimeout(() => window.location.href = "/login.html", 1500);
       throw new Error('sem token');
     }
-    const res = await fetch(`${apiUrl}/verify-token`, {
+    const res = await fetch(\`\${apiUrl}/verify-token\`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -193,14 +194,16 @@
   // =================== helpers de exibição ===================
   const asText     = (v) => (v == null ? '' : String(v));
   const decodePlus = (s) => asText(s).replace(/\+/g, ' ');
-  const joinTags   = (tags) => Array.isArray(tags) ? tags.join(', ') : '';
+  const joinTags   = (tags) => Array.isArray(tags) ? tags.map(t => String(t||'')).filter(Boolean).join(', ') : '';
 
+  // Mapeamento específico que você informou:
+  // SEI = seiNumber; Atribuição = unit; Anotação = subject; Tipo = tags[0] (ou join); Especificação = title
   function mapProcess(p) {
     const sei = p.seiNumber || p.seiNumberNorm || p.sei || '';
-    const assigned = p.assignedTo || p.unit || (p.meta && (p.meta.atribuicao || p.meta.unit)) || '';
-    const type = p.type || joinTags(p.tags);
-    const spec = p.spec || p.title || '';
-    const note = p.note || p.subject || '';
+    const assigned = p.unit || p.assignedTo || '';
+    const type = Array.isArray(p.tags) && p.tags.length ? p.tags[0] : joinTags(p.tags);
+    const spec = p.title || p.spec || '';
+    const note = p.subject || p.note || '';
     const updatedISO = p.updatedAtSEI || p.updatedAt || p.lastSyncedAt || p.createdAt;
     const updated = updatedISO ? new Date(updatedISO).toLocaleString('pt-BR') : '-';
     return { sei, assigned, type, spec, note, updated };
@@ -210,6 +213,15 @@
   let pageProc = 1;
   let pagesProc = 1;
   const limitProc = 20;
+
+  function updatePagerButtons() {
+    const prev = document.getElementById('prevProc');
+    const next = document.getElementById('nextProc');
+    prev.disabled = pageProc <= 1;
+    next.disabled = pageProc >= pagesProc;
+    prev.title = prev.disabled ? 'Primeira página' : 'Página anterior';
+    next.title = next.disabled ? 'Última página' : 'Próxima página';
+  }
 
   async function carregarProcessos() {
     const params = new URLSearchParams({ page: pageProc, limit: limitProc });
@@ -228,11 +240,16 @@
     tbody.innerHTML = `<tr><td colspan="7">Carregando…</td></tr>`;
 
     try {
-      const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`, {
+      const res = await fetch(\`\${apiUrl}/api/processes?\${params.toString()}\`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
+
       if (!res.ok) {
-        tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (${res.status})</td></tr>`;
+        let msg = '';
+        try { const t = await res.text(); msg = t?.slice(0, 200); } catch {}
+        tbody.innerHTML = \`<tr><td colspan="7">Erro ao carregar (\${res.status}) \${msg ? ' - ' + msg : ''}</td></tr>\`;
+        document.getElementById('pageInfoProc').textContent = '';
+        pagesProc = 1; updatePagerButtons();
         return;
       }
 
@@ -249,21 +266,13 @@
         pages = json.pages || json.totalPages || 1;
         total = json.total || json.count || items.length;
       }
-      pagesProc = pages;
-
-      // Filtro adicional no cliente (opcional)
-      const q = (s || '').toLowerCase();
-      if (q) {
-        items = items.filter(p => {
-          const m = mapProcess(p);
-          return (m.spec + ' ' + m.note + ' ' + m.type).toLowerCase().includes(q);
-        });
-      }
+      pagesProc = Math.max(1, pages);
+      updatePagerButtons();
 
       if (!items.length) {
         tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
         document.getElementById('pageInfoProc').textContent =
-          `Página ${page} de ${pages} — ${total} itens`;
+          \`Página \${page} de \${pagesProc} — \${total} itens\`;
         return;
       }
 
@@ -272,17 +281,17 @@
         const m = mapProcess(p);
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${m.sei}</td>
-          <td>${decodePlus(m.assigned)}</td>
-          <td>${m.type}</td>
-          <td class="wrap">${decodePlus(m.spec)}</td>
-          <td class="wrap">${decodePlus(m.note)}</td>
-          <td>${m.updated}</td>
+          <td>\${m.sei}</td>
+          <td>\${decodePlus(m.assigned)}</td>
+          <td>\${decodePlus(m.type)}</td>
+          <td class="wrap">\${decodePlus(m.spec)}</td>
+          <td class="wrap">\${decodePlus(m.note)}</td>
+          <td>\${m.updated}</td>
           <td>
-            <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${m.sei}">
+            <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="\${m.sei}">
               <i class="fab fa-whatsapp"></i>
             </button>
-            <button class="btn btn-sm btn-outline-secondary" data-action="trello" data-sei="${m.sei}">
+            <button class="btn btn-sm btn-outline-secondary" data-action="trello" data-sei="\${m.sei}">
               <i class="fab fa-trello"></i>
             </button>
           </td>
@@ -291,11 +300,13 @@
       });
 
       document.getElementById('pageInfoProc').textContent =
-        `Página ${page} de ${pages} — ${total} itens`;
+        \`Página \${page} de \${pagesProc} — \${total} itens\`;
 
     } catch (e) {
-      tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar</td></tr>`;
       console.error(e);
+      tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (console)</td></tr>`;
+      document.getElementById('pageInfoProc').textContent = '';
+      pagesProc = 1; updatePagerButtons();
     }
   }
 
@@ -306,9 +317,9 @@
     const action = btn.dataset.action;
     const sei = btn.dataset.sei;
     if (action === 'whatsapp') {
-      alert(`(placeholder) Gerar mensagem WhatsApp para o processo ${sei}`);
+      alert(\`(placeholder) Gerar mensagem WhatsApp para o processo \${sei}\`);
     } else if (action === 'trello') {
-      alert(`(placeholder) Enviar/atualizar cartão Trello para o processo ${sei}`);
+      alert(\`(placeholder) Enviar/atualizar cartão Trello para o processo \${sei}\`);
     }
   });
 
@@ -330,7 +341,7 @@
   // =================== Usuários externos ===================
   async function carregarUsuariosExternos() {
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos`, {
+      const res = await fetch(\`\${apiUrl}/usuarios-externos\`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
       const lista = await res.json();
@@ -343,10 +354,10 @@
       lista.forEach(usuario => {
         tbody.innerHTML += `
           <tr>
-            <td>${usuario.nome || ''}</td>
-            <td>${usuario.empresa || ''}</td>
+            <td>\${usuario.nome || ''}</td>
+            <td>\${usuario.empresa || ''}</td>
             <td>
-              <button class="btn btn-danger btn-sm" onclick="removerUsuarioExterno('${usuario._id}')">Remover</button>
+              <button class="btn btn-danger btn-sm" onclick="removerUsuarioExterno('\${usuario._id}')">Remover</button>
             </td>
           </tr>`;
       });
@@ -358,7 +369,7 @@
   async function removerUsuarioExterno(id) {
     if (!confirm('Tem certeza que deseja remover este usuário?')) return;
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
+      const res = await fetch(\`\${apiUrl}/usuarios-externos/\${id}\`, { method: 'DELETE', headers: { ...authHeaders() } });
       if (res.ok) carregarUsuariosExternos();
     } catch (err) {
       alert('Erro ao remover usuário.');
@@ -369,7 +380,7 @@
   // =================== Contratos ===================
   async function carregarContratos() {
     try {
-      const res = await fetch(`${apiUrl}/contratos`, {
+      const res = await fetch(\`\${apiUrl}/contratos\`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
       const contratos = await res.json();
@@ -382,9 +393,9 @@
       contratos.forEach(c => {
         tbody.innerHTML += `
           <tr>
-            <td>${c.numero || ''}</td>
+            <td>\${c.numero || ''}</td>
             <td>
-              <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}')">Remover</button>
+              <button class="btn btn-danger btn-sm" onclick="removerContrato('\${c._id}')">Remover</button>
             </td>
           </tr>`;
       });
@@ -396,7 +407,7 @@
   async function removerContrato(id) {
     if (!confirm('Deseja remover este contrato?')) return;
     try {
-      const res = await fetch(`${apiUrl}/contratos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
+      const res = await fetch(\`\${apiUrl}/contratos/\${id}\`, { method: 'DELETE', headers: { ...authHeaders() } });
       if (res.ok) carregarContratos();
     } catch (err) {
       alert('Erro ao remover contrato.');
@@ -408,9 +419,9 @@
   (async () => {
     try {
       await ensureAdmin();
-      carregarProcessos();
-      carregarUsuariosExternos();
-      carregarContratos();
+      await carregarProcessos();
+      await carregarUsuariosExternos();
+      await carregarContratos();
     } catch (e) {
       /* ensureAdmin já trata redirecionamento/alertas */
     }
