@@ -145,32 +145,32 @@
 
 <script>
   // Garante que estamos usando o localStorage nativo do navegador
-  const LS = window.top?.localStorage || window.localStorage;
+  const LS = window.localStorage;
 
   // Se o backend estiver em outra origem, defina window.APP_API_BASE = 'http://seu-backend'; antes deste script.
   const apiUrl = window.APP_API_BASE || window.location.origin;
 
   const showAlert = (message, type = 'success') => {
-    const safe = String(message ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safe = String(message ?? '').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');
     document.getElementById('alertPlaceholder').innerHTML = `
       <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
         ${safe}
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <button type="button" class="close" data-dismiss="alert">×</button>
       </div>`;
   };
 
   document.getElementById('btnLogout').addEventListener('click', () => {
-    LS.removeItem('token'); // Usando LS
+    LS.removeItem('token');
     window.location.href = "/login.html";
   });
 
   function authHeaders() {
-    const token = LS.getItem('token'); // Usando LS
+    const token = LS.getItem('token');
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
   async function ensureAdmin() {
-    const token = LS.getItem("token"); // Usando LS
+    const token = LS.getItem("token");
     if (!token) {
       showAlert("⛔ Acesso restrito. Faça login primeiro.", "danger");
       setTimeout(() => window.location.href = "/login.html", 1500);
@@ -186,7 +186,7 @@
     const role = result.role ?? result.user?.role ?? '';
     if (!isValid || role !== "admin") {
       showAlert("⛔ Acesso negado. Área exclusiva para administradores.", "danger");
-      LS.removeItem("token"); // Usando LS
+      LS.removeItem("token");
       setTimeout(() => window.location.href = "/", 1500);
       throw new Error('sem permissão');
     }
@@ -339,7 +339,7 @@
   // ----------------- USUÁRIOS EXTERNOS -----------------
   async function carregarUsuariosExternos() {
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos`, { // Sem /api
+      const res = await fetch(`${apiUrl}/usuarios-externos`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
       const lista = await res.json();
@@ -367,7 +367,7 @@
   async function removerUsuarioExterno(id) {
     if (!confirm('Tem certeza que deseja remover este usuário?')) return;
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } }); // Sem /api
+      const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
       if (res.ok) carregarUsuariosExternos();
     } catch (err) {
       alert('Erro ao remover usuário.');
@@ -382,10 +382,10 @@
     const empresa = document.getElementById('empresa').value.trim();
 
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos`, { // Sem /api
+      const res = await fetch(`${apiUrl}/usuarios-externos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify([{ idExterno, nome, empresa }]) // Array conforme backend espera
+        body: JSON.stringify([{ idExterno, nome, empresa }])
       });
       if (res.ok) {
         showAlert('✅ Usuário externo cadastrado com sucesso!', 'success');
@@ -403,7 +403,7 @@
   // ----------------- CONTRATOS -----------------
   async function carregarContratos() {
     try {
-      const res = await fetch(`${apiUrl}/contratos`, { // Sem /api
+      const res = await fetch(`${apiUrl}/contratos`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
       const contratos = await res.json();
@@ -417,7 +417,7 @@
         tbody.innerHTML += `
           <tr>
             <td>${c.numero || ''}</td>
-            <td class="text-muted">—</td> <!-- Botão de remover contrato removido -->
+            <td class="text-muted">—</td>
           </tr>`;
       });
     } catch (err) {
@@ -430,7 +430,7 @@
     const numero = document.getElementById('numeroContrato').value.trim();
 
     try {
-      const res = await fetch(`${apiUrl}/contratos`, { // Sem /api
+      const res = await fetch(`${apiUrl}/contratos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ numero })
