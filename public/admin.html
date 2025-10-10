@@ -14,7 +14,6 @@
     .section-title { margin-top: 40px; }
     .muted { color:#666; }
     .badge { padding:.25rem .5rem; border-radius: 12px; }
-    .toolbar .form-control { min-width: 180px; }
     .table-wrap { overflow-x:auto; }
     td.wrap { white-space: pre-wrap; }
     .btn[disabled] { pointer-events: none; opacity: .6; }
@@ -48,27 +47,30 @@
 
   <h2 class="section-title">Processos SEI</h2>
 
-  <div class="toolbar mb-3 d-flex flex-wrap align-items-end gap-2">
-    <div class="mr-2 mb-2">
-      <label class="mb-1" for="fSearch">Buscar (especificação/anotação)</label>
-      <input id="fSearch" class="form-control" placeholder="Ex.: passarela, vistoria..." />
+  <div class="toolbar mb-3">
+    <div class="row">
+      <div class="col-md-6 mb-2">
+        <label class="mb-1" for="fSearch">🔍 Busca Geral</label>
+        <input id="fSearch" class="form-control" placeholder="Buscar em qualquer campo (SEI, especificação, anotação, tipo...)" />
+      </div>
+      <div class="col-md-3 mb-2">
+        <label class="mb-1" for="fContract">📄 Contrato</label>
+        <input id="fContract" class="form-control" placeholder="Ex.: 12 00101/2022" />
+      </div>
+      <div class="col-md-3 mb-2">
+        <label class="mb-1" for="fUnit">👤 Atribuição</label>
+        <input id="fUnit" class="form-control" placeholder="Ex.: fernando.pinto" />
+      </div>
     </div>
-    <div class="mr-2 mb-2">
-      <label class="mb-1" for="fUnit">Unidade</label>
-      <input id="fUnit" class="form-control" placeholder="Ex.: UL Brasília" />
-    </div>
-    <div class="mr-2 mb-2">
-      <label class="mb-1" for="fStatus">Status</label>
-      <input id="fStatus" class="form-control" placeholder="Ex.: Aguardando" />
-    </div>
-    <div class="mr-2 mb-2">
-      <label class="mb-1" for="fContract">Contrato</label>
-      <input id="fContract" class="form-control" placeholder="Ex.: 12 00101/2022" />
-    </div>
-
-    <div class="mb-2">
-      <button id="btnFilter" class="btn btn-primary mr-2"><i class="fas fa-search"></i> Filtrar</button>
-      <button id="btnClear" class="btn btn-secondary"><i class="fas fa-eraser"></i> Limpar</button>
+    <div class="row">
+      <div class="col-12">
+        <button id="btnFilter" class="btn btn-primary mr-2">
+          <i class="fas fa-search"></i> Filtrar
+        </button>
+        <button id="btnClear" class="btn btn-secondary">
+          <i class="fas fa-eraser"></i> Limpar
+        </button>
+      </div>
     </div>
   </div>
 
@@ -144,14 +146,11 @@
 </div>
 
 <script>
-  // Garante que estamos usando o localStorage nativo do navegador
   const LS = window.localStorage;
-
-  // Se o backend estiver em outra origem, defina window.APP_API_BASE = 'http://seu-backend'; antes deste script.
   const apiUrl = window.APP_API_BASE || window.location.origin;
 
   const showAlert = (message, type = 'success') => {
-    const safe = String(message ?? '').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');
+    const safe = String(message ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     document.getElementById('alertPlaceholder').innerHTML = `
       <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
         ${safe}
@@ -169,19 +168,16 @@
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-async function ensureAdmin() {
-  const token = LS.getItem("token");
-  if (!token) {
-    showAlert("⛔ Acesso restrito. Faça login primeiro.", "danger");
-    setTimeout(() => window.location.href = "/login.html", 1500);
-    throw new Error('sem token');
+  async function ensureAdmin() {
+    const token = LS.getItem("token");
+    if (!token) {
+      showAlert("⛔ Acesso restrito. Faça login primeiro.", "danger");
+      setTimeout(() => window.location.href = "/login.html", 1500);
+      throw new Error('sem token');
+    }
+    console.warn('verify-token desativado temporariamente (modo permissivo total).');
+    return true;
   }
-  // SKIP total da verificação remota por enquanto
-  console.warn('verify-token desativado temporariamente (modo permissivo total).');
-  return true;
-}
-
-  //////////
 
   const asText     = (v) => (v == null ? '' : String(v));
   const decodePlus = (s) => asText(s).replace(/\+/g, ' ');
@@ -215,14 +211,12 @@ async function ensureAdmin() {
   async function carregarProcessos() {
     const params = new URLSearchParams({ page: pageProc, limit: limitProc });
 
-    const s  = document.getElementById('fSearch').value.trim();
-    const u  = document.getElementById('fUnit').value.trim();
-    const st = document.getElementById('fStatus').value.trim();
-    const c  = document.getElementById('fContract').value.trim();
+    const s  = document.getElementById('fSearch').value.trim();   // busca geral
+    const u  = document.getElementById('fUnit').value.trim();     // atribuição
+    const c  = document.getElementById('fContract').value.trim(); // contrato
 
     if (s)  params.set('search', s);
     if (u)  params.set('unit', u);
-    if (st) params.set('status', st);
     if (c)  params.set('contract', c);
 
     const tbody = document.getElementById('tbodyProc');
@@ -316,7 +310,6 @@ async function ensureAdmin() {
   document.getElementById('btnClear').addEventListener('click', () => {
     document.getElementById('fSearch').value = '';
     document.getElementById('fUnit').value = '';
-    document.getElementById('fStatus').value = '';
     document.getElementById('fContract').value = '';
     pageProc = 1; carregarProcessos();
   });
@@ -359,9 +352,14 @@ async function ensureAdmin() {
     if (!confirm('Tem certeza que deseja remover este usuário?')) return;
     try {
       const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
-      if (res.ok) carregarUsuariosExternos();
+      if (res.ok) {
+        showAlert('✅ Usuário removido com sucesso!', 'success');
+        carregarUsuariosExternos();
+      } else {
+        showAlert('❌ Erro ao remover usuário.', 'danger');
+      }
     } catch (err) {
-      alert('Erro ao remover usuário.');
+      showAlert('❌ Erro ao remover usuário.', 'danger');
     }
   }
   window.removerUsuarioExterno = removerUsuarioExterno;
@@ -391,53 +389,76 @@ async function ensureAdmin() {
     }
   });
 
-// ----------------- CONTRATOS -----------------
-async function carregarContratos() {
-  try {
-    const res = await fetch(`${apiUrl}/contratos`, {
-      headers: { 'Content-Type': 'application/json', ...authHeaders() }
-    });
-    const contratos = await res.json();
-    const tbody = document.querySelector('#contratosTable tbody');
-    tbody.innerHTML = '';
-    if (!Array.isArray(contratos) || !contratos.length) {
-      tbody.innerHTML = `<tr><td colspan="2" class="text-muted">Nenhum contrato cadastrado.</td></tr>`;
-      return;
+  // ----------------- CONTRATOS -----------------
+  async function carregarContratos() {
+    try {
+      const res = await fetch(`${apiUrl}/contratos`, {
+        headers: { 'Content-Type': 'application/json', ...authHeaders() }
+      });
+      const contratos = await res.json();
+      const tbody = document.querySelector('#contratosTable tbody');
+      tbody.innerHTML = '';
+      if (!Array.isArray(contratos) || !contratos.length) {
+        tbody.innerHTML = `<tr><td colspan="2" class="text-muted">Nenhum contrato cadastrado.</td></tr>`;
+        return;
+      }
+      contratos.forEach(c => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.numero || ''}</td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}', '${(c.numero || '').replace(/'/g, "\\'")}')">Remover</button>
+            </td>
+          </tr>`;
+      });
+    } catch (err) {
+      console.error('Erro ao carregar contratos:', err);
     }
-    contratos.forEach(c => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${c.numero || ''}</td>
-          <td>
-            <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}', '${(c.numero || '').replace(/'/g, "\\'")}')">Remover</button>
-          </td>
-        </tr>`;
-    });
-  } catch (err) {
-    console.error('Erro ao carregar contratos:', err);
   }
-}
 
-async function removerContrato(id, numero) {
-  if (!confirm(`Tem certeza que deseja remover o contrato ${numero || id}?`)) return;
-  try {
-    const res = await fetch(`${apiUrl}/contratos/${id}`, { 
-      method: 'DELETE', 
-      headers: { ...authHeaders() } 
-    });
-    if (res.ok) {
-      showAlert('✅ Contrato removido com sucesso!', 'success');
-      carregarContratos();
-    } else {
-      const msg = await res.text();
-      showAlert('❌ Erro ao remover contrato: ' + msg, 'danger');
+  async function removerContrato(id, numero) {
+    if (!confirm(`Tem certeza que deseja remover o contrato ${numero || id}?`)) return;
+    try {
+      const res = await fetch(`${apiUrl}/contratos/${id}`, { 
+        method: 'DELETE', 
+        headers: { ...authHeaders() } 
+      });
+      if (res.ok) {
+        showAlert('✅ Contrato removido com sucesso!', 'success');
+        carregarContratos();
+      } else {
+        const msg = await res.text();
+        showAlert('❌ Erro ao remover contrato: ' + msg, 'danger');
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert('❌ Erro ao remover contrato.', 'danger');
     }
-  } catch (err) {
-    console.error(err);
-    showAlert('❌ Erro ao remover contrato.', 'danger');
   }
-}
-window.removerContrato = removerContrato;
+  window.removerContrato = removerContrato;
+
+  document.getElementById('formContrato').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const numero = document.getElementById('numeroContrato').value.trim();
+
+    try {
+      const res = await fetch(`${apiUrl}/contratos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ numero })
+      });
+      if (res.ok) {
+        showAlert('✅ Contrato cadastrado com sucesso!', 'success');
+        document.getElementById('formContrato').reset();
+        carregarContratos();
+      } else {
+        const msg = await res.text();
+        showAlert('❌ Erro ao cadastrar contrato: ' + msg, 'danger');
+      }
+    } catch (err) {
+      showAlert('❌ Erro ao cadastrar contrato.', 'danger');
+    }
+  });
 
   // ----------------- BOOTSTRAP -----------------
   (async () => {
