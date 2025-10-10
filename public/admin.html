@@ -27,7 +27,6 @@
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
-
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ml-auto">
         <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a></li>
@@ -145,7 +144,8 @@
 </div>
 
 <script>
-  const apiUrl = window.location.origin;
+  // Se o backend estiver em outra origem, defina window.APP_API_BASE = 'http://seu-backend'; antes deste script.
+  const apiUrl = window.APP_API_BASE || window.location.origin;
 
   const showAlert = (message, type = 'success') => {
     document.getElementById('alertPlaceholder').innerHTML = `
@@ -162,7 +162,7 @@
 
   function authHeaders() {
     const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return token ? { Authorization: \`Bearer \${token}\` } : {};
   }
 
   async function ensureAdmin() {
@@ -172,13 +172,15 @@
       setTimeout(() => window.location.href = "/login.html", 1500);
       throw new Error('sem token');
     }
-    const res = await fetch(`${apiUrl}/verify-token`, {
+    const res = await fetch(\`\${apiUrl}/api/verify-token\`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
     });
     const result = await res.json();
-    if (!result.valid || result.role !== "admin") {
+    const isValid = result.valid ?? result.ok ?? false;
+    const role = result.role ?? result.user?.role ?? '';
+    if (!isValid || role !== "admin") {
       showAlert("⛔ Acesso negado. Área exclusiva para administradores.", "danger");
       localStorage.removeItem("token");
       setTimeout(() => window.location.href = "/", 1500);
@@ -191,16 +193,17 @@
   const joinTags   = (tags) => Array.isArray(tags) ? tags.map(t => String(t||'')).filter(Boolean).join(', ') : '';
 
   function mapProcess(p) {
-    const sei = p.seiNumber || p.seiNumberNorm || p.sei || '';
-    const assigned = p.unit || p.assignedTo || '';
-    const type = Array.isArray(p.tags) && p.tags.length ? p.tags[0] : joinTags(p.tags);
-    const spec = p.title || p.spec || '';
-    const note = p.subject || p.note || '';
-    const updatedISO = p.updatedAtSEI || p.updatedAt || p.lastSyncedAt || p.createdAt;
+    const sei = p.seiNumber || p.seiNumberNorm || p.processNumber || p.numero || p.sei || '';
+    const assigned = p.unit || p.assignedTo || p.unidade || p.atribuicao || '';
+    const type = Array.isArray(p.tags) && p.tags.length ? (p.tags[0] || '') : (p.type || p.tipo || joinTags(p.tags));
+    const spec = p.title || p.spec || p.description || p.descricao || p.especificacao || '';
+    const note = p.subject || p.note || p.anotacao || p.obs || p.observacao || '';
+    const updatedISO = p.updatedAtSEI || p.updatedAt || p.lastSyncedAt || p.modifiedAt || p.createdAt;
     const updated = updatedISO ? new Date(updatedISO).toLocaleString('pt-BR') : '-';
     return { sei, assigned, type, spec, note, updated };
   }
 
+  // ----------------- PROCESSOS -----------------
   let pageProc = 1;
   let pagesProc = 1;
   const limitProc = 20;
@@ -231,7 +234,7 @@
     tbody.innerHTML = `<tr><td colspan="7">Carregando…</td></tr>`;
 
     try {
-      const res = await fetch(`${apiUrl}/processes?${params.toString()}`, {
+      const res = await fetch(\`\${apiUrl}/api/processes?\${params.toString()}\`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
 
@@ -252,10 +255,10 @@
         items = json;
         total = json.length;
       } else {
-        items = json.items || json.data || json.results || [];
-        page  = json.page || json.currentPage || 1;
+        items = json.items || json.data || json.results || json.docs || [];
+        page  = json.page || json.currentPage || json.pageNumber || 1;
         pages = json.pages || json.totalPages || 1;
-        total = json.total || json.count || items.length;
+        total = json.total || json.count || json.totalDocs || items.length;
       }
       pagesProc = Math.max(1, pages);
       updatePagerButtons();
@@ -263,7 +266,8 @@
       if (!items.length) {
         tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
         document.getElementById('pageInfoProc').textContent =
-          `Página ${page} de ${pagesProc} — ${total} itens`;
+          \`Página \${page} de \${pagesProc} — \${total} itens\`;
+        console.warn('Processos vazios. JSON:', json);
         return;
       }
 
@@ -291,7 +295,7 @@
       });
 
       document.getElementById('pageInfoProc').textContent =
-        `Página ${page} de ${pagesProc} — ${total} itens`;
+        \`Página \${page} de \${pagesProc} — \${total} itens\`;
 
     } catch (e) {
       console.error(e);
@@ -307,9 +311,9 @@
     const action = btn.dataset.action;
     const sei = btn.dataset.sei;
     if (action === 'whatsapp') {
-      alert(`(placeholder) Gerar mensagem WhatsApp para o processo ${sei}`);
+      alert(\`(placeholder) Gerar mensagem WhatsApp para o processo \${sei}\`);
     } else if (action === 'trello') {
-      alert(`(placeholder) Enviar/atualizar cartão Trello para o processo ${sei}`);
+      alert(\`(placeholder) Enviar/atualizar cartão Trello para o processo \${sei}\`);
     }
   });
 
@@ -328,9 +332,10 @@
     if (pageProc < pagesProc) { pageProc++; carregarProcessos(); }
   });
 
+  // ----------------- USUÁRIOS EXTERNOS -----------------
   async function carregarUsuariosExternos() {
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos`, {
+      const res = await fetch(\`\${apiUrl}/api/usuarios-externos\`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
       const lista = await res.json();
@@ -358,7 +363,7 @@
   async function removerUsuarioExterno(id) {
     if (!confirm('Tem certeza que deseja remover este usuário?')) return;
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
+      const res = await fetch(\`\${apiUrl}/api/usuarios-externos/\${id}\`, { method: 'DELETE', headers: { ...authHeaders() } });
       if (res.ok) carregarUsuariosExternos();
     } catch (err) {
       alert('Erro ao remover usuário.');
@@ -373,26 +378,28 @@
     const empresa = document.getElementById('empresa').value.trim();
 
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos`, {
+      const res = await fetch(\`\${apiUrl}/api/usuarios-externos\`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ idExterno, nome, empresa })
+        body: JSON.stringify({ idExterno, nome, empresa }) // objeto, não array
       });
       if (res.ok) {
         showAlert('Usuário externo cadastrado com sucesso!', 'success');
         document.getElementById('formUsuarioExterno').reset();
         carregarUsuariosExternos();
       } else {
-        showAlert('Erro ao cadastrar usuário externo.', 'danger');
+        const msg = await res.text();
+        showAlert('Erro ao cadastrar usuário externo: ' + msg, 'danger');
       }
     } catch (err) {
       showAlert('Erro ao cadastrar usuário externo.', 'danger');
     }
   });
 
+  // ----------------- CONTRATOS -----------------
   async function carregarContratos() {
     try {
-      const res = await fetch(`${apiUrl}/contratos`, {
+      const res = await fetch(\`\${apiUrl}/api/contratos\`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
       const contratos = await res.json();
@@ -419,7 +426,7 @@
   async function removerContrato(id) {
     if (!confirm('Deseja remover este contrato?')) return;
     try {
-      const res = await fetch(`${apiUrl}/contratos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
+      const res = await fetch(\`\${apiUrl}/api/contratos/\${id}\`, { method: 'DELETE', headers: { ...authHeaders() } });
       if (res.ok) carregarContratos();
     } catch (err) {
       alert('Erro ao remover contrato.');
@@ -432,7 +439,7 @@
     const numero = document.getElementById('numeroContrato').value.trim();
 
     try {
-      const res = await fetch(`${apiUrl}/contratos`, {
+      const res = await fetch(\`\${apiUrl}/api/contratos\`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ numero })
@@ -442,13 +449,15 @@
         document.getElementById('formContrato').reset();
         carregarContratos();
       } else {
-        showAlert('Erro ao cadastrar contrato.', 'danger');
+        const msg = await res.text();
+        showAlert('Erro ao cadastrar contrato: ' + msg, 'danger');
       }
     } catch (err) {
       showAlert('Erro ao cadastrar contrato.', 'danger');
     }
   });
 
+  // ----------------- BOOTSTRAP -----------------
   (async () => {
     try {
       await ensureAdmin();
