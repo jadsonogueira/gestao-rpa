@@ -147,8 +147,8 @@
 </div>
 
 <script>
-  // =================== helpers base ===================
-  const apiUrl = window.location.origin;
+  // =================== base & helpers ===================
+  const apiUrl = window.APP_API_BASE || window.location.origin;
 
   const showAlert = (message, type = 'success') => {
     document.getElementById('alertPlaceholder').innerHTML = `
@@ -163,6 +163,11 @@
     window.location.href = "/login.html";
   });
 
+  function authHeaders() {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   // =================== segurança (token admin) ===================
   async function ensureAdmin() {
     const token = localStorage.getItem("token");
@@ -171,7 +176,7 @@
       setTimeout(() => window.location.href = "/login.html", 1500);
       throw new Error('sem token');
     }
-    const res = await fetch("/verify-token", {
+    const res = await fetch(`${apiUrl}/verify-token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -186,11 +191,22 @@
   }
 
   // =================== helpers de exibição ===================
-  const asText    = (v) => (v == null ? '' : String(v));
+  const asText     = (v) => (v == null ? '' : String(v));
   const decodePlus = (s) => asText(s).replace(/\+/g, ' ');
   const joinTags   = (tags) => Array.isArray(tags) ? tags.join(', ') : '';
 
-  // =================== Processos SEI: listagem e filtros ===================
+  function mapProcess(p) {
+    const sei = p.seiNumber || p.seiNumberNorm || p.sei || '';
+    const assigned = p.assignedTo || p.unit || (p.meta && (p.meta.atribuicao || p.meta.unit)) || '';
+    const type = p.type || joinTags(p.tags);
+    const spec = p.spec || p.title || '';
+    const note = p.note || p.subject || '';
+    const updatedISO = p.updatedAtSEI || p.updatedAt || p.lastSyncedAt || p.createdAt;
+    const updated = updatedISO ? new Date(updatedISO).toLocaleString('pt-BR') : '-';
+    return { sei, assigned, type, spec, note, updated };
+  }
+
+  // =================== Processos SEI ===================
   let pageProc = 1;
   let pagesProc = 1;
   const limitProc = 20;
@@ -212,57 +228,61 @@
     tbody.innerHTML = `<tr><td colspan="7">Carregando…</td></tr>`;
 
     try {
-      const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`);
+      const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`, {
+        headers: { 'Content-Type': 'application/json', ...authHeaders() }
+      });
       if (!res.ok) {
         tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (${res.status})</td></tr>`;
         return;
       }
-      const data = await res.json();
-      pagesProc = data.pages || 1;
 
-      let items = Array.isArray(data.items) ? data.items : [];
-      // filtro adicional no cliente (busca em spec/note/title/subject)
-      const q = s.toLowerCase();
+      const json = await res.json();
+      let items = [];
+      let page = 1, pages = 1, total = 0;
+
+      if (Array.isArray(json)) {
+        items = json;
+        total = json.length;
+      } else {
+        items = json.items || json.data || json.results || [];
+        page  = json.page || json.currentPage || 1;
+        pages = json.pages || json.totalPages || 1;
+        total = json.total || json.count || items.length;
+      }
+      pagesProc = pages;
+
+      // Filtro adicional no cliente (opcional)
+      const q = (s || '').toLowerCase();
       if (q) {
         items = items.filter(p => {
-          const espec = asText(p.spec || p.title).toLowerCase();
-          const nota  = asText(p.note || p.subject).toLowerCase();
-          return espec.includes(q) || nota.includes(q);
+          const m = mapProcess(p);
+          return (m.spec + ' ' + m.note + ' ' + m.type).toLowerCase().includes(q);
         });
       }
 
       if (!items.length) {
         tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
         document.getElementById('pageInfoProc').textContent =
-          `Página ${data.page || 1} de ${data.pages || 1} — 0 itens`;
+          `Página ${page} de ${pages} — ${total} itens`;
         return;
       }
 
       tbody.innerHTML = '';
       items.forEach(p => {
-        const sei   = asText(p.seiNumber);
-        const atrib = decodePlus(p.assignedTo || (p.meta && p.meta.atribuicao));
-        const tipo  = decodePlus(p.type) || joinTags(p.tags);
-        const espec = decodePlus(p.spec || p.title);
-        const nota  = decodePlus(p.note || p.subject);
-
-        const updated = p.updatedAtSEI
-          ? new Date(p.updatedAtSEI).toLocaleString('pt-BR')
-          : (p.lastSyncedAt ? new Date(p.lastSyncedAt).toLocaleString('pt-BR') : '-');
-
+        const m = mapProcess(p);
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${sei}</td>
-          <td>${atrib}</td>
-          <td>${tipo}</td>
-          <td class="wrap">${espec}</td>
-          <td class="wrap">${nota}</td>
-          <td>${updated}</td>
+          <td>${m.sei}</td>
+          <td>${decodePlus(m.assigned)}</td>
+          <td>${m.type}</td>
+          <td class="wrap">${decodePlus(m.spec)}</td>
+          <td class="wrap">${decodePlus(m.note)}</td>
+          <td>${m.updated}</td>
           <td>
-            <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${sei}">
+            <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${m.sei}">
               <i class="fab fa-whatsapp"></i>
             </button>
-            <button class="btn btn-sm btn-outline-secondary" data-action="trello" data-sei="${sei}">
+            <button class="btn btn-sm btn-outline-secondary" data-action="trello" data-sei="${m.sei}">
               <i class="fab fa-trello"></i>
             </button>
           </td>
@@ -271,7 +291,7 @@
       });
 
       document.getElementById('pageInfoProc').textContent =
-        `Página ${data.page} de ${data.pages} — ${data.total} itens`;
+        `Página ${page} de ${pages} — ${total} itens`;
 
     } catch (e) {
       tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar</td></tr>`;
@@ -310,7 +330,9 @@
   // =================== Usuários externos ===================
   async function carregarUsuariosExternos() {
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos`);
+      const res = await fetch(`${apiUrl}/usuarios-externos`, {
+        headers: { 'Content-Type': 'application/json', ...authHeaders() }
+      });
       const lista = await res.json();
       const tbody = document.querySelector('#usuariosTable tbody');
       tbody.innerHTML = '';
@@ -336,7 +358,7 @@
   async function removerUsuarioExterno(id) {
     if (!confirm('Tem certeza que deseja remover este usuário?')) return;
     try {
-      const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
       if (res.ok) carregarUsuariosExternos();
     } catch (err) {
       alert('Erro ao remover usuário.');
@@ -347,7 +369,9 @@
   // =================== Contratos ===================
   async function carregarContratos() {
     try {
-      const res = await fetch(`${apiUrl}/contratos`);
+      const res = await fetch(`${apiUrl}/contratos`, {
+        headers: { 'Content-Type': 'application/json', ...authHeaders() }
+      });
       const contratos = await res.json();
       const tbody = document.querySelector('#contratosTable tbody');
       tbody.innerHTML = '';
@@ -372,7 +396,7 @@
   async function removerContrato(id) {
     if (!confirm('Deseja remover este contrato?')) return;
     try {
-      const res = await fetch(`${apiUrl}/contratos/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${apiUrl}/contratos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
       if (res.ok) carregarContratos();
     } catch (err) {
       alert('Erro ao remover contrato.');
