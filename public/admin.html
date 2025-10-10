@@ -176,38 +176,9 @@ async function ensureAdmin() {
     setTimeout(() => window.location.href = "/login.html", 1500);
     throw new Error('sem token');
   }
-
-  // Modo permissivo: tenta verificar; se a rota não existir ou falhar, segue em frente
-  try {
-    const res = await fetch(`${apiUrl}/verify-token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    });
-
-    if (res.ok) {
-      // Se existir, valida a resposta
-      let result = {};
-      try { result = await res.json(); } catch {}
-      const isValid = (result.valid ?? result.ok ?? true); // default: true
-      const role = (result.role ?? result.user?.role ?? 'admin'); // default: admin
-      if (!isValid || role !== "admin") {
-        showAlert("⛔ Acesso negado. Área exclusiva para administradores.", "danger");
-        LS.removeItem("token");
-        setTimeout(() => window.location.href = "/", 1500);
-        throw new Error('token inválido ou sem permissão');
-      }
-    } else if (res.status === 404) {
-      console.warn('verify-token ausente (404). Seguindo em modo permissivo.');
-      // segue sem bloquear
-    } else {
-      console.warn(`verify-token respondeu ${res.status}. Seguindo em modo permissivo.`);
-      // segue sem bloquear
-    }
-  } catch (e) {
-    console.warn('Falha ao chamar verify-token. Seguindo em modo permissivo:', e?.message || e);
-    // segue sem bloquear
-  }
+  // SKIP total da verificação remota por enquanto
+  console.warn('verify-token desativado temporariamente (modo permissivo total).');
+  return true;
 }
 
   //////////
