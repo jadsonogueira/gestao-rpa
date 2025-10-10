@@ -391,53 +391,53 @@ async function ensureAdmin() {
     }
   });
 
-  // ----------------- CONTRATOS -----------------
-  async function carregarContratos() {
-    try {
-      const res = await fetch(`${apiUrl}/contratos`, {
-        headers: { 'Content-Type': 'application/json', ...authHeaders() }
-      });
-      const contratos = await res.json();
-      const tbody = document.querySelector('#contratosTable tbody');
-      tbody.innerHTML = '';
-      if (!Array.isArray(contratos) || !contratos.length) {
-        tbody.innerHTML = `<tr><td colspan="2" class="text-muted">Nenhum contrato cadastrado.</td></tr>`;
-        return;
-      }
-      contratos.forEach(c => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${c.numero || ''}</td>
-            <td class="text-muted">—</td>
-          </tr>`;
-      });
-    } catch (err) {
-      console.error('Erro ao carregar contratos:', err);
+// ----------------- CONTRATOS -----------------
+async function carregarContratos() {
+  try {
+    const res = await fetch(`${apiUrl}/contratos`, {
+      headers: { 'Content-Type': 'application/json', ...authHeaders() }
+    });
+    const contratos = await res.json();
+    const tbody = document.querySelector('#contratosTable tbody');
+    tbody.innerHTML = '';
+    if (!Array.isArray(contratos) || !contratos.length) {
+      tbody.innerHTML = `<tr><td colspan="2" class="text-muted">Nenhum contrato cadastrado.</td></tr>`;
+      return;
     }
+    contratos.forEach(c => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${c.numero || ''}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}', '${(c.numero || '').replace(/'/g, "\\'")}')">Remover</button>
+          </td>
+        </tr>`;
+    });
+  } catch (err) {
+    console.error('Erro ao carregar contratos:', err);
   }
+}
 
-  document.getElementById('formContrato').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const numero = document.getElementById('numeroContrato').value.trim();
-
-    try {
-      const res = await fetch(`${apiUrl}/contratos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ numero })
-      });
-      if (res.ok) {
-        showAlert('✅ Contrato cadastrado com sucesso!', 'success');
-        document.getElementById('formContrato').reset();
-        carregarContratos();
-      } else {
-        const msg = await res.text();
-        showAlert('❌ Erro ao cadastrar contrato: ' + msg, 'danger');
-      }
-    } catch (err) {
-      showAlert('❌ Erro ao cadastrar contrato.', 'danger');
+async function removerContrato(id, numero) {
+  if (!confirm(`Tem certeza que deseja remover o contrato ${numero || id}?`)) return;
+  try {
+    const res = await fetch(`${apiUrl}/contratos/${id}`, { 
+      method: 'DELETE', 
+      headers: { ...authHeaders() } 
+    });
+    if (res.ok) {
+      showAlert('✅ Contrato removido com sucesso!', 'success');
+      carregarContratos();
+    } else {
+      const msg = await res.text();
+      showAlert('❌ Erro ao remover contrato: ' + msg, 'danger');
     }
-  });
+  } catch (err) {
+    console.error(err);
+    showAlert('❌ Erro ao remover contrato.', 'danger');
+  }
+}
+window.removerContrato = removerContrato;
 
   // ----------------- BOOTSTRAP -----------------
   (async () => {
