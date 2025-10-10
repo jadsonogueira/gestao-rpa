@@ -148,10 +148,11 @@
   const apiUrl = window.APP_API_BASE || window.location.origin;
 
   const showAlert = (message, type = 'success') => {
+    const safe = String(message ?? '').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>');
     document.getElementById('alertPlaceholder').innerHTML = `
       <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
-        ${message}
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        ${safe}
+        <button type="button" class="close" data-dismiss="alert">×</button>
       </div>`;
   };
 
@@ -162,7 +163,7 @@
 
   function authHeaders() {
     const token = localStorage.getItem('token');
-    return token ? { Authorization: \`Bearer \${token}\` } : {};
+    return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
   async function ensureAdmin() {
@@ -172,7 +173,7 @@
       setTimeout(() => window.location.href = "/login.html", 1500);
       throw new Error('sem token');
     }
-    const res = await fetch(\`\${apiUrl}/api/verify-token\`, {
+    const res = await fetch(`${apiUrl}/verify-token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -234,7 +235,7 @@
     tbody.innerHTML = `<tr><td colspan="7">Carregando…</td></tr>`;
 
     try {
-      const res = await fetch(\`\${apiUrl}/api/processes?\${params.toString()}\`, {
+      const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
 
@@ -266,7 +267,7 @@
       if (!items.length) {
         tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
         document.getElementById('pageInfoProc').textContent =
-          \`Página \${page} de \${pagesProc} — \${total} itens\`;
+          `Página ${page} de ${pagesProc} — ${total} itens`;
         console.warn('Processos vazios. JSON:', json);
         return;
       }
@@ -295,7 +296,7 @@
       });
 
       document.getElementById('pageInfoProc').textContent =
-        \`Página \${page} de \${pagesProc} — \${total} itens\`;
+        `Página ${page} de ${pagesProc} — ${total} itens`;
 
     } catch (e) {
       console.error(e);
@@ -311,9 +312,9 @@
     const action = btn.dataset.action;
     const sei = btn.dataset.sei;
     if (action === 'whatsapp') {
-      alert(\`(placeholder) Gerar mensagem WhatsApp para o processo \${sei}\`);
+      alert(`(placeholder) Gerar mensagem WhatsApp para o processo ${sei}`);
     } else if (action === 'trello') {
-      alert(\`(placeholder) Enviar/atualizar cartão Trello para o processo \${sei}\`);
+      alert(`(placeholder) Enviar/atualizar cartão Trello para o processo ${sei}`);
     }
   });
 
@@ -335,7 +336,7 @@
   // ----------------- USUÁRIOS EXTERNOS -----------------
   async function carregarUsuariosExternos() {
     try {
-      const res = await fetch(\`\${apiUrl}/api/usuarios-externos\`, {
+      const res = await fetch(`${apiUrl}/usuarios-externos`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
       const lista = await res.json();
@@ -363,7 +364,7 @@
   async function removerUsuarioExterno(id) {
     if (!confirm('Tem certeza que deseja remover este usuário?')) return;
     try {
-      const res = await fetch(\`\${apiUrl}/api/usuarios-externos/\${id}\`, { method: 'DELETE', headers: { ...authHeaders() } });
+      const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
       if (res.ok) carregarUsuariosExternos();
     } catch (err) {
       alert('Erro ao remover usuário.');
@@ -378,28 +379,28 @@
     const empresa = document.getElementById('empresa').value.trim();
 
     try {
-      const res = await fetch(\`\${apiUrl}/api/usuarios-externos\`, {
+      const res = await fetch(`${apiUrl}/usuarios-externos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ idExterno, nome, empresa }) // objeto, não array
+        body: JSON.stringify([{ idExterno, nome, empresa }]) // array conforme backend espera
       });
       if (res.ok) {
-        showAlert('Usuário externo cadastrado com sucesso!', 'success');
+        showAlert('✅ Usuário externo cadastrado com sucesso!', 'success');
         document.getElementById('formUsuarioExterno').reset();
         carregarUsuariosExternos();
       } else {
         const msg = await res.text();
-        showAlert('Erro ao cadastrar usuário externo: ' + msg, 'danger');
+        showAlert('❌ Erro ao cadastrar usuário externo: ' + msg, 'danger');
       }
     } catch (err) {
-      showAlert('Erro ao cadastrar usuário externo.', 'danger');
+      showAlert('❌ Erro ao cadastrar usuário externo.', 'danger');
     }
   });
 
   // ----------------- CONTRATOS -----------------
   async function carregarContratos() {
     try {
-      const res = await fetch(\`\${apiUrl}/api/contratos\`, {
+      const res = await fetch(`${apiUrl}/contratos`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
       const contratos = await res.json();
@@ -413,9 +414,7 @@
         tbody.innerHTML += `
           <tr>
             <td>${c.numero || ''}</td>
-            <td>
-              <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}')">Remover</button>
-            </td>
+            <td class="text-muted">—</td>
           </tr>`;
       });
     } catch (err) {
@@ -423,37 +422,26 @@
     }
   }
 
-  async function removerContrato(id) {
-    if (!confirm('Deseja remover este contrato?')) return;
-    try {
-      const res = await fetch(\`\${apiUrl}/api/contratos/\${id}\`, { method: 'DELETE', headers: { ...authHeaders() } });
-      if (res.ok) carregarContratos();
-    } catch (err) {
-      alert('Erro ao remover contrato.');
-    }
-  }
-  window.removerContrato = removerContrato;
-
   document.getElementById('formContrato').addEventListener('submit', async (e) => {
     e.preventDefault();
     const numero = document.getElementById('numeroContrato').value.trim();
 
     try {
-      const res = await fetch(\`\${apiUrl}/api/contratos\`, {
+      const res = await fetch(`${apiUrl}/contratos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ numero })
       });
       if (res.ok) {
-        showAlert('Contrato cadastrado com sucesso!', 'success');
+        showAlert('✅ Contrato cadastrado com sucesso!', 'success');
         document.getElementById('formContrato').reset();
         carregarContratos();
       } else {
         const msg = await res.text();
-        showAlert('Erro ao cadastrar contrato: ' + msg, 'danger');
+        showAlert('❌ Erro ao cadastrar contrato: ' + msg, 'danger');
       }
     } catch (err) {
-      showAlert('Erro ao cadastrar contrato.', 'danger');
+      showAlert('❌ Erro ao cadastrar contrato.', 'danger');
     }
   });
 
