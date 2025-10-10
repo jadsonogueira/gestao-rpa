@@ -231,7 +231,7 @@
     tbody.innerHTML = `<tr><td colspan="7">Carregando…</td></tr>`;
 
     try {
-      const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`, {
+      const res = await fetch(`${apiUrl}/processes?${params.toString()}`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
 
