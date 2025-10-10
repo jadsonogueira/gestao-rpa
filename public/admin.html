@@ -217,14 +217,26 @@
 
     if (s)  params.set('search', s);
     if (u)  params.set('unit', u);
-    if (c)  params.set('contract', c);
+    
+    // Envia o contrato em várias chaves para compatibilizar com o backend
+    if (c) {
+      params.set('contract', c);
+      params.set('contrato', c);
+      params.set('contractNumber', c);
+      params.set('numeroContrato', c);
+    }
+
+    // LOG TEMPORÁRIO PARA DEBUG
+    console.log('🔍 Filtros aplicados:', { search: s, unit: u, contract: c });
+    console.log('📡 URL completa:', `${apiUrl}/api/processes?${params.toString()}`);
 
     const tbody = document.getElementById('tbodyProc');
     tbody.innerHTML = `<tr><td colspan="7">Carregando…</td></tr>`;
 
     try {
       const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`, {
-        headers: { 'Content-Type': 'application/json', ...authHeaders() }
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        cache: 'no-store' // força a buscar no servidor, evita 304
       });
 
       if (!res.ok) {
@@ -237,6 +249,8 @@
       }
 
       const json = await res.json();
+      console.log('📦 Response JSON:', json); // LOG para debug
+      
       let items = [];
       let page = 1, pages = 1, total = 0;
 
