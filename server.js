@@ -474,6 +474,72 @@ const contratoSchema = new mongoose.Schema({
 });
 const Contrato = mongoose.model('Contrato', contratoSchema);
 
+
+// =================== Processos SEI ===================
+const processSchema = new mongoose.Schema({
+  seiNumber: String,        // "50612.500131/2017-19"
+  seiNumberNorm: String,    // "50612500131201719" (se tiver)
+  subject: String,          // anotação/assunto
+  title: String,            // especificação/título
+  type: String,             // tipo
+  tags: [String],           // array de tags
+  unit: String,             // unidade / assignedTo
+  assignedTo: String,
+  status: String,
+  contracts: [String],      // opcional
+  updatedAtSEI: Date,
+  updatedAt: Date,
+  lastSyncedAt: Date,
+  createdAt: { type: Date, default: Date.now }
+}, { collection: 'processes' }); // IMPORTANT: usa a collection appdnit.processes
+
+const Process = mongoose.model('Process', processSchema);
+
+// GET /api/processes?page=&limit=&search=&unit=&status=&contract=
+app.get('/api/processes', async (req, res) => {
+  try {
+    const page  = Math.max(1, parseInt(req.query.page || '1', 10));
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit || '20', 10)));
+    const skip  = (page - 1) * limit;
+
+    const { search, unit, status, contract } = req.query;
+
+    const q = {};
+    if (unit)   q.$or = [{ unit: new RegExp(unit, 'i') }, { assignedTo: new RegExp(unit, 'i') }];
+    if (status) q.status = new RegExp(status, 'i');
+
+    // busca textual simples em title/spec/subject/note/type/tags
+    const terms = (search || '').trim();
+    if (terms) {
+      const rx = new RegExp(terms.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      q.$or = (q.$or || []).concat([
+        { title: rx }, { subject: rx }, { type: rx }, { seiNumber: rx }, { seiNumberNorm: rx }, { tags: rx }
+      ]);
+    }
+
+    if (contract) {
+      // se você salva contratos como array de strings (numbers/ids)
+      q.contracts = { $elemMatch: new RegExp(contract, 'i') };
+    }
+
+    // Se não houver $or, remova para evitar operadores vazios
+    if (q.$or && !q.$or.length) delete q.$or;
+
+    const [total, items] = await Promise.all([
+      Process.countDocuments(q),
+      Process.find(q).sort({ updatedAtSEI: -1, lastSyncedAt: -1, createdAt: -1 }).skip(skip).limit(limit)
+    ]);
+
+    const pages = Math.max(1, Math.ceil(total / limit));
+    return res.json({ items, page, pages, total });
+  } catch (err) {
+    console.error('Erro em GET /api/processes:', err);
+    return res.status(500).json({ error: 'Erro ao listar processos' });
+  }
+});
+
+
+
 // Rota para listar usuários (sem a senha)
 app.get('/usuarios', async (req, res) => {
   try {
