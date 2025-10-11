@@ -60,7 +60,7 @@ console.log('[script.js] carregado');
     #fluxoForm #procResults tbody tr {
       color: #e9ecef;                                /* texto claro nas linhas */
       background-color: transparent;
-      cursor: default;
+      cursor: pointer; /* agora a linha é clicável */
     }
     #fluxoForm #procResults tbody tr:hover {
       background: rgba(255,255,255,0.06);            /* hover sutil claro */
@@ -75,15 +75,6 @@ console.log('[script.js] carregado');
     #fluxoForm #procResults td.col-numero { max-width: 200px; }
     #fluxoForm #procResults td.col-atrib  { max-width: 200px; }
     #fluxoForm #procResults td.col-title  { max-width: 360px; }
-
-    /* Botão "Usar" minimalista no fim da linha */
-    #fluxoForm #procResults td.col-action {
-      width: 64px;
-      text-align: right;
-    }
-    #fluxoForm #procResults td.col-action .btn.btn-primary.btn-sm {
-      padding: 2px 8px;
-    }
 
     /* Paginação enxuta alinhada à direita */
     #fluxoForm #procResults .pager,
@@ -387,7 +378,7 @@ async function abrirFormulario(fluxo) {
             { value: 'Boletim de Desempenho Parcial - Medições', label: 'Boletim de Desempenho Parcial - Medições' }
           ]
         },
-        { id: 'numero', placeholder: 'Número', type: 'text', value: '-' },
+        { id: 'numero', placeholder: 'Número', type: 'text' },
         { id: 'nomeArvore', placeholder: 'Nome na Árvore', type: 'text' },
         { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] }
       ];
@@ -521,7 +512,7 @@ async function abrirFormulario(fluxo) {
     inp.type = 'text';
     inp.className = 'form-control';
     inp.id = 'buscaProcGlobal';
-    inp.placeholder = 'Digite parte do número, título, tipo, atribuição...';
+    inp.placeholder = 'Digite parte do número, título, atribuição...';
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -538,7 +529,7 @@ async function abrirFormulario(fluxo) {
     resWrap.className = 'mt-2';
     grp.appendChild(resWrap);
 
-    // Coloca a busca no topo do form (acima de tudo)
+    // Coloca a busca no topo do form
     fluxoForm.insertBefore(grp, fluxoForm.firstChild);
 
     // Pequeno espaçador
@@ -584,22 +575,15 @@ async function abrirFormulario(fluxo) {
           <td class="col-atrib"  title="${m.atrib}">${m.atrib}</td>
           <td class="col-title"  title="${m.titulo}">${m.titulo}</td>
         `;
-        // Botão "Usar" discreto numa célula de ação (sem cabeçalho)
-        const tdAction = document.createElement('td');
-        tdAction.className = 'col-action';
-        const btnUse = document.createElement('button');
-        btnUse.type = 'button';
-        btnUse.className = 'btn btn-primary btn-sm';
-        btnUse.textContent = 'Usar';
-        btnUse.addEventListener('click', () => {
+        // Seleção por clique na linha inteira
+        tr.addEventListener('click', () => {
+          if (!m.numero) return;
           campoNumeroProc.value = m.numero;
           showAlert(`Processo selecionado: ${m.numero}`, 'success');
           campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
           campoNumeroProc.classList.add('is-valid');
           setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
         });
-        tdAction.appendChild(btnUse);
-        tr.appendChild(tdAction);
 
         tbody.appendChild(tr);
       });
@@ -860,7 +844,7 @@ async function abrirFormulario(fluxo) {
     if (window.$ && $('#fluxoModal').length) {
       $('#fluxoModal').modal('show');
     } else {
-      // fallback básico sem jQuery/Bootstrap (se necessário)
+      // fallback básico
       const modal = document.getElementById('fluxoModal');
       if (modal) modal.style.display = 'block';
     }
@@ -909,7 +893,7 @@ function enviarFormularioAxios(e) {
     }
   });
 
-  // Anexa versão UTC do agendamento (ajuda o backend a evitar problemas de fuso)
+  // Anexa versão UTC do agendamento
   if (envioSelecionado === 'agendar') {
     const whenEl = e.target.querySelector('#quando');
     if (whenEl && whenEl.value) {
