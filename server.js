@@ -495,46 +495,46 @@ const processSchema = new mongoose.Schema({
 
 const Process = mongoose.models.Process || mongoose.model('Process', processSchema);
 
-// GET /api/processes?page=&limit=&search=&unit=&status=&contract=
+// Exemplo de handler GET /api/processes
+// Supondo Mongoose e uma collection Process
 app.get('/api/processes', async (req, res) => {
   try {
-    const page  = Math.max(1, parseInt(req.query.page || '1', 10));
-    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit || '20', 10)));
-    const skip  = (page - 1) * limit;
+    const { search = '', page = 1, limit = 10 } = req.query;
+    const p = Math.max(parseInt(page) || 1, 1);
+    const l = Math.max(parseInt(limit) || 10, 1);
 
-    const { search, unit, status, contract } = req.query;
+    let query = {};
+    if (search && search.trim().length >= 2) {
+      const term = search.trim();
 
-    const q = {};
-    if (unit)   q.$or = [{ unit: new RegExp(unit, 'i') }, { assignedTo: new RegExp(unit, 'i') }];
-    if (status) q.status = new RegExp(status, 'i');
+      // Se quiser tratar números com/sem pontuação (normalização leve)
+      const normalizado = term.replace(/[.\-\/\s]/g, '');
 
-    // busca textual simples em title/spec/subject/note/type/tags
-    const terms = (search || '').trim();
-    if (terms) {
-      const rx = new RegExp(terms.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      q.$or = (q.$or || []).concat([
-        { title: rx }, { subject: rx }, { type: rx }, { seiNumber: rx }, { seiNumberNorm: rx }, { tags: rx }
-      ]);
+      const rx = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');           // termo original
+      const rxNorm = new RegExp(normalizado.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'); // termo normalizado
+
+      query = {
+        $or: [
+          { seiNumber: rx }, { seiNumberNorm: rxNorm }, { processNumber: rx }, { numero: rx }, { sei: rx },
+          { title: rx }, { spec: rx }, { description: rx }, { descricao: rx }, { especificacao: rx },
+          { unit: rx }, { assignedTo: rx }, { unidade: rx }, { atribuicao: rx },
+
+          // Se houverem outros campos úteis, inclua aqui
+          { interessado: rx }, { assunto: rx }, { classe: rx }, { protocolo: rx }
+        ]
+      };
     }
 
-    if (contract) {
-      // se você salva contratos como array de strings (numbers/ids)
-      q.contracts = { $elemMatch: new RegExp(contract, 'i') };
-    }
-
-    // Se não houver $or, remova para evitar operadores vazios
-    if (q.$or && !q.$or.length) delete q.$or;
-
-    const [total, items] = await Promise.all([
-      Process.countDocuments(q),
-      Process.find(q).sort({ updatedAtSEI: -1, lastSyncedAt: -1, createdAt: -1 }).skip(skip).limit(limit)
+    const [items, total] = await Promise.all([
+      Process.find(query).sort({ updatedAt: -1 }).skip((p - 1) * l).limit(l).lean(),
+      Process.countDocuments(query)
     ]);
 
-    const pages = Math.max(1, Math.ceil(total / limit));
-    return res.json({ items, page, pages, total });
+    const totalPages = Math.max(Math.ceil(total / l), 1);
+    res.json({ items, page: p, totalPages, total });
   } catch (err) {
-    console.error('Erro em GET /api/processes:', err);
-    return res.status(500).json({ error: 'Erro ao listar processos' });
+    console.error('GET /api/processes error', err);
+    res.status(500).json({ error: 'internal_error' });
   }
 });
 
