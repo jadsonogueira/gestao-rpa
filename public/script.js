@@ -32,32 +32,51 @@ console.log('[script.js] carregado');
     #fluxoForm #procResults .results-scroll {
       max-height: 220px;
       overflow: auto;
+      background: #111;              /* fundo do corpo da lista */
     }
-    /* Tabela compacta e legível */
+
+    /* Tabela compacta e legível (tema escuro) */
     #fluxoForm #procResults table.table {
       margin-bottom: 0;
       font-size: 0.88rem;
+      color: #e9ecef;                /* texto claro no corpo */
+      background-color: transparent; /* herda o #111 do container */
     }
+
+    /* Cabeçalho fixo e contrastado no tema escuro */
     #fluxoForm #procResults thead th {
       position: sticky;
       top: 0;
       z-index: 1;
-      background: rgba(255,255,255,0.06);
+      color: #f8f9fa;                                /* texto claro no header */
+      background: rgba(255,255,255,0.10);            /* header levemente mais claro */
       backdrop-filter: blur(2px);
+      border-bottom-color: rgba(255,255,255,0.15);
+    }
+
+    /* Linhas e células no tema escuro */
+    #fluxoForm #procResults tbody tr {
+      color: #e9ecef;                                /* texto claro nas linhas */
+      background-color: transparent;
     }
     #fluxoForm #procResults tbody tr:hover {
-      background: rgba(0,0,0,0.25);
+      background: rgba(255,255,255,0.06);            /* hover sutil claro */
     }
-    /* Células com truncamento elegante */
     #fluxoForm #procResults td,
     #fluxoForm #procResults th {
       white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
       max-width: 260px;
+      border-color: rgba(255,255,255,0.12);          /* bordas suaves no escuro */
     }
-    /* Coluna Título um pouco mais larga */
     #fluxoForm #procResults td.col-title { max-width: 360px; }
+
+    /* Botões na coluna Selecionar com contraste */
+    #fluxoForm #procResults td .btn.btn-primary.btn-sm {
+      padding: 2px 8px;
+    }
+
     /* Paginação enxuta alinhada à direita */
     #fluxoForm #procResults .pager {
       display: flex;
@@ -66,7 +85,15 @@ console.log('[script.js] carregado');
       gap: 8px;
       padding: 8px;
       background: rgba(255,255,255,0.04);
+      color: #e9ecef;
+      border-top: 1px solid rgba(255,255,255,0.08);
     }
+    #fluxoForm #procResults .pager .btn.btn-light.btn-sm {
+      color: #212529;
+      background-color: #f8f9fa;
+      border-color: #e9ecef;
+    }
+
     /* Espaço entre o bloco de busca e o resto do formulário */
     #fluxoForm .after-search-spacer {
       height: 8px;
