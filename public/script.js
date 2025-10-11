@@ -5,6 +5,80 @@
 const apiUrl = window.location.origin;
 console.log('[script.js] carregado');
 
+// Injeta CSS do buscador de processos no <head> sem precisar editar o HTML
+(function injectProcessSearchCSS() {
+  const css = `
+    /* Bloco de busca dentro do modal */
+    #fluxoForm .proc-search-group {
+      margin-bottom: 12px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.15);
+    }
+    /* Linha com input e botão */
+    #fluxoForm .proc-search-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+    /* Container dos resultados com rolagem e cabeçalho fixo */
+    #fluxoForm #procResults {
+      margin-top: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    #fluxoForm #procResults .results-scroll {
+      max-height: 220px;
+      overflow: auto;
+    }
+    /* Tabela compacta e legível */
+    #fluxoForm #procResults table.table {
+      margin-bottom: 0;
+      font-size: 0.88rem;
+    }
+    #fluxoForm #procResults thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(2px);
+    }
+    #fluxoForm #procResults tbody tr:hover {
+      background: rgba(0,0,0,0.25);
+    }
+    /* Células com truncamento elegante */
+    #fluxoForm #procResults td,
+    #fluxoForm #procResults th {
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      max-width: 260px;
+    }
+    /* Coluna Título um pouco mais larga */
+    #fluxoForm #procResults td.col-title { max-width: 360px; }
+    /* Paginação enxuta alinhada à direita */
+    #fluxoForm #procResults .pager {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 8px;
+      background: rgba(255,255,255,0.04);
+    }
+    /* Espaço entre o bloco de busca e o resto do formulário */
+    #fluxoForm .after-search-spacer {
+      height: 8px;
+    }
+  `;
+  const styleEl = document.createElement('style');
+  styleEl.type = 'text/css';
+  styleEl.setAttribute('data-injected', 'proc-search-css');
+  styleEl.appendChild(document.createTextNode(css));
+  document.head.appendChild(styleEl);
+})();
+
 // ---------- UI helpers ----------
 function showAlert(message, type = 'success') {
   const alertPlaceholder = document.getElementById('alertPlaceholder');
