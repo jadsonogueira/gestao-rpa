@@ -304,22 +304,21 @@
       font-size: 1.5rem;
     }
 
-    /* Cards PDF com destaque especial */
-    .pdf-service {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 197, 253, 0.15) 100%);
-      border: 2px solid rgba(59, 130, 246, 0.3);
-    }
-
-    .pdf-service:hover {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(147, 197, 253, 0.25) 100%);
-      border-color: rgba(59, 130, 246, 0.6);
-    }
-
-    .pdf-service .service-icon {
-      background: linear-gradient(135deg, #3b82f6 0%, #93c5fd 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+/* Remova o fundo escuro atual */
+.pdf-service {
+  background: rgba(255,255,255,0.95);         /* igual aos outros */
+  border: 2px solid rgba(59,130,246,0.45);    /* azul mais visível */
+  box-shadow: 0 8px 25px rgba(59,130,246,0.18); /* leve glow azulado */
+}
+.pdf-service:hover {
+  transform: translateY(-10px) scale(1.02);
+  border-color: rgba(59,130,246,0.75);
+  box-shadow: 0 15px 40px rgba(59,130,246,0.28);
+}
+.pdf-service .service-icon {
+  background: linear-gradient(135deg,#3b82f6,#93c5fd);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
 
     /* Modal moderno */
     .modal-content {
