@@ -27,12 +27,13 @@ console.log('[script.js] carregado');
       margin-top: 10px;
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 6px;
-      overflow: hidden;
+      overflow: visible;
     }
     #fluxoForm #procResults .results-scroll {
-      max-height: 220px;
+      max-height: 240px;
       overflow: auto;
-      background: #111;              /* fundo do corpo da lista */
+      -webkit-overflow-scrolling: touch;
+      background: #111; /* fundo do corpo da lista */
     }
 
     /* Tabela compacta e legível (tema escuro) */
@@ -41,6 +42,7 @@ console.log('[script.js] carregado');
       font-size: 0.88rem;
       color: #e9ecef;                /* texto claro no corpo */
       background-color: transparent; /* herda o #111 do container */
+      table-layout: fixed;           /* truncamento consistente */
     }
 
     /* Cabeçalho fixo e contrastado no tema escuro */
@@ -78,7 +80,8 @@ console.log('[script.js] carregado');
     }
 
     /* Paginação enxuta alinhada à direita */
-    #fluxoForm #procResults .pager {
+    #fluxoForm #procResults .pager,
+    #fluxoForm #procResults .d-flex.align-items-center.mt-2 {
       display: flex;
       align-items: center;
       justify-content: flex-end;
@@ -88,16 +91,15 @@ console.log('[script.js] carregado');
       color: #e9ecef;
       border-top: 1px solid rgba(255,255,255,0.08);
     }
-    #fluxoForm #procResults .pager .btn.btn-light.btn-sm {
+    #fluxoForm #procResults .pager .btn.btn-light.btn-sm,
+    #fluxoForm #procResults .d-flex.align-items-center.mt-2 .btn.btn-light.btn-sm {
       color: #212529;
       background-color: #f8f9fa;
       border-color: #e9ecef;
     }
 
     /* Espaço entre o bloco de busca e o resto do formulário */
-    #fluxoForm .after-search-spacer {
-      height: 8px;
-    }
+    #fluxoForm .after-search-spacer { height: 8px; }
   `;
   const styleEl = document.createElement('style');
   styleEl.type = 'text/css';
@@ -501,14 +503,14 @@ async function abrirFormulario(fluxo) {
   const campoNumeroProc = fluxoForm.querySelector('#processoSei, #processo_sei');
   if (campoNumeroProc) {
     const grp = document.createElement('div');
-    grp.className = 'form-group';
+    grp.className = 'form-group proc-search-group';
 
     const lbl = document.createElement('label');
     lbl.textContent = 'Buscar processo (qualquer campo)';
     lbl.htmlFor = 'buscaProcGlobal';
 
     const row = document.createElement('div');
-    row.className = 'd-flex';
+    row.className = 'proc-search-row';
 
     const inp = document.createElement('input');
     inp.type = 'text';
@@ -518,7 +520,7 @@ async function abrirFormulario(fluxo) {
 
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'btn btn-secondary ml-2';
+    btn.className = 'btn btn-secondary';
     btn.textContent = 'Buscar';
 
     row.appendChild(inp);
@@ -534,31 +536,37 @@ async function abrirFormulario(fluxo) {
     // Coloca a busca no topo do form (acima de tudo)
     fluxoForm.insertBefore(grp, fluxoForm.firstChild);
 
+    // Pequeno espaçador
+    const spacer = document.createElement('div');
+    spacer.className = 'after-search-spacer';
+    fluxoForm.insertBefore(spacer, grp.nextSibling);
+
     let pagina = 1;
     const limite = 10;
 
     async function executarBusca(page = 1) {
       const term = inp.value.trim();
       if (term.length < 2) {
-        resWrap.innerHTML = '<div class="text-muted">Digite pelo menos 2 caracteres.</div>';
+        resWrap.innerHTML = '<div class="text-muted p-2">Digite pelo menos 2 caracteres.</div>';
         return;
       }
-      resWrap.innerHTML = '<div class="text-muted">Buscando…</div>';
+      resWrap.innerHTML = '<div class="text-muted p-2">Buscando…</div>';
       const { items, page: p, pages, total } = await buscarProcessosGlobais(term, page, limite);
       if (!items.length) {
-        resWrap.innerHTML = '<div class="text-muted">Nenhum processo encontrado.</div>';
+        resWrap.innerHTML = '<div class="text-muted p-2">Nenhum processo encontrado.</div>';
         return;
       }
 
       const table = document.createElement('table');
-      table.className = 'table table-sm table-hover table-bordered';
+      table.className = 'table table-sm table-hover table-bordered mb-0';
+      table.style.tableLayout = 'fixed';
       table.innerHTML = `
-        <thead class="thead-light">
+        <thead>
           <tr>
             <th style="min-width:160px;">Número</th>
-            <th style="min-width:160px;">Atribuição</th>
+            <th style="min-width:140px;">Atribuição</th>
             <th style="min-width:120px;">Tipo</th>
-            <th style="min-width:240px;">Título/Especificação</th>
+            <th style="min-width:220px;">Título/Especificação</th>
             <th style="width:90px;">Selecionar</th>
           </tr>
         </thead>
@@ -569,16 +577,16 @@ async function abrirFormulario(fluxo) {
         const m = mapProcRow(proc);
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${m.numero}</td>
-          <td>${m.atrib}</td>
-          <td>${m.tipo}</td>
-          <td>${m.titulo}</td>
+          <td title="${m.numero}">${m.numero}</td>
+          <td title="${m.atrib}">${m.atrib}</td>
+          <td title="${m.tipo}">${m.tipo}</td>
+          <td class="col-title" title="${m.titulo}">${m.titulo}</td>
           <td><button type="button" class="btn btn-primary btn-sm">Usar</button></td>
         `;
         const useBtn = tr.querySelector('button');
         useBtn.addEventListener('click', () => {
           campoNumeroProc.value = m.numero;
-          showAlert(`Processo selecionado: ${m.numero}`, 'success');
+          showAlert(\`Processo selecionado: ${m.numero}\`, 'success');
           campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
           campoNumeroProc.classList.add('is-valid');
           setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
@@ -586,6 +594,16 @@ async function abrirFormulario(fluxo) {
         tbody.appendChild(tr);
       });
 
+      // wrapper com rolagem
+      const scrollWrap = document.createElement('div');
+      scrollWrap.className = 'results-scroll';
+      // fallback inline para garantir rolagem
+      scrollWrap.style.maxHeight = '240px';
+      scrollWrap.style.overflow = 'auto';
+      scrollWrap.style.webkitOverflowScrolling = 'touch';
+      scrollWrap.appendChild(table);
+
+      // paginação
       const pager = document.createElement('div');
       pager.className = 'd-flex align-items-center mt-2';
       const prev = document.createElement('button');
@@ -595,7 +613,7 @@ async function abrirFormulario(fluxo) {
 
       const info = document.createElement('span');
       info.className = 'text-muted mr-2';
-      info.textContent = `Página ${p} / ${pages} — ${total} itens`;
+      info.textContent = \`Página ${p} / ${pages} — ${total} itens\`;
 
       const next = document.createElement('button');
       next.className = 'btn btn-light btn-sm';
@@ -606,12 +624,15 @@ async function abrirFormulario(fluxo) {
       next.addEventListener('click', () => { if (pagina < pages) { pagina++; executarBusca(pagina); } });
 
       resWrap.innerHTML = '';
-      resWrap.appendChild(table);
+      resWrap.style.overflow = 'visible';
+      resWrap.appendChild(scrollWrap);
+
       const pagWrap = document.createElement('div');
       pagWrap.appendChild(prev);
       pagWrap.appendChild(info);
       pagWrap.appendChild(next);
-      resWrap.appendChild(pagWrap);
+      pager.appendChild(pagWrap);
+      resWrap.appendChild(pager);
     }
 
     btn.addEventListener('click', () => { pagina = 1; executarBusca(pagina); });
@@ -624,7 +645,7 @@ async function abrirFormulario(fluxo) {
     });
   }
 
-  // ----- Containers extras (iguais ao seu código) -----
+  // ----- Containers extras -----
   // Imagens individuais
   const imagensContainer = document.createElement('div');
   imagensContainer.id = 'imagensContainer';
