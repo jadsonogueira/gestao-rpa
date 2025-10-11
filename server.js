@@ -507,17 +507,7 @@ app.get('/api/processes', async (req, res) => {
     if (search && search.trim().length >= 2) {
       const term = search.trim();
 
-    // ...
-// dentro do handler GET /api/processes
-try {
-  const { search = '', page = 1, limit = 10 } = req.query;
-  const p = Math.max(parseInt(page) || 1, 1);
-  const l = Math.max(parseInt(limit) || 10, 1);
-
-  let query = {};
-  if (search && search.trim().length >= 2) {
-    const term = search.trim();
-
+ 
     // normalização leve para números
     const normalizado = term.replace(/[.\-\/\s]/g, '');
     const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
