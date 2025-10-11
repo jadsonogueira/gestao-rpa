@@ -496,58 +496,58 @@ const processSchema = new mongoose.Schema({
 const Process = mongoose.models.Process || mongoose.model('Process', processSchema);
 
 // Exemplo de handler GET /api/processes
-// Supondo Mongoose e uma collection Process
 app.get('/api/processes', async (req, res) => {
   try {
     const { search = '', page = 1, limit = 10 } = req.query;
-    const p = Math.max(parseInt(page) || 1, 1);
-    const l = Math.max(parseInt(limit) || 10, 1);
+    const p = Math.max(parseInt(page, 10) || 1, 1);
+    const l = Math.max(parseInt(limit, 10) || 10, 1);
 
     let query = {};
     if (search && search.trim().length >= 2) {
       const term = search.trim();
 
- 
-    // normalização leve para números
-    const normalizado = term.replace(/[.\-\/\s]/g, '');
-    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // normalização leve para números
+      const normalizado = term.replace(/[.\-\/\s]/g, '');
+      const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    const rx = new RegExp(esc(term), 'i');        // termo original
-    const rxNorm = new RegExp(esc(normalizado), 'i'); // termo normalizado (números)
+      const rx = new RegExp(esc(term), 'i');          // termo original
+      const rxNorm = new RegExp(esc(normalizado), 'i'); // termo normalizado (números)
 
-    // Query ajustada aos campos que você mostrou no banco:
-    // seiNumber, seiNumberNorm, title, subject, unit, status, tags
-    query = {
-      $or: [
-        // números
-        { seiNumber: rx },
-        { seiNumberNorm: rxNorm },
+      // Campos da sua coleção (pelo seu print): seiNumber, seiNumberNorm, title, subject, unit, status, tags
+      query = {
+        $or: [
+          // números
+          { seiNumber: rx },
+          { seiNumberNorm: rxNorm },
 
-        // títulos/assunto
-        { title: rx },
-        { subject: rx },
+          // títulos/assunto
+          { title: rx },
+          { subject: rx },
 
-        // ATRIBUIÇÃO/UNIDADE
-        { unit: rx },
+          // ATRIBUIÇÃO/UNIDADE
+          { unit: rx },
 
-        // extras úteis
-        { status: rx },
-        { tags: rx } // array de strings aceita regex
-      ]
-    };
+          // extras úteis
+          { status: rx },
+          { tags: rx } // array de strings aceita regex
+        ]
+      };
+    }
+
+    const [items, total] = await Promise.all([
+      Process.find(query).sort({ updatedAt: -1 }).skip((p - 1) * l).limit(l).lean(),
+      Process.countDocuments(query)
+    ]);
+
+    const totalPages = Math.max(Math.ceil(total / l), 1);
+    return res.json({ items, page: p, totalPages, total });
+  } catch (err) {
+    console.error('GET /api/processes error', err);
+    return res.status(500).json({ error: 'internal_error' });
   }
+});
 
-  const [items, total] = await Promise.all([
-    Process.find(query).sort({ updatedAt: -1 }).skip((p - 1) * l).limit(l).lean(),
-    Process.countDocuments(query)
-  ]);
 
-  const totalPages = Math.max(Math.ceil(total / l), 1);
-  res.json({ items, page: p, totalPages, total });
-} catch (err) {
-  console.error('GET /api/processes error', err);
-  res.status(500).json({ error: 'internal_error' });
-}
 // ...
 // Rota para listar usuários (sem a senha)
 app.get('/usuarios', async (req, res) => {
