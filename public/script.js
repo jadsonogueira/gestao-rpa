@@ -132,6 +132,23 @@ console.log('[script.js] carregado');
       #fluxoForm #procResults th.th-title { min-width: 360px; }
       #fluxoForm #procResults td.col-title { max-width: 480px; }
     }
+
+  /* Mensagens vazias/estado no container de resultados - tema claro */
+#fluxoForm #procResults .text-muted,
+#fluxoForm #procResults .empty-state,
+#fluxoForm #procResults .no-results,
+#fluxoForm #procResults .loading-state {
+  color: #374151 !important;      /* texto cinza-escuro legível */
+  background: #ffffff;            /* fundo branco */
+  padding: 8px 10px;
+  border-radius: 4px;
+}
+
+/* Opcional: dar uma leve borda para destacar a mensagem */
+#fluxoForm #procResults .text-muted {
+  border: 1px dashed #e5e7eb;
+}
+    
   `;
   const styleEl = document.createElement('style');
   styleEl.type = 'text/css';
