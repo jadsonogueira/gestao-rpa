@@ -40,9 +40,9 @@ console.log('[script.js] carregado');
     #fluxoForm #procResults table.table {
       margin-bottom: 0;
       font-size: 0.88rem;
-      color: #e9ecef;                /* texto claro no corpo */
-      background-color: transparent; /* herda o #111 do container */
-      table-layout: fixed;           /* truncamento consistente */
+      color: #e9ecef;
+      background-color: transparent;
+      table-layout: fixed;
     }
 
     /* Cabeçalho fixo e contrastado no tema escuro */
@@ -50,27 +50,27 @@ console.log('[script.js] carregado');
       position: sticky;
       top: 0;
       z-index: 1;
-      color: #f8f9fa;                                /* texto claro no header */
-      background: rgba(255,255,255,0.10);            /* header levemente mais claro */
+      color: #f8f9fa;
+      background: rgba(255,255,255,0.10);
       backdrop-filter: blur(2px);
       border-bottom-color: rgba(255,255,255,0.15);
     }
 
     /* Linhas e células no tema escuro */
     #fluxoForm #procResults tbody tr {
-      color: #e9ecef;                                /* texto claro nas linhas */
+      color: #e9ecef;
       background-color: transparent;
-      cursor: pointer; /* agora a linha é clicável */
+      cursor: pointer;
     }
     #fluxoForm #procResults tbody tr:hover {
-      background: rgba(255,255,255,0.06);            /* hover sutil claro */
+      background: rgba(255,255,255,0.06);
     }
     #fluxoForm #procResults td,
     #fluxoForm #procResults th {
       white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
-      border-color: rgba(255,255,255,0.12);          /* bordas suaves no escuro */
+      border-color: rgba(255,255,255,0.12);
     }
     #fluxoForm #procResults td.col-numero { max-width: 200px; }
     #fluxoForm #procResults td.col-atrib  { max-width: 200px; }
@@ -147,9 +147,7 @@ async function fetchJSON(path) {
 }
 
 async function carregarUsuariosExternos() {
-  // [{ _id, idExterno, nome, empresa }]
   const lista = await fetchJSON('/usuarios-externos');
-  // value será o NOME (para o e-mail ir com o nome, não com o _id)
   return lista.map(u => ({
     value: u.nome,
     label: u.nome,
@@ -159,7 +157,6 @@ async function carregarUsuariosExternos() {
 }
 
 async function carregarContratos() {
-  // [{ _id, numero }]
   const lista = await fetchJSON('/contratos');
   return lista.map(c => ({ value: c.numero, label: c.numero }));
 }
@@ -182,7 +179,7 @@ const fluxoInstrucoes = {
   'Dividir PDF': 'Selecione um PDF e, opcionalmente, informe faixas (ex.: 1-3,5,7-9). Se não informar, dividiremos página a página.'
 };
 
-// ---------- Helpers de data ----------
+// ---------- Helpers ----------
 function hojeYYYYMMDD() {
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -192,15 +189,37 @@ function hojeYYYYMMDD() {
 }
 
 function agoraParaDatetimeLocalMin() {
-  // "YYYY-MM-DDTHH:MM" (sem segundos) no fuso local
   const d = new Date();
-  d.setMinutes(d.getMinutes() + 5); // buffer de 5 min
+  d.setMinutes(d.getMinutes() + 5);
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+// ---------- Normalização de texto ----------
+// Tenta decodificar URL-encoding e também converte '+' em espaço quando apropriado.
+function decodePossiblyEncoded(str) {
+  if (!str) return '';
+  const s = String(str);
+
+  // Se tem %xx, provavelmente está percent-encoded
+  const seemsPercentEncoded = /%[0-9A-Fa-f]{2}/.test(s);
+
+  // Primeiro, substitui '+' por espaço para tratar casos "application/x-www-form-urlencoded"
+  let candidate = s.replace(/\+/g, ' ');
+
+  if (seemsPercentEncoded) {
+    try {
+      candidate = decodeURIComponent(candidate);
+    } catch {
+      // Se der erro, fica com o fallback apenas com '+' -> espaço
+    }
+  }
+
+  return candidate.trim();
 }
 
 // ---------- Busca Global de Processos ----------
@@ -233,11 +252,16 @@ async function buscarProcessosGlobais(term, page = 1, limit = 10) {
   }
 }
 
-// Mapeia processo para campos mais estáveis
+// Mapeia processo com normalização do título/especificação
 function mapProcRow(p) {
   const numero = p.seiNumber || p.seiNumberNorm || p.processNumber || p.numero || p.sei || '';
   const atrib  = p.unit || p.assignedTo || p.unidade || p.atribuicao || '';
-  const titulo = p.title || p.spec || p.description || p.descricao || p.especificacao || '';
+
+  const rawTitulo =
+    p.title || p.spec || p.description || p.descricao || p.especificacao || '';
+
+  const titulo = decodePossiblyEncoded(rawTitulo);
+
   return { numero, atrib, titulo };
 }
 
@@ -252,8 +276,8 @@ function buildSelectOptions(selectEl, options) {
 
   (options || []).forEach(o => {
     const opt = document.createElement('option');
-    opt.value = o.value;       // agora é o nome, para ir no e-mail
-    opt.textContent = o.label; // exibe só o nome
+    opt.value = o.value;
+    opt.textContent = o.label;
     if (o.id) opt.dataset.id = o.id;
     if (o.idExterno) opt.dataset.idexterno = o.idExterno;
     selectEl.appendChild(opt);
@@ -438,7 +462,6 @@ async function abrirFormulario(fluxo) {
         input.appendChild(radioDiv);
       });
 
-      // comportamentos dos métodos de upload
       input.addEventListener('change', function(e) {
         const metodo = e.target.value;
         const imagensContainer = document.getElementById('imagensContainer');
@@ -475,7 +498,6 @@ async function abrirFormulario(fluxo) {
         }
       });
     } else {
-      // input padrão (text, file, etc.)
       input = document.createElement('input');
       input.type = campo.type;
       input.className = 'form-control';
@@ -529,10 +551,8 @@ async function abrirFormulario(fluxo) {
     resWrap.className = 'mt-2';
     grp.appendChild(resWrap);
 
-    // Coloca a busca no topo do form
     fluxoForm.insertBefore(grp, fluxoForm.firstChild);
 
-    // Pequeno espaçador
     const spacer = document.createElement('div');
     spacer.className = 'after-search-spacer';
     fluxoForm.insertBefore(spacer, grp.nextSibling);
@@ -575,7 +595,6 @@ async function abrirFormulario(fluxo) {
           <td class="col-atrib"  title="${m.atrib}">${m.atrib}</td>
           <td class="col-title"  title="${m.titulo}">${m.titulo}</td>
         `;
-        // Seleção por clique na linha inteira
         tr.addEventListener('click', () => {
           if (!m.numero) return;
           campoNumeroProc.value = m.numero;
@@ -588,16 +607,13 @@ async function abrirFormulario(fluxo) {
         tbody.appendChild(tr);
       });
 
-      // wrapper com rolagem
       const scrollWrap = document.createElement('div');
       scrollWrap.className = 'results-scroll';
-      // fallback inline para garantir rolagem
       scrollWrap.style.maxHeight = '240px';
       scrollWrap.style.overflow = 'auto';
       scrollWrap.style.webkitOverflowScrolling = 'touch';
       scrollWrap.appendChild(table);
 
-      // paginação
       const pager = document.createElement('div');
       pager.className = 'd-flex align-items-center mt-2';
       const prev = document.createElement('button');
@@ -640,7 +656,6 @@ async function abrirFormulario(fluxo) {
   }
 
   // ----- Containers extras -----
-  // Imagens individuais
   const imagensContainer = document.createElement('div');
   imagensContainer.id = 'imagensContainer';
   imagensContainer.style.display = 'none';
@@ -754,7 +769,7 @@ async function abrirFormulario(fluxo) {
   pdfGroup.appendChild(pdfInput);
   pdfContainer.appendChild(pdfGroup);
 
-  // ====== BLOCO DE AGENDAMENTO (presente para todos os serviços) ======
+  // ====== BLOCO DE AGENDAMENTO ======
   const agGroup = document.createElement('div');
   agGroup.className = 'form-group';
   agGroup.id = 'agendamentoGroup';
@@ -776,7 +791,7 @@ async function abrirFormulario(fluxo) {
   rImediato.id = rImediatoId;
   rImediato.value = 'imediato';
   rImediato.className = 'mr-2';
-  rImediato.checked = true; // padrão
+  rImediato.checked = true;
 
   const lImediato = document.createElement('label');
   lImediato.htmlFor = rImediatoId;
@@ -819,7 +834,6 @@ async function abrirFormulario(fluxo) {
   agGroup.appendChild(agRadios);
   fluxoForm.appendChild(agGroup);
 
-  // alterna exibição do campo "quando"
   agGroup.addEventListener('change', (e) => {
     if (e.target && e.target.name === 'envio') {
       const isAgendar = e.target.value === 'agendar';
@@ -844,7 +858,6 @@ async function abrirFormulario(fluxo) {
     if (window.$ && $('#fluxoModal').length) {
       $('#fluxoModal').modal('show');
     } else {
-      // fallback básico
       const modal = document.getElementById('fluxoModal');
       if (modal) modal.style.display = 'block';
     }
@@ -857,7 +870,6 @@ async function abrirFormulario(fluxo) {
 function enviarFormularioAxios(e) {
   e.preventDefault();
 
-  // Validação simples do agendamento antes de enviar
   const envioSelecionado = (e.target.querySelector('input[name="envio"]:checked') || {}).value || 'imediato';
   if (envioSelecionado === 'agendar') {
     const quandoEl = e.target.querySelector('#quando');
@@ -865,7 +877,6 @@ function enviarFormularioAxios(e) {
       showAlert('Informe a data e hora do agendamento.', 'warning');
       return;
     }
-    // valida mínimo
     const min = quandoEl.min ? new Date(quandoEl.min) : null;
     const escolhido = new Date(quandoEl.value);
     if (min && escolhido < min) {
@@ -893,7 +904,6 @@ function enviarFormularioAxios(e) {
     }
   });
 
-  // Anexa versão UTC do agendamento
   if (envioSelecionado === 'agendar') {
     const whenEl = e.target.querySelector('#quando');
     if (whenEl && whenEl.value) {
@@ -901,7 +911,6 @@ function enviarFormularioAxios(e) {
     }
   }
 
-  // Decide endpoint
   const url = fluxo === 'Unir PDFs'
     ? `${apiUrl}/merge-pdf`
     : fluxo === 'PDF para JPG'
@@ -987,7 +996,7 @@ function enviarFormularioAxios(e) {
   });
 }
 
-// Expor no escopo global (cards chamam isso pelo onclick do HTML)
+// Expor no escopo global
 window.abrirFormulario = abrirFormulario;
 
 // ==================== fim script.js ====================
