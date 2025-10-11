@@ -1,4 +1,4 @@
-// ==================== script.js (com agendamento em todos os serviços) ====================
+// ==================== script.js (com agendamento em todos os serviços + busca global de processos) ====================
 'use strict';
 
 // Base da API
@@ -101,6 +101,45 @@ function agoraParaDatetimeLocalMin() {
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
+// ---------- Busca Global de Processos ----------
+async function buscarProcessosGlobais(term, page = 1, limit = 10) {
+  if (!term || term.trim().length < 2) return { items: [], page: 1, pages: 1, total: 0 };
+  const params = new URLSearchParams({ search: term.trim(), page, limit });
+  const url = `${apiUrl}/api/processes?${params.toString()}`;
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+
+    let items = [];
+    let currentPage = 1, totalPages = 1, total = 0;
+
+    if (Array.isArray(json)) {
+      items = json;
+      total = items.length;
+    } else {
+      items = json.items || json.data || json.results || json.docs || [];
+      currentPage = json.page || json.currentPage || 1;
+      totalPages = json.totalPages || 1;
+      total = json.total || json.count || json.totalDocs || items.length;
+    }
+    return { items, page: currentPage, pages: totalPages, total };
+  } catch (e) {
+    console.error('Falha ao buscar processos:', e);
+    return { items: [], page: 1, pages: 1, total: 0 };
+  }
+}
+
+// Mapeia processo para campos mais estáveis
+function mapProcRow(p) {
+  const numero = p.seiNumber || p.seiNumberNorm || p.processNumber || p.numero || p.sei || '';
+  const atrib  = p.unit || p.assignedTo || p.unidade || p.atribuicao || '';
+  const tipo   = Array.isArray(p.tags) && p.tags.length ? (p.tags[0] || '') : (p.type || p.tipo || '');
+  const titulo = p.title || p.spec || p.description || p.descricao || p.especificacao || '';
+  return { numero, atrib, tipo, titulo };
 }
 
 // ---------- UI builders ----------
@@ -356,6 +395,133 @@ async function abrirFormulario(fluxo) {
     formGroup.appendChild(input);
     fluxoForm.appendChild(formGroup);
   });
+
+  // -------------- Buscador Global quando há número de processo --------------
+  const campoNumeroProc = fluxoForm.querySelector('#processoSei, #processo_sei');
+  if (campoNumeroProc) {
+    const grp = document.createElement('div');
+    grp.className = 'form-group';
+
+    const lbl = document.createElement('label');
+    lbl.textContent = 'Buscar processo (qualquer campo)';
+    lbl.htmlFor = 'buscaProcGlobal';
+
+    const row = document.createElement('div');
+    row.className = 'd-flex';
+
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'form-control';
+    inp.id = 'buscaProcGlobal';
+    inp.placeholder = 'Digite parte do número, título, tipo, atribuição...';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-secondary ml-2';
+    btn.textContent = 'Buscar';
+
+    row.appendChild(inp);
+    row.appendChild(btn);
+    grp.appendChild(lbl);
+    grp.appendChild(row);
+
+    const resWrap = document.createElement('div');
+    resWrap.id = 'procResults';
+    resWrap.className = 'mt-2';
+    grp.appendChild(resWrap);
+
+    // Coloca a busca no topo do form (acima de tudo)
+    fluxoForm.insertBefore(grp, fluxoForm.firstChild);
+
+    let pagina = 1;
+    const limite = 10;
+
+    async function executarBusca(page = 1) {
+      const term = inp.value.trim();
+      if (term.length < 2) {
+        resWrap.innerHTML = '<div class="text-muted">Digite pelo menos 2 caracteres.</div>';
+        return;
+      }
+      resWrap.innerHTML = '<div class="text-muted">Buscando…</div>';
+      const { items, page: p, pages, total } = await buscarProcessosGlobais(term, page, limite);
+      if (!items.length) {
+        resWrap.innerHTML = '<div class="text-muted">Nenhum processo encontrado.</div>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'table table-sm table-hover table-bordered';
+      table.innerHTML = `
+        <thead class="thead-light">
+          <tr>
+            <th style="min-width:160px;">Número</th>
+            <th style="min-width:160px;">Atribuição</th>
+            <th style="min-width:120px;">Tipo</th>
+            <th style="min-width:240px;">Título/Especificação</th>
+            <th style="width:90px;">Selecionar</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+      const tbody = table.querySelector('tbody');
+      items.forEach(proc => {
+        const m = mapProcRow(proc);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${m.numero}</td>
+          <td>${m.atrib}</td>
+          <td>${m.tipo}</td>
+          <td>${m.titulo}</td>
+          <td><button type="button" class="btn btn-primary btn-sm">Usar</button></td>
+        `;
+        const useBtn = tr.querySelector('button');
+        useBtn.addEventListener('click', () => {
+          campoNumeroProc.value = m.numero;
+          showAlert(`Processo selecionado: ${m.numero}`, 'success');
+          campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          campoNumeroProc.classList.add('is-valid');
+          setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
+        });
+        tbody.appendChild(tr);
+      });
+
+      const pager = document.createElement('div');
+      pager.className = 'd-flex align-items-center mt-2';
+      const prev = document.createElement('button');
+      prev.className = 'btn btn-light btn-sm mr-2';
+      prev.textContent = '◀';
+      prev.disabled = p <= 1;
+
+      const info = document.createElement('span');
+      info.className = 'text-muted mr-2';
+      info.textContent = `Página ${p} / ${pages} — ${total} itens`;
+
+      const next = document.createElement('button');
+      next.className = 'btn btn-light btn-sm';
+      next.textContent = '▶';
+      next.disabled = p >= pages;
+
+      prev.addEventListener('click', () => { if (pagina > 1) { pagina--; executarBusca(pagina); } });
+      next.addEventListener('click', () => { if (pagina < pages) { pagina++; executarBusca(pagina); } });
+
+      resWrap.innerHTML = '';
+      resWrap.appendChild(table);
+      const pagWrap = document.createElement('div');
+      pagWrap.appendChild(prev);
+      pagWrap.appendChild(info);
+      pagWrap.appendChild(next);
+      resWrap.appendChild(pagWrap);
+    }
+
+    btn.addEventListener('click', () => { pagina = 1; executarBusca(pagina); });
+    inp.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        pagina = 1;
+        executarBusca(pagina);
+      }
+    });
+  }
 
   // ----- Containers extras (iguais ao seu código) -----
   // Imagens individuais
@@ -685,14 +851,12 @@ function enviarFormularioAxios(e) {
 
       showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
 
-      // FECHA O MODAL APÓS SUCESSO
       if (window.$ && $('#fluxoModal').length) {
         $('#fluxoModal').modal('hide');
       }
     } else {
       showAlert('✅ Solicitação enviada com sucesso.', 'success');
 
-      // FECHA O MODAL APÓS SUCESSO
       if (window.$ && $('#fluxoModal').length) {
         $('#fluxoModal').modal('hide');
       }
