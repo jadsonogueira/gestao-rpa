@@ -60,6 +60,7 @@ console.log('[script.js] carregado');
     #fluxoForm #procResults tbody tr {
       color: #e9ecef;                                /* texto claro nas linhas */
       background-color: transparent;
+      cursor: default;
     }
     #fluxoForm #procResults tbody tr:hover {
       background: rgba(255,255,255,0.06);            /* hover sutil claro */
@@ -69,13 +70,18 @@ console.log('[script.js] carregado');
       white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
-      max-width: 260px;
       border-color: rgba(255,255,255,0.12);          /* bordas suaves no escuro */
     }
-    #fluxoForm #procResults td.col-title { max-width: 360px; }
+    #fluxoForm #procResults td.col-numero { max-width: 200px; }
+    #fluxoForm #procResults td.col-atrib  { max-width: 200px; }
+    #fluxoForm #procResults td.col-title  { max-width: 360px; }
 
-    /* Botões na coluna Selecionar com contraste */
-    #fluxoForm #procResults td .btn.btn-primary.btn-sm {
+    /* Botão "Usar" minimalista no fim da linha */
+    #fluxoForm #procResults td.col-action {
+      width: 64px;
+      text-align: right;
+    }
+    #fluxoForm #procResults td.col-action .btn.btn-primary.btn-sm {
       padding: 2px 8px;
     }
 
@@ -240,9 +246,8 @@ async function buscarProcessosGlobais(term, page = 1, limit = 10) {
 function mapProcRow(p) {
   const numero = p.seiNumber || p.seiNumberNorm || p.processNumber || p.numero || p.sei || '';
   const atrib  = p.unit || p.assignedTo || p.unidade || p.atribuicao || '';
-  const tipo   = Array.isArray(p.tags) && p.tags.length ? (p.tags[0] || '') : (p.type || p.tipo || '');
   const titulo = p.title || p.spec || p.description || p.descricao || p.especificacao || '';
-  return { numero, atrib, tipo, titulo };
+  return { numero, atrib, titulo };
 }
 
 // ---------- UI builders ----------
@@ -563,11 +568,9 @@ async function abrirFormulario(fluxo) {
       table.innerHTML = `
         <thead>
           <tr>
-            <th style="min-width:160px;">Número</th>
-            <th style="min-width:140px;">Atribuição</th>
-            <th style="min-width:120px;">Tipo</th>
-            <th style="min-width:220px;">Título/Especificação</th>
-            <th style="width:90px;">Selecionar</th>
+            <th style="min-width:180px;">Número</th>
+            <th style="min-width:180px;">Atribuição</th>
+            <th style="min-width:280px;">Título/Especificação</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -577,20 +580,27 @@ async function abrirFormulario(fluxo) {
         const m = mapProcRow(proc);
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td title="${m.numero}">${m.numero}</td>
-          <td title="${m.atrib}">${m.atrib}</td>
-          <td title="${m.tipo}">${m.tipo}</td>
-          <td class="col-title" title="${m.titulo}">${m.titulo}</td>
-          <td><button type="button" class="btn btn-primary btn-sm">Usar</button></td>
+          <td class="col-numero" title="${m.numero}">${m.numero}</td>
+          <td class="col-atrib"  title="${m.atrib}">${m.atrib}</td>
+          <td class="col-title"  title="${m.titulo}">${m.titulo}</td>
         `;
-        const useBtn = tr.querySelector('button');
-        useBtn.addEventListener('click', () => {
+        // Botão "Usar" discreto numa célula de ação (sem cabeçalho)
+        const tdAction = document.createElement('td');
+        tdAction.className = 'col-action';
+        const btnUse = document.createElement('button');
+        btnUse.type = 'button';
+        btnUse.className = 'btn btn-primary btn-sm';
+        btnUse.textContent = 'Usar';
+        btnUse.addEventListener('click', () => {
           campoNumeroProc.value = m.numero;
-          showAlert(\`Processo selecionado: ${m.numero}\`, 'success');
+          showAlert(`Processo selecionado: ${m.numero}`, 'success');
           campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
           campoNumeroProc.classList.add('is-valid');
           setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
         });
+        tdAction.appendChild(btnUse);
+        tr.appendChild(tdAction);
+
         tbody.appendChild(tr);
       });
 
@@ -613,7 +623,7 @@ async function abrirFormulario(fluxo) {
 
       const info = document.createElement('span');
       info.className = 'text-muted mr-2';
-      info.textContent = \`Página ${p} / ${pages} — ${total} itens\`;
+      info.textContent = `Página ${p} / ${pages} — ${total} itens`;
 
       const next = document.createElement('button');
       next.className = 'btn btn-light btn-sm';
