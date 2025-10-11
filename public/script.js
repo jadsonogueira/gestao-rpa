@@ -60,7 +60,7 @@ console.log('[script.js] carregado');
     #fluxoForm #procResults tbody tr {
       color: #e9ecef;
       background-color: transparent;
-      cursor: pointer;
+      cursor: pointer; /* linha clicável */
     }
     #fluxoForm #procResults tbody tr:hover {
       background: rgba(255,255,255,0.06);
@@ -71,10 +71,27 @@ console.log('[script.js] carregado');
       text-overflow: ellipsis;
       overflow: hidden;
       border-color: rgba(255,255,255,0.12);
+      vertical-align: middle;
     }
-    #fluxoForm #procResults td.col-numero { max-width: 200px; }
-    #fluxoForm #procResults td.col-atrib  { max-width: 200px; }
-    #fluxoForm #procResults td.col-title  { max-width: 360px; }
+
+    /* Larguras das colunas (nova ordem: Número, Título/Especificação, Atribuição) */
+    #fluxoForm #procResults td.col-numero { max-width: 280px; }        /* maior para não cortar */
+    #fluxoForm #procResults th.th-numero { min-width: 220px; }
+
+    #fluxoForm #procResults td.col-title { max-width: 360px; padding: 0; } /* célula com rolagem */
+    #fluxoForm #procResults th.th-title  { min-width: 280px; }
+
+    #fluxoForm #procResults td.col-atrib { max-width: 160px; }         /* mais estreita */
+    #fluxoForm #procResults th.th-atrib  { min-width: 140px; }
+
+    /* Conteúdo rolável horizontal APENAS dentro da célula de especificação */
+    #fluxoForm #procResults .title-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      padding: 6px 8px;           /* repõe o padding removido da td */
+      -webkit-overflow-scrolling: touch;
+    }
 
     /* Paginação enxuta alinhada à direita */
     #fluxoForm #procResults .pager,
@@ -204,21 +221,11 @@ function agoraParaDatetimeLocalMin() {
 function decodePossiblyEncoded(str) {
   if (!str) return '';
   const s = String(str);
-
-  // Se tem %xx, provavelmente está percent-encoded
   const seemsPercentEncoded = /%[0-9A-Fa-f]{2}/.test(s);
-
-  // Primeiro, substitui '+' por espaço para tratar casos "application/x-www-form-urlencoded"
   let candidate = s.replace(/\+/g, ' ');
-
   if (seemsPercentEncoded) {
-    try {
-      candidate = decodeURIComponent(candidate);
-    } catch {
-      // Se der erro, fica com o fallback apenas com '+' -> espaço
-    }
+    try { candidate = decodeURIComponent(candidate); } catch {}
   }
-
   return candidate.trim();
 }
 
@@ -256,12 +263,8 @@ async function buscarProcessosGlobais(term, page = 1, limit = 10) {
 function mapProcRow(p) {
   const numero = p.seiNumber || p.seiNumberNorm || p.processNumber || p.numero || p.sei || '';
   const atrib  = p.unit || p.assignedTo || p.unidade || p.atribuicao || '';
-
-  const rawTitulo =
-    p.title || p.spec || p.description || p.descricao || p.especificacao || '';
-
+  const rawTitulo = p.title || p.spec || p.description || p.descricao || p.especificacao || '';
   const titulo = decodePossiblyEncoded(rawTitulo);
-
   return { numero, atrib, titulo };
 }
 
@@ -462,6 +465,7 @@ async function abrirFormulario(fluxo) {
         input.appendChild(radioDiv);
       });
 
+      // comportamentos dos métodos de upload
       input.addEventListener('change', function(e) {
         const metodo = e.target.value;
         const imagensContainer = document.getElementById('imagensContainer');
@@ -498,6 +502,7 @@ async function abrirFormulario(fluxo) {
         }
       });
     } else {
+      // input padrão (text, file, etc.)
       input = document.createElement('input');
       input.type = campo.type;
       input.className = 'form-control';
@@ -551,8 +556,10 @@ async function abrirFormulario(fluxo) {
     resWrap.className = 'mt-2';
     grp.appendChild(resWrap);
 
+    // Coloca a busca no topo do form
     fluxoForm.insertBefore(grp, fluxoForm.firstChild);
 
+    // Pequeno espaçador
     const spacer = document.createElement('div');
     spacer.className = 'after-search-spacer';
     fluxoForm.insertBefore(spacer, grp.nextSibling);
@@ -579,9 +586,9 @@ async function abrirFormulario(fluxo) {
       table.innerHTML = `
         <thead>
           <tr>
-            <th style="min-width:180px;">Número</th>
-            <th style="min-width:180px;">Atribuição</th>
-            <th style="min-width:280px;">Título/Especificação</th>
+            <th class="th-numero">Número</th>
+            <th class="th-title">Título/Especificação</th>
+            <th class="th-atrib">Atribuição</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -590,11 +597,19 @@ async function abrirFormulario(fluxo) {
       items.forEach(proc => {
         const m = mapProcRow(proc);
         const tr = document.createElement('tr');
+        // Título com rolagem horizontal interna
+        const titleCell = `
+          <td class="col-title" title="${m.titulo}">
+            <div class="title-scroll">${m.titulo}</div>
+          </td>
+        `;
         tr.innerHTML = `
           <td class="col-numero" title="${m.numero}">${m.numero}</td>
+          ${titleCell}
           <td class="col-atrib"  title="${m.atrib}">${m.atrib}</td>
-          <td class="col-title"  title="${m.titulo}">${m.titulo}</td>
         `;
+
+        // Seleção por clique na linha inteira
         tr.addEventListener('click', () => {
           if (!m.numero) return;
           campoNumeroProc.value = m.numero;
@@ -607,6 +622,7 @@ async function abrirFormulario(fluxo) {
         tbody.appendChild(tr);
       });
 
+      // wrapper com rolagem vertical da lista
       const scrollWrap = document.createElement('div');
       scrollWrap.className = 'results-scroll';
       scrollWrap.style.maxHeight = '240px';
@@ -614,6 +630,7 @@ async function abrirFormulario(fluxo) {
       scrollWrap.style.webkitOverflowScrolling = 'touch';
       scrollWrap.appendChild(table);
 
+      // paginação
       const pager = document.createElement('div');
       pager.className = 'd-flex align-items-center mt-2';
       const prev = document.createElement('button');
