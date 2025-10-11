@@ -8,81 +8,83 @@ console.log('[script.js] carregado');
 // Injeta CSS do buscador de processos no <head> sem precisar editar o HTML
 (function injectProcessSearchCSS() {
   const css = `
-    /* Bloco de busca dentro do modal */
+    /* Bloco de busca dentro do modal (tema claro) */
     #fluxoForm .proc-search-group {
       margin-bottom: 12px;
       padding: 10px;
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
-      background: rgba(0,0,0,0.15);
+      background: #ffffff;
     }
+
     /* Linha com input e botão */
     #fluxoForm .proc-search-row {
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 8px;
     }
+
     /* Container dos resultados com rolagem e cabeçalho fixo */
     #fluxoForm #procResults {
       margin-top: 10px;
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid #e5e7eb;
       border-radius: 6px;
       overflow: visible;
+      background: #ffffff;
     }
     #fluxoForm #procResults .results-scroll {
       max-height: 240px;
       overflow: auto;
       -webkit-overflow-scrolling: touch;
-      background: #111; /* fundo do corpo da lista */
+      background: #ffffff; /* fundo do corpo da lista */
     }
 
-    /* Tabela compacta e legível (tema escuro) */
+    /* Tabela compacta e legível (tema claro) */
     #fluxoForm #procResults table.table {
       margin-bottom: 0;
-      font-size: 0.88rem;
-      color: #e9ecef;
+      font-size: 0.9rem;
+      color: #111827;
       background-color: transparent;
       table-layout: fixed;
     }
 
-    /* Cabeçalho fixo e contrastado no tema escuro */
+    /* Cabeçalho fixo e claro */
     #fluxoForm #procResults thead th {
       position: sticky;
       top: 0;
       z-index: 1;
-      color: #f8f9fa;
-      background: rgba(255,255,255,0.10);
-      backdrop-filter: blur(2px);
-      border-bottom-color: rgba(255,255,255,0.15);
+      color: #111827;
+      background: #f3f4f6;
+      border-bottom: 1px solid #e5e7eb;
     }
 
-    /* Linhas e células no tema escuro */
+    /* Linhas e células (tema claro) */
     #fluxoForm #procResults tbody tr {
-      color: #e9ecef;
-      background-color: transparent;
+      color: #111827;
+      background-color: #ffffff;
       cursor: pointer; /* linha clicável */
     }
     #fluxoForm #procResults tbody tr:hover {
-      background: rgba(255,255,255,0.06);
+      background: #f9fafb;
     }
     #fluxoForm #procResults td,
     #fluxoForm #procResults th {
       white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
-      border-color: rgba(255,255,255,0.12);
+      border-color: #e5e7eb;
       vertical-align: middle;
     }
 
-    /* Larguras das colunas (nova ordem: Número, Título/Especificação, Atribuição) */
-    #fluxoForm #procResults td.col-numero { max-width: 280px; }        /* maior para não cortar */
-    #fluxoForm #procResults th.th-numero { min-width: 220px; }
+    /* Larguras das colunas (ordem: Número, Título/Especificação, Atribuição) */
+    #fluxoForm #procResults td.col-numero { max-width: 300px; }  /* maior para não cortar */
+    #fluxoForm #procResults th.th-numero { min-width: 240px; }
 
-    #fluxoForm #procResults td.col-title { max-width: 360px; padding: 0; } /* célula com rolagem */
-    #fluxoForm #procResults th.th-title  { min-width: 280px; }
+    #fluxoForm #procResults td.col-title { max-width: 420px; padding: 0; } /* célula com rolagem */
+    #fluxoForm #procResults th.th-title  { min-width: 320px; }
 
-    #fluxoForm #procResults td.col-atrib { max-width: 160px; }         /* mais estreita */
-    #fluxoForm #procResults th.th-atrib  { min-width: 140px; }
+    #fluxoForm #procResults td.col-atrib { max-width: 150px; }  /* mais estreita */
+    #fluxoForm #procResults th.th-atrib  { min-width: 130px; }
 
     /* Conteúdo rolável horizontal APENAS dentro da célula de especificação */
     #fluxoForm #procResults .title-scroll {
@@ -93,7 +95,7 @@ console.log('[script.js] carregado');
       -webkit-overflow-scrolling: touch;
     }
 
-    /* Paginação enxuta alinhada à direita */
+    /* Paginação clara e discreta, alinhada à direita */
     #fluxoForm #procResults .pager,
     #fluxoForm #procResults .d-flex.align-items-center.mt-2 {
       display: flex;
@@ -101,19 +103,35 @@ console.log('[script.js] carregado');
       justify-content: flex-end;
       gap: 8px;
       padding: 8px;
-      background: rgba(255,255,255,0.04);
-      color: #e9ecef;
-      border-top: 1px solid rgba(255,255,255,0.08);
+      background: #fafafa;
+      color: #374151;
+      border-top: 1px solid #e5e7eb;
     }
     #fluxoForm #procResults .pager .btn.btn-light.btn-sm,
     #fluxoForm #procResults .d-flex.align-items-center.mt-2 .btn.btn-light.btn-sm {
-      color: #212529;
-      background-color: #f8f9fa;
-      border-color: #e9ecef;
+      color: #111827;
+      background-color: #f3f4f6;
+      border-color: #e5e7eb;
     }
 
     /* Espaço entre o bloco de busca e o resto do formulário */
     #fluxoForm .after-search-spacer { height: 8px; }
+
+    /* Opcional: zebra striping leve para leitura */
+    #fluxoForm #procResults tbody tr:nth-child(odd) {
+      background: #ffffff;
+    }
+    #fluxoForm #procResults tbody tr:nth-child(even) {
+      background: #fcfcfd;
+    }
+
+    /* Em telas largas, dar ainda mais espaço ao Número */
+    @media (min-width: 1200px) {
+      #fluxoForm #procResults th.th-numero { min-width: 280px; }
+      #fluxoForm #procResults td.col-numero { max-width: 340px; }
+      #fluxoForm #procResults th.th-title { min-width: 360px; }
+      #fluxoForm #procResults td.col-title { max-width: 480px; }
+    }
   `;
   const styleEl = document.createElement('style');
   styleEl.type = 'text/css';
@@ -121,6 +139,7 @@ console.log('[script.js] carregado');
   styleEl.appendChild(document.createTextNode(css));
   document.head.appendChild(styleEl);
 })();
+
 
 // ---------- UI helpers ----------
 function showAlert(message, type = 'success') {
