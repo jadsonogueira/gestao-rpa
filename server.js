@@ -950,7 +950,7 @@ if (agIso) {
     mailContent += `Requerente: ${usuario?.username || 'Desconhecido'}\n`;
     mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
 
-    const attachments = []; // <-- precisa estar aqui no começo do try
+     let attachments = []; // <-- precisa estar aqui no começo do try
 
     if (fluxo === 'Liberar assinatura externa') {
       mailContent += `Assinante: ${dados.assinante || ''}\n`;
