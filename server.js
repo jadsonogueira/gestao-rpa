@@ -1245,17 +1245,15 @@ app.get('/', (req, res) => {
 });
 
 // Rota para verificação do token JWT (sempre 200 com valid:true/false)
+// /verify-token estável: 200 sempre, sem derrubar sessão
 app.post('/verify-token', express.json(), (req, res) => {
   try {
-    // tenta corpo { token } ou header Authorization: Bearer xxx
     const bodyToken = req.body && req.body.token;
-    const header = req.headers.authorization || '';
-    const headerToken = header.startsWith('Bearer ') ? header.slice(7) : null;
-
+    const auth = req.headers.authorization || '';
+    const headerToken = auth.startsWith('Bearer ') ? auth.slice(7) : null;
     const token = bodyToken || headerToken;
-    if (!token) {
-      return res.json({ valid: false, error: 'Token ausente' });
-    }
+
+    if (!token) return res.json({ valid: false, error: 'Token ausente' });
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -1263,12 +1261,12 @@ app.post('/verify-token', express.json(), (req, res) => {
     } catch {
       return res.json({ valid: false, error: 'Token inválido ou expirado' });
     }
-  } catch (err) {
-    console.error('Erro ao verificar token:', err);
-    // mantém 200 para não disparar “logout” global
-    return res.json({ valid: false, error: 'Erro interno no servidor' });
+  } catch (e) {
+    console.error('verify-token erro:', e.message);
+    return res.json({ valid: false, error: 'Erro interno' });
   }
 });
+
 
 
 
