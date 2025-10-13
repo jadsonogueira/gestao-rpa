@@ -1244,27 +1244,32 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-// Rota para verificação do token JWT
-app.post('/verify-token', (req, res) => {
-  let body = '';
-  req.on('data', chunk => (body += chunk));
-  req.on('end', () => {
-    try {
-      const { token } = JSON.parse(body);
-      if (!token) return res.status(400).json({ valid: false, error: 'Token ausente' });
+// Rota para verificação do token JWT (sempre 200 com valid:true/false)
+app.post('/verify-token', express.json(), (req, res) => {
+  try {
+    // tenta corpo { token } ou header Authorization: Bearer xxx
+    const bodyToken = req.body && req.body.token;
+    const header = req.headers.authorization || '';
+    const headerToken = header.startsWith('Bearer ') ? header.slice(7) : null;
 
-      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-          return res.status(401).json({ valid: false, error: 'Token inválido ou expirado' });
-        }
-        res.json({ valid: true, userId: decoded.id, role: decoded.role });
-      });
-    } catch (err) {
-      console.error('Erro ao verificar token:', err);
-      res.status(500).json({ valid: false, error: 'Erro interno no servidor' });
+    const token = bodyToken || headerToken;
+    if (!token) {
+      return res.json({ valid: false, error: 'Token ausente' });
     }
-  });
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      return res.json({ valid: true, userId: decoded.id, role: decoded.role });
+    } catch {
+      return res.json({ valid: false, error: 'Token inválido ou expirado' });
+    }
+  } catch (err) {
+    console.error('Erro ao verificar token:', err);
+    // mantém 200 para não disparar “logout” global
+    return res.json({ valid: false, error: 'Erro interno no servidor' });
+  }
 });
+
 
 
 app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
