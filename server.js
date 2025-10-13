@@ -86,13 +86,7 @@ try {
   console.warn('Rota /api/processes não carregada:', e.message);
 }
 
-try {
-  const processDocumentsRoutes = require('./routes/processDocuments');
-  app.use('/api/process-documents', processDocumentsRoutes);
-  console.log('Rota /api/process-documents carregada com sucesso.');
-} catch (e) {
-  console.warn('Rota /api/process-documents não carregada:', e.message);
-}
+
 
 function normalizeLangs(input) {
   if (!input) return 'por+eng';
@@ -950,7 +944,7 @@ if (agIso) {
     mailContent += `Requerente: ${usuario?.username || 'Desconhecido'}\n`;
     mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
 
-     let attachments = []; // <-- precisa estar aqui no começo do try
+    const attachments = []; // <-- precisa estar aqui no começo do try
 
     if (fluxo === 'Liberar assinatura externa') {
       mailContent += `Assinante: ${dados.assinante || ''}\n`;
@@ -1244,30 +1238,27 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
-// Rota para verificação do token JWT (sempre 200 com valid:true/false)
-// /verify-token estável: 200 sempre, sem derrubar sessão
-app.post('/verify-token', express.json(), (req, res) => {
-  try {
-    const bodyToken = req.body && req.body.token;
-    const auth = req.headers.authorization || '';
-    const headerToken = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-    const token = bodyToken || headerToken;
-
-    if (!token) return res.json({ valid: false, error: 'Token ausente' });
-
+// Rota para verificação do token JWT
+app.post('/verify-token', (req, res) => {
+  let body = '';
+  req.on('data', chunk => (body += chunk));
+  req.on('end', () => {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      return res.json({ valid: true, userId: decoded.id, role: decoded.role });
-    } catch {
-      return res.json({ valid: false, error: 'Token inválido ou expirado' });
+      const { token } = JSON.parse(body);
+      if (!token) return res.status(400).json({ valid: false, error: 'Token ausente' });
+
+      jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(401).json({ valid: false, error: 'Token inválido ou expirado' });
+        }
+        res.json({ valid: true, userId: decoded.id, role: decoded.role });
+      });
+    } catch (err) {
+      console.error('Erro ao verificar token:', err);
+      res.status(500).json({ valid: false, error: 'Erro interno no servidor' });
     }
-  } catch (e) {
-    console.error('verify-token erro:', e.message);
-    return res.json({ valid: false, error: 'Erro interno' });
-  }
+  });
 });
-
-
 
 
 app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
