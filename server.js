@@ -86,7 +86,13 @@ try {
   console.warn('Rota /api/processes não carregada:', e.message);
 }
 
-
+try {
+  const processDocumentsRoutes = require('./routes/processDocuments');
+  app.use('/api/process-documents', processDocumentsRoutes);
+  console.log('Rota /api/process-documents carregada com sucesso.');
+} catch (e) {
+  console.warn('Rota /api/process-documents não carregada:', e.message);
+}
 
 function normalizeLangs(input) {
   if (!input) return 'por+eng';
