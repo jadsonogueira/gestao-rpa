@@ -1231,6 +1231,26 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
 }
 });
 
+// /verify-token robusto: aceita GET (sem body) e não retorna 401
+app.get('/verify-token', (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    const headerToken = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+    const token = headerToken || req.query.token || null;
+
+    if (!token) return res.json({ valid: false, error: 'Token ausente' });
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      return res.json({ valid: true, userId: decoded.id, role: decoded.role });
+    } catch {
+      return res.json({ valid: false, error: 'Token inválido ou expirado' });
+    }
+  } catch (e) {
+    console.error('verify-token (GET) erro:', e.message);
+    return res.json({ valid: false, error: 'Erro interno' });
+  }
+});
 
     
 // Rota para a página principal
