@@ -1041,9 +1041,13 @@ function enviarFormularioAxios(e) {
     }
   })
   .catch(err => {
-    console.error(err);
-    showAlert('Falha ao processar sua solicitação.', 'danger');
-  })
+  console.error('send-email erro:',
+    err?.response?.status,
+    err?.response?.data || err?.message
+  );
+  showAlert('Falha ao processar sua solicitação.', 'danger');
+})
+
   .finally(() => {
     hideLoadingOverlay();
   });
