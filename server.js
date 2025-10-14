@@ -1222,14 +1222,19 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
     attachments // aqui os anexos seguem como Buffer, igual antes
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-  if (error) {
-    const msg = (error && (error.response || error.message)) || String(error);
-    console.error('[EMAIL] falha:', msg);
-    return res.status(500).send(`Erro ao enviar o e-mail: ${msg}`);
-  }
-  return res.send('E-mail enviado com sucesso');
-});
+  // depois de montar transporter e mailOptions:
+transporter.sendMail(mailOptions)
+  .then(info => {
+    console.log('[SEND] ok messageId=', info && info.messageId);
+    res.send('E-mail enviado com sucesso');
+  })
+  .catch(err => {
+    const msg = (err && (err.response || err.message)) || String(err);
+    console.error('[SEND][SMTP ERROR]', msg);
+    // devolve texto simples para aparecer no Network → Response
+    res.status(500).type('text/plain').send(`Erro ao enviar o e-mail: ${msg}`);
+  });
+
 
 }
 
