@@ -282,12 +282,23 @@
     }
   }
 
+  // Utilitário: recupera o SEI do botão ou da primeira célula da linha (fallback)
+  function getSeiFromButton(btn){
+    const direct = btn?.dataset?.sei;
+    if (direct) return direct;
+    const tr = btn.closest('tr');
+    const firstCell = tr ? tr.querySelector('td') : null;
+    return (firstCell?.textContent || '').trim();
+  }
+
   document.getElementById('processosTable').addEventListener('click', e => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
     const action = btn.dataset.action;
-    const sei = btn.dataset.sei;
-    if (action === 'docs') solicitarAtualizacaoDocs(sei);
+    if (action === 'docs') {
+      const sei = getSeiFromButton(btn);
+      solicitarAtualizacaoDocs(sei);
+    }
   });
 
   document.getElementById('btnFilter').addEventListener('click', () => { pageProc = 1; carregarProcessos(); });
@@ -299,20 +310,22 @@
     carregarProcessos();
   });
 
+  // === Enviar e-mail: Atualizar lista de documentos (por linha) ===
   async function solicitarAtualizacaoDocs(sei){
     const { name, email } = getUserIdentity();
-    const subject = 'Atualizar lista de documentos';
+    const subject = 'Atualizar lista de documentos'; // solicitado
     const body = [
-      'Fluxo: Atualizar lista de documentos',
+      'Fluxo: Atualizar lista de documentos', // solicitado
       '',
       'Dados do formulário:',
       `Agendamento: ${new Date().toISOString()}`,
       `Número do processo SEI: ${sei}`,
       `Requerente: ${name}`,
-      `Email: ${email}`
-    ].join('\n');
+      `Email: ${email}`,
+    ].join('
+');
 
-    const payload = { fluxo:'Atualizar documentos de processo SEI', to:'jadson.pena@dnit.gov.br', subject, text: body };
+    const payload = { fluxo:'Atualizar lista de documentos', to:'jadson.pena@dnit.gov.br', subject, text: body };
 
     try {
       const res = await fetch(`${apiUrl}/send-email`, {
@@ -320,7 +333,7 @@
       });
       if (!res.ok) throw new Error(await res.text());
       showAlert(`📨 Solicitação enviada para atualizar documentos do processo ${sei}.`, 'success');
-    } catch {
+    } catch (err) {
       const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailto;
       showAlert('⚠️ Não consegui enviar pelo servidor; abrindo seu cliente de e-mail…','warning');
