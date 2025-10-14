@@ -728,55 +728,61 @@
     }
   </script>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Você não está autenticado. Redirecionando para o login...');
-        window.location.href = 'login.html';
+ <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Você não está autenticado. Redirecionando para o login...');
+      window.location.href = '/login.html';   // use caminho absoluto
+      return;
+    }
+
+    try {
+      // ✅ use GET + Authorization (evita body/JSON quebrando)
+      const res = await fetch('/verify-token', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // se o servidor estiver fora/retornar HTML, isso não quebra o fluxo
+      let data = { valid: false };
+      try {
+        data = await res.json();
+      } catch (_) {
+        // mantém data.valid = false e trata abaixo
+      }
+
+      if (!data.valid) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = '/login.html';
         return;
       }
 
-      try {
-        const res = await fetch(`${window.location.origin}/verify-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token })
-        });
+      const userRole = data.userRole || data.role;
 
-        const data = await res.json();
-        if (!data.valid) {
-          localStorage.removeItem('token');
-          return window.location.href = 'login.html';
+      // Aplica restrição com base no atributo data-role
+      document.querySelectorAll('.card.service-card').forEach(card => {
+        const roleAttr = card.getAttribute('data-role');
+        if (!roleAttr) return;
+        const allowedRoles = roleAttr.split(',').map(r => r.trim());
+        if (!allowedRoles.includes(userRole)) {
+          card.classList.add('restrito');
+          card.removeAttribute('onclick');
+          card.setAttribute('data-toggle', 'tooltip');
+          card.setAttribute('title', 'Acesso restrito: serviço disponível apenas para níveis superiores');
         }
+      });
 
-        const userRole = data.userRole || data.role;
+      if (window.$) $('[data-toggle="tooltip"]').tooltip();
+    } catch (err) {
+      console.error('Erro ao verificar token:', err);
+      // ⚠️ rede intermitente? mostre aviso, mas evite redirecionar sem necessidade
+      alert('Falha de conexão ao verificar autenticação. Tente recarregar a página.');
+    }
+  });
+</script>
 
-        // Aplica restrição com base no atributo data-role
-        document.querySelectorAll('.card.service-card').forEach(card => {
-          const roleAttr = card.getAttribute('data-role');
-          if (!roleAttr) return;
-
-          const allowedRoles = roleAttr.split(',').map(r => r.trim());
-
-          if (!allowedRoles.includes(userRole)) {
-            card.classList.add('restrito');
-            card.removeAttribute('onclick');
-            card.setAttribute('data-toggle', 'tooltip');
-            card.setAttribute('title', 'Acesso restrito: serviço disponível apenas para níveis superiores');
-          }
-        });
-
-        // Inicializar tooltips Bootstrap
-        $('[data-toggle="tooltip"]').tooltip();
-      } catch (err) {
-        console.error('Erro ao verificar token:', err);
-        alert('Erro ao verificar autenticação. Redirecionando para o login...');
-        localStorage.removeItem('token');
-        window.location.href = 'login.html';
-      }
-    });
-  </script>
 
   <script>
     const logoutBtn = document.getElementById('logoutButton');
