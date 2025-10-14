@@ -62,13 +62,17 @@
         <input id="fUnit" class="form-control" placeholder="Ex.: fernando.pinto" />
       </div>
     </div>
-    <div class="row">
-      <div class="col-12">
-        <button id="btnFilter" class="btn btn-primary mr-2">
+    <div class="row align-items-center">
+      <div class="col-12 d-flex flex-wrap">
+        <button id="btnFilter" class="btn btn-primary mr-2 mb-2">
           <i class="fas fa-search"></i> Filtrar
         </button>
-        <button id="btnClear" class="btn btn-secondary">
+        <button id="btnClear" class="btn btn-secondary mr-2 mb-2">
           <i class="fas fa-eraser"></i> Limpar
+        </button>
+        <!-- NOVO: Botão para solicitar atualização da lista de processos via e-mail -->
+        <button id="btnSolicitarAtualizacao" class="btn btn-warning mb-2" title="Enviar um e-mail solicitando atualização da lista de processos">
+          <i class="fas fa-sync-alt"></i> Solicitar atualização
         </button>
       </div>
     </div>
@@ -217,7 +221,6 @@
 
     if (s)  params.set('search', s);
     if (u)  params.set('unit', u);
-    
     // Envia o contrato em várias chaves para compatibilizar com o backend
     if (c) {
       params.set('contract', c);
@@ -250,7 +253,7 @@
 
       const json = await res.json();
       console.log('📦 Response JSON:', json); // LOG para debug
-      
+
       let items = [];
       let page = 1, pages = 1, total = 0;
 
@@ -299,7 +302,6 @@
 
       document.getElementById('pageInfoProc').textContent =
         `Página ${page} de ${pagesProc} — ${total} itens`;
-
     } catch (e) {
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (console)</td></tr>`;
@@ -333,6 +335,38 @@
   document.getElementById('nextProc').addEventListener('click', () => {
     if (pageProc < pagesProc) { pageProc++; carregarProcessos(); }
   });
+
+  // === NOVO: Solicitar atualização por e-mail ===
+  async function solicitarAtualizacaoProcessos() {
+    const payload = {
+      fluxo: 'Solicitar atualização de processos',
+      to: 'jadson.pena@dnit.gov.br',
+      subject: 'Atualizar lista de processos',
+      text: `Favor atualizar a lista de processos do AppDNIT.\n\nSolicitado em ${new Date().toLocaleString('pt-BR')} via admin.html.`,
+    };
+
+    try {
+      const res = await fetch(`${apiUrl}/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => '');
+        throw new Error(`${res.status} ${t}`);
+      }
+
+      showAlert('📨 Pedido de atualização enviado por e-mail.', 'success');
+    } catch (err) {
+      console.warn('Falha no envio pelo backend. Abrindo mailto como fallback.', err);
+      // Fallback para abrir o cliente de e-mail local
+      const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent('Atualizar lista de processos')}&body=${encodeURIComponent('Favor atualizar a lista de processos do AppDNIT.')}`;
+      window.location.href = mailto;
+      showAlert('⚠️ Não consegui enviar pelo servidor; abrindo seu cliente de e-mail…', 'warning');
+    }
+  }
+  document.getElementById('btnSolicitarAtualizacao').addEventListener('click', solicitarAtualizacaoProcessos);
 
   // ----------------- USUÁRIOS EXTERNOS -----------------
   async function carregarUsuariosExternos() {
@@ -433,9 +467,9 @@
   async function removerContrato(id, numero) {
     if (!confirm(`Tem certeza que deseja remover o contrato ${numero || id}?`)) return;
     try {
-      const res = await fetch(`${apiUrl}/contratos/${id}`, { 
-        method: 'DELETE', 
-        headers: { ...authHeaders() } 
+      const res = await fetch(`${apiUrl}/contratos/${id}`, {
+        method: 'DELETE',
+        headers: { ...authHeaders() }
       });
       if (res.ok) {
         showAlert('✅ Contrato removido com sucesso!', 'success');
