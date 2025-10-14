@@ -878,11 +878,10 @@ app.use((req, res, next) => {
   next();
 });
 
-
-
 app.post('/send-email', upload.any(), async (req, res) => {
-  console.log('Dados recebidos no formulário:', req.body);
+    console.log('[DEBUG] chegou no /send-email - método POST');
   try {
+    console.log('Dados recebidos no formulário:', req.body);
     const fluxo = req.body.fluxo;
     const dados = req.body;
    // if (!dados.email) {
