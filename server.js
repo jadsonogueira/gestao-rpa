@@ -86,7 +86,13 @@ try {
   console.warn('Rota /api/processes não carregada:', e.message);
 }
 
-
+try {
+  const processDocumentsRoutes = require('./routes/processDocuments');
+  app.use('/api/process-documents', processDocumentsRoutes);
+  console.log('Rota /api/process-documents carregada com sucesso.');
+} catch (e) {
+  console.warn('Rota /api/process-documents não carregada:', e.message);
+}
 
 function normalizeLangs(input) {
   if (!input) return 'por+eng';
@@ -944,7 +950,7 @@ if (agIso) {
     mailContent += `Requerente: ${usuario?.username || 'Desconhecido'}\n`;
     mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
 
-    const attachments = []; // <-- precisa estar aqui no começo do try
+    let attachments = []; // <-- precisa estar aqui no começo do try
 
     if (fluxo === 'Liberar assinatura externa') {
       mailContent += `Assinante: ${dados.assinante || ''}\n`;
@@ -1298,7 +1304,7 @@ app.post('/pdf-to-jpg', upload.single('arquivoPdf'), async (req, res) => {
     const baseName = path.basename(req.file.originalname, '.pdf');
     const safeBase = sanitizeFilename(baseName);
 
-    const attachments = [];
+    let attachments = [];
 
     for (let i = 1; i <= numPages; i++) {
       const outputPrefix = path.join(tempDir, `page_${i}`);
