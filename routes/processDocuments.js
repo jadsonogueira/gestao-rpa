@@ -23,6 +23,8 @@ router.post(
   requireApiKey,
   express.text({ type: '*/*', limit: '10mb' }), // aceita text/plain ou application/json
   async (req, res) => {
+    console.log('[process-documents] typeof body =', typeof req.body);
+    console.log('[process-documents] raw body =', req.body);
     try {
       let payload = [];
       const rawBody = req.body;
