@@ -51,7 +51,7 @@
     <div class="row">
       <div class="col-md-6 mb-2">
         <label class="mb-1" for="fSearch">🔍 Busca Geral</label>
-        <input id="fSearch" class="form-control" placeholder="Buscar em qualquer campo (SEI, especificação, anotação, tipo...)" />
+        <input id="fSearch" class="form-control" placeholder="Buscar em qualquer campo (SEI, especificação, tipo...)" />
       </div>
       <div class="col-md-3 mb-2">
         <label class="mb-1" for="fContract">📄 Contrato</label>
@@ -70,8 +70,7 @@
         <button id="btnClear" class="btn btn-secondary mr-2 mb-2">
           <i class="fas fa-eraser"></i> Limpar
         </button>
-        <!-- Botão para solicitar atualização da lista de processos via e-mail -->
-        <button id="btnSolicitarAtualizacao" class="btn btn-warning mb-2" title="Enviar um e-mail solicitando atualização da lista de processos">
+        <button id="btnSolicitarAtualizacao" class="btn btn-warning mb-2" title="Enviar e-mail solicitando atualização da lista de processos">
           <i class="fas fa-sync-alt"></i> Solicitar atualização
         </button>
       </div>
@@ -94,6 +93,7 @@
       <tbody id="tbodyProc"></tbody>
     </table>
   </div>
+
   <div class="d-flex align-items-center mb-4">
     <button id="prevProc" class="btn btn-light mr-2" title="Página anterior">◀</button>
     <span id="pageInfoProc" class="mr-2 muted"></span>
@@ -179,15 +179,14 @@
       setTimeout(() => window.location.href = "/login.html", 1500);
       throw new Error('sem token');
     }
-    console.warn('verify-token desativado temporariamente (modo permissivo total).');
     return true;
   }
 
-  const asText     = (v) => (v == null ? '' : String(v));
+  const asText = (v) => (v == null ? '' : String(v));
   const decodePlus = (s) => asText(s).replace(/\+/g, ' ');
-  const joinTags   = (tags) => Array.isArray(tags) ? tags.map(t => String(t||'')).filter(Boolean).join(', ') : '';
+  const joinTags = (tags) => Array.isArray(tags) ? tags.map(t => String(t||'')).filter(Boolean).join(', ') : '';
 
-  // Tenta extrair nome e email do JWT do usuário logado
+  // Extrai nome e e-mail do JWT
   function parseJwt(token){
     try {
       const base = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
@@ -213,38 +212,25 @@
     return { sei, assigned, type, spec, updated };
   }
 
-  // ----------------- PROCESSOS -----------------
+  // === PROCESSOS ===
   let pageProc = 1;
   let pagesProc = 1;
   const limitProc = 20;
 
   function updatePagerButtons() {
-    const prev = document.getElementById('prevProc');
-    const next = document.getElementById('nextProc');
-    prev.disabled = pageProc <= 1;
-    next.disabled = pageProc >= pagesProc;
-    prev.title = prev.disabled ? 'Primeira página' : 'Página anterior';
-    next.title = next.disabled ? 'Última página' : 'Próxima página';
+    document.getElementById('prevProc').disabled = pageProc <= 1;
+    document.getElementById('nextProc').disabled = pageProc >= pagesProc;
   }
 
   async function carregarProcessos() {
     const params = new URLSearchParams({ page: pageProc, limit: limitProc });
+    const s = document.getElementById('fSearch').value.trim();
+    const u = document.getElementById('fUnit').value.trim();
+    const c = document.getElementById('fContract').value.trim();
 
-    const s  = document.getElementById('fSearch').value.trim();   // busca geral
-    const u  = document.getElementById('fUnit').value.trim();     // atribuição
-    const c  = document.getElementById('fContract').value.trim(); // contrato
-
-    if (s)  params.set('search', s);
-    if (u)  params.set('unit', u);
-    if (c) {
-      params.set('contract', c);
-      params.set('contrato', c);
-      params.set('contractNumber', c);
-      params.set('numeroContrato', c);
-    }
-
-    console.log('🔍 Filtros aplicados:', { search: s, unit: u, contract: c });
-    console.log('📡 URL completa:', `${apiUrl}/api/processes?${params.toString()}`);
+    if (s) params.set('search', s);
+    if (u) params.set('unit', u);
+    if (c) { params.set('contract', c); params.set('contrato', c); }
 
     const tbody = document.getElementById('tbodyProc');
     tbody.innerHTML = `<tr><td colspan="7">Carregando…</td></tr>`;
@@ -254,42 +240,17 @@
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         cache: 'no-store'
       });
-
-      if (!res.ok) {
-        let msg = '';
-        try { const t = await res.text(); msg = t?.slice(0, 200); } catch {}
-        tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (${res.status}) ${msg ? ' - ' + msg : ''}</td></tr>`;
-        document.getElementById('pageInfoProc').textContent = '';
-        pagesProc = 1; updatePagerButtons();
-        return;
-      }
-
       const json = await res.json();
-      console.log('📦 Response JSON:', json);
 
-      let items = [];
-      let page = 1, pages = 1, total = 0;
-
-      if (Array.isArray(json)) {
-        items = json;
-        total = json.length;
-      } else {
-        items = json.items || json.data || json.results || json.docs || [];
-        page  = json.page || json.currentPage || json.pageNumber || 1;
-        pages = json.totalPages || 1;
-        total = json.total || json.count || json.totalDocs || items.length;
-      }
-      pagesProc = Math.max(1, pages);
-      updatePagerButtons();
-
-      if (!items.length) {
-        tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
-        document.getElementById('pageInfoProc').textContent = `Página ${page} de ${pagesProc} — ${total} itens`;
-        console.warn('Processos vazios. JSON:', json);
-        return;
-      }
+      let items = json.items || json.data || json.results || json.docs || [];
+      if (!Array.isArray(items)) items = [];
 
       tbody.innerHTML = '';
+      if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
+        return;
+      }
+
       items.forEach(p => {
         const m = mapProcess(p);
         const tr = document.createElement('tr');
@@ -315,29 +276,18 @@
         `;
         tbody.appendChild(tr);
       });
-
-      document.getElementById('pageInfoProc').textContent = `Página ${page} de ${pagesProc} — ${total} itens`;
-    } catch (e) {
-      console.error(e);
-      tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (console)</td></tr>`;
-      document.getElementById('pageInfoProc').textContent = '';
-      pagesProc = 1; updatePagerButtons();
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar processos.</td></tr>`;
     }
   }
 
-  // Delegação dos botões da tabela
-  document.getElementById('processosTable').addEventListener('click', (e) => {
+  document.getElementById('processosTable').addEventListener('click', e => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
     const action = btn.dataset.action;
     const sei = btn.dataset.sei;
-    if (action === 'whatsapp') {
-      alert(`(placeholder) Gerar mensagem WhatsApp para o processo ${sei}`);
-    } else if (action === 'trello') {
-      alert(`(placeholder) Enviar/atualizar cartão Trello para o processo ${sei}`);
-    } else if (action === 'docs') {
-      solicitarAtualizacaoDocs(sei);
-    }
+    if (action === 'docs') solicitarAtualizacaoDocs(sei);
   });
 
   document.getElementById('btnFilter').addEventListener('click', () => { pageProc = 1; carregarProcessos(); });
@@ -345,245 +295,43 @@
     document.getElementById('fSearch').value = '';
     document.getElementById('fUnit').value = '';
     document.getElementById('fContract').value = '';
-    pageProc = 1; carregarProcessos();
-  });
-  document.getElementById('prevProc').addEventListener('click', () => {
-    if (pageProc > 1) { pageProc--; carregarProcessos(); }
-  });
-  document.getElementById('nextProc').addEventListener('click', () => {
-    if (pageProc < pagesProc) { pageProc++; carregarProcessos(); }
+    pageProc = 1;
+    carregarProcessos();
   });
 
-  // === Enviar email para atualizar lista de processos ===
-  async function solicitarAtualizacaoProcessos() {
-    const payload = {
-      fluxo: 'Solicitar atualização de processos',
-      to: 'jadson.pena@dnit.gov.br',
-      subject: 'Atualizar lista de processos',
-      text: `Favor atualizar a lista de processos do AppDNIT.
-
-Solicitado em ${new Date().toLocaleString('pt-BR')} via admin.html.`,
-    };
-
-    try {
-      const res = await fetch(`${apiUrl}/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const t = await res.text().catch(() => '');
-        throw new Error(`${res.status} ${t}`);
-      }
-
-      showAlert('📨 Pedido de atualização enviado por e-mail.', 'success');
-    } catch (err) {
-      console.warn('Falha no envio pelo backend. Abrindo mailto como fallback.', err);
-      const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent('Atualizar lista de processos')}&body=${encodeURIComponent('Favor atualizar a lista de processos do AppDNIT.')}`;
-      window.location.href = mailto;
-      showAlert('⚠️ Não consegui enviar pelo servidor; abrindo seu cliente de e-mail…', 'warning');
-    }
-  }
-  document.getElementById('btnSolicitarAtualizacao').addEventListener('click', solicitarAtualizacaoProcessos);
-
-  // === NOVO: Enviar email para atualizar documentos do processo (por linha) ===
   async function solicitarAtualizacaoDocs(sei){
     const { name, email } = getUserIdentity();
-    const assunto = 'Atualizar documentos de processo SEI';
-    const corpo = [
+    const subject = 'Atualizar documentos de processo SEI';
+    const body = [
       'Fluxo: Atualizar documentos de processo SEI',
       '',
       'Dados do formulário:',
       `Agendamento: ${new Date().toISOString()}`,
       `Número do processo SEI: ${sei}`,
       `Requerente: ${name}`,
-      `Email: ${email}`,
-    ].join('
-');
+      `Email: ${email}`
+    ].join('\n');
 
-    const payload = {
-      fluxo: 'Atualizar documentos de processo SEI',
-      to: 'jadson.pena@dnit.gov.br',
-      subject: assunto,
-      text: corpo,
-    };
+    const payload = { fluxo:'Atualizar documentos de processo SEI', to:'jadson.pena@dnit.gov.br', subject, text: body };
 
     try {
       const res = await fetch(`${apiUrl}/send-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify(payload)
+        method:'POST', headers:{ 'Content-Type':'application/json', ...authHeaders() }, body:JSON.stringify(payload)
       });
-      if (!res.ok) {
-        const t = await res.text().catch(() => '');
-        throw new Error(`${res.status} ${t}`);
-      }
+      if (!res.ok) throw new Error(await res.text());
       showAlert(`📨 Solicitação enviada para atualizar documentos do processo ${sei}.`, 'success');
-    } catch (err) {
-      console.warn('Falha no envio pelo backend. Abrindo mailto como fallback.', err);
-      const mailtoBody = encodeURIComponent([
-        'Fluxo: Atualizar documentos de processo SEI','',
-        'Dados do formulário:',
-        `Agendamento: ${new Date().toISOString()}`,
-        `Número do processo SEI: ${sei}`,
-        `Requerente: ${getUserIdentity().name}`,
-        `Email: ${getUserIdentity().email}`,
-      ].join('
-'));
-      const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent(assunto)}&body=${mailtoBody}`;
+    } catch {
+      const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailto;
-      showAlert('⚠️ Não consegui enviar pelo servidor; abrindo seu cliente de e-mail…', 'warning');
+      showAlert('⚠️ Não consegui enviar pelo servidor; abrindo seu cliente de e-mail…','warning');
     }
   }
 
-  // ----------------- USUÁRIOS EXTERNOS -----------------
-  async function carregarUsuariosExternos() {
-    try {
-      const res = await fetch(`${apiUrl}/usuarios-externos`, {
-        headers: { 'Content-Type': 'application/json', ...authHeaders() }
-      });
-      const lista = await res.json();
-      const tbody = document.querySelector('#usuariosTable tbody');
-      tbody.innerHTML = '';
-      if (!Array.isArray(lista) || !lista.length) {
-        tbody.innerHTML = `<tr><td colspan="3" class="text-muted">Nenhum usuário externo cadastrado.</td></tr>`;
-        return;
-      }
-      lista.forEach(usuario => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${usuario.nome || ''}</td>
-            <td>${usuario.empresa || ''}</td>
-            <td>
-              <button class="btn btn-danger btn-sm" onclick="removerUsuarioExterno('${usuario._id}')">Remover</button>
-            </td>
-          </tr>`;
-      });
-    } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
-    }
-  }
-
-  async function removerUsuarioExterno(id) {
-    if (!confirm('Tem certeza que deseja remover este usuário?')) return;
-    try {
-      const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
-      if (res.ok) {
-        showAlert('✅ Usuário removido com sucesso!', 'success');
-        carregarUsuariosExternos();
-      } else {
-        showAlert('❌ Erro ao remover usuário.', 'danger');
-      }
-    } catch (err) {
-      showAlert('❌ Erro ao remover usuário.', 'danger');
-    }
-  }
-  window.removerUsuarioExterno = removerUsuarioExterno;
-
-  document.getElementById('formUsuarioExterno').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const idExterno = document.getElementById('idExterno').value.trim();
-    const nome = document.getElementById('nome').value.trim();
-    const empresa = document.getElementById('empresa').value.trim();
-
-    try {
-      const res = await fetch(`${apiUrl}/usuarios-externos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify([{ idExterno, nome, empresa }])
-      });
-      if (res.ok) {
-        showAlert('✅ Usuário externo cadastrado com sucesso!', 'success');
-        document.getElementById('formUsuarioExterno').reset();
-        carregarUsuariosExternos();
-      } else {
-        const msg = await res.text();
-        showAlert('❌ Erro ao cadastrar usuário externo: ' + msg, 'danger');
-      }
-    } catch (err) {
-      showAlert('❌ Erro ao cadastrar usuário externo.', 'danger');
-    }
-  });
-
-  // ----------------- CONTRATOS -----------------
-  async function carregarContratos() {
-    try {
-      const res = await fetch(`${apiUrl}/contratos`, {
-        headers: { 'Content-Type': 'application/json', ...authHeaders() }
-      });
-      const contratos = await res.json();
-      const tbody = document.querySelector('#contratosTable tbody');
-      tbody.innerHTML = '';
-      if (!Array.isArray(contratos) || !contratos.length) {
-        tbody.innerHTML = `<tr><td colspan="2" class="text-muted">Nenhum contrato cadastrado.</td></tr>`;
-        return;
-      }
-      contratos.forEach(c => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${c.numero || ''}</td>
-            <td>
-              <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}', '${(c.numero || '').replace(/'/g, "\'")}')">Remover</button>
-            </td>
-          </tr>`;
-      });
-    } catch (err) {
-      console.error('Erro ao carregar contratos:', err);
-    }
-  }
-
-  async function removerContrato(id, numero) {
-    if (!confirm(`Tem certeza que deseja remover o contrato ${numero || id}?`)) return;
-    try {
-      const res = await fetch(`${apiUrl}/contratos/${id}`, {
-        method: 'DELETE',
-        headers: { ...authHeaders() }
-      });
-      if (res.ok) {
-        showAlert('✅ Contrato removido com sucesso!', 'success');
-        carregarContratos();
-      } else {
-        const msg = await res.text();
-        showAlert('❌ Erro ao remover contrato: ' + msg, 'danger');
-      }
-    } catch (err) {
-      console.error(err);
-      showAlert('❌ Erro ao remover contrato.', 'danger');
-    }
-  }
-  window.removerContrato = removerContrato;
-
-  document.getElementById('formContrato').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const numero = document.getElementById('numeroContrato').value.trim();
-
-    try {
-      const res = await fetch(`${apiUrl}/contratos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ numero })
-      });
-      if (res.ok) {
-        showAlert('✅ Contrato cadastrado com sucesso!', 'success');
-        document.getElementById('formContrato').reset();
-        carregarContratos();
-      } else {
-        const msg = await res.text();
-        showAlert('❌ Erro ao cadastrar contrato: ' + msg, 'danger');
-      }
-    } catch (err) {
-      showAlert('❌ Erro ao cadastrar contrato.', 'danger');
-    }
-  });
-
-  // ----------------- BOOTSTRAP -----------------
+  // === BOOTSTRAP ===
   (async () => {
     try {
       await ensureAdmin();
       await carregarProcessos();
-      await carregarUsuariosExternos();
-      await carregarContratos();
     } catch (e) {
       console.error(e);
     }
