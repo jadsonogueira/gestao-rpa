@@ -70,7 +70,7 @@
         <button id="btnClear" class="btn btn-secondary mr-2 mb-2">
           <i class="fas fa-eraser"></i> Limpar
         </button>
-        <!-- NOVO: Botão para solicitar atualização da lista de processos via e-mail -->
+        <!-- Botão para solicitar atualização da lista de processos via e-mail -->
         <button id="btnSolicitarAtualizacao" class="btn btn-warning mb-2" title="Enviar um e-mail solicitando atualização da lista de processos">
           <i class="fas fa-sync-alt"></i> Solicitar atualização
         </button>
@@ -86,9 +86,9 @@
           <th style="min-width:160px;">Atribuição</th>
           <th style="min-width:160px;">Tipo/Tags</th>
           <th style="min-width:220px;">Especificação</th>
-          <th style="min-width:220px;">Anotação</th>
           <th style="min-width:160px;">Atualizado</th>
           <th style="min-width:140px;">Ações</th>
+          <th style="min-width:180px;">Docs</th>
         </tr>
       </thead>
       <tbody id="tbodyProc"></tbody>
@@ -187,15 +187,30 @@
   const decodePlus = (s) => asText(s).replace(/\+/g, ' ');
   const joinTags   = (tags) => Array.isArray(tags) ? tags.map(t => String(t||'')).filter(Boolean).join(', ') : '';
 
+  // Tenta extrair nome e email do JWT do usuário logado
+  function parseJwt(token){
+    try {
+      const base = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+      const json = decodeURIComponent(atob(base).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      return JSON.parse(json);
+    } catch { return null; }
+  }
+  function getUserIdentity(){
+    const token = LS.getItem('token') || '';
+    const p = token ? (parseJwt(token) || {}) : {};
+    const name = p.name || p.nome || p.user?.name || p.user?.nome || p.preferred_username || p.username || 'usuario';
+    const email = p.email || p.user?.email || p.upn || '';
+    return { name, email };
+  }
+
   function mapProcess(p) {
     const sei = p.seiNumber || p.seiNumberNorm || p.processNumber || p.numero || p.sei || '';
     const assigned = p.unit || p.assignedTo || p.unidade || p.atribuicao || '';
     const type = Array.isArray(p.tags) && p.tags.length ? (p.tags[0] || '') : (p.type || p.tipo || joinTags(p.tags));
     const spec = p.title || p.spec || p.description || p.descricao || p.especificacao || '';
-    const note = p.subject || p.note || p.anotacao || p.obs || p.observacao || '';
     const updatedISO = p.updatedAtSEI || p.updatedAt || p.lastSyncedAt || p.modifiedAt || p.createdAt;
     const updated = updatedISO ? new Date(updatedISO).toLocaleString('pt-BR') : '-';
-    return { sei, assigned, type, spec, note, updated };
+    return { sei, assigned, type, spec, updated };
   }
 
   // ----------------- PROCESSOS -----------------
@@ -221,7 +236,6 @@
 
     if (s)  params.set('search', s);
     if (u)  params.set('unit', u);
-    // Envia o contrato em várias chaves para compatibilizar com o backend
     if (c) {
       params.set('contract', c);
       params.set('contrato', c);
@@ -229,7 +243,6 @@
       params.set('numeroContrato', c);
     }
 
-    // LOG TEMPORÁRIO PARA DEBUG
     console.log('🔍 Filtros aplicados:', { search: s, unit: u, contract: c });
     console.log('📡 URL completa:', `${apiUrl}/api/processes?${params.toString()}`);
 
@@ -239,7 +252,7 @@
     try {
       const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        cache: 'no-store' // força a buscar no servidor, evita 304
+        cache: 'no-store'
       });
 
       if (!res.ok) {
@@ -252,7 +265,7 @@
       }
 
       const json = await res.json();
-      console.log('📦 Response JSON:', json); // LOG para debug
+      console.log('📦 Response JSON:', json);
 
       let items = [];
       let page = 1, pages = 1, total = 0;
@@ -271,8 +284,7 @@
 
       if (!items.length) {
         tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
-        document.getElementById('pageInfoProc').textContent =
-          `Página ${page} de ${pagesProc} — ${total} itens`;
+        document.getElementById('pageInfoProc').textContent = `Página ${page} de ${pagesProc} — ${total} itens`;
         console.warn('Processos vazios. JSON:', json);
         return;
       }
@@ -286,7 +298,6 @@
           <td>${decodePlus(m.assigned)}</td>
           <td>${decodePlus(m.type)}</td>
           <td class="wrap">${decodePlus(m.spec)}</td>
-          <td class="wrap">${decodePlus(m.note)}</td>
           <td>${m.updated}</td>
           <td>
             <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${m.sei}">
@@ -296,12 +307,16 @@
               <i class="fab fa-trello"></i>
             </button>
           </td>
+          <td>
+            <button class="btn btn-sm btn-info" data-action="docs" data-sei="${m.sei}">
+              <i class="fas fa-file-upload"></i> Atualizar docs
+            </button>
+          </td>
         `;
         tbody.appendChild(tr);
       });
 
-      document.getElementById('pageInfoProc').textContent =
-        `Página ${page} de ${pagesProc} — ${total} itens`;
+      document.getElementById('pageInfoProc').textContent = `Página ${page} de ${pagesProc} — ${total} itens`;
     } catch (e) {
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (console)</td></tr>`;
@@ -310,6 +325,7 @@
     }
   }
 
+  // Delegação dos botões da tabela
   document.getElementById('processosTable').addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
@@ -319,6 +335,8 @@
       alert(`(placeholder) Gerar mensagem WhatsApp para o processo ${sei}`);
     } else if (action === 'trello') {
       alert(`(placeholder) Enviar/atualizar cartão Trello para o processo ${sei}`);
+    } else if (action === 'docs') {
+      solicitarAtualizacaoDocs(sei);
     }
   });
 
@@ -336,13 +354,15 @@
     if (pageProc < pagesProc) { pageProc++; carregarProcessos(); }
   });
 
-  // === NOVO: Solicitar atualização por e-mail ===
+  // === Enviar email para atualizar lista de processos ===
   async function solicitarAtualizacaoProcessos() {
     const payload = {
-      fluxo: 'Atualizar lista de processos',
+      fluxo: 'Solicitar atualização de processos',
       to: 'jadson.pena@dnit.gov.br',
       subject: 'Atualizar lista de processos',
-      text: `Favor atualizar a lista de processos do AppDNIT.\n\nSolicitado em ${new Date().toLocaleString('pt-BR')} via admin.html.`,
+      text: `Favor atualizar a lista de processos do AppDNIT.
+
+Solicitado em ${new Date().toLocaleString('pt-BR')} via admin.html.`,
     };
 
     try {
@@ -360,13 +380,62 @@
       showAlert('📨 Pedido de atualização enviado por e-mail.', 'success');
     } catch (err) {
       console.warn('Falha no envio pelo backend. Abrindo mailto como fallback.', err);
-      // Fallback para abrir o cliente de e-mail local
       const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent('Atualizar lista de processos')}&body=${encodeURIComponent('Favor atualizar a lista de processos do AppDNIT.')}`;
       window.location.href = mailto;
       showAlert('⚠️ Não consegui enviar pelo servidor; abrindo seu cliente de e-mail…', 'warning');
     }
   }
   document.getElementById('btnSolicitarAtualizacao').addEventListener('click', solicitarAtualizacaoProcessos);
+
+  // === NOVO: Enviar email para atualizar documentos do processo (por linha) ===
+  async function solicitarAtualizacaoDocs(sei){
+    const { name, email } = getUserIdentity();
+    const assunto = 'Atualizar documentos de processo SEI';
+    const corpo = [
+      'Fluxo: Atualizar documentos de processo SEI',
+      '',
+      'Dados do formulário:',
+      `Agendamento: ${new Date().toISOString()}`,
+      `Número do processo SEI: ${sei}`,
+      `Requerente: ${name}`,
+      `Email: ${email}`,
+    ].join('
+');
+
+    const payload = {
+      fluxo: 'Atualizar documentos de processo SEI',
+      to: 'jadson.pena@dnit.gov.br',
+      subject: assunto,
+      text: corpo,
+    };
+
+    try {
+      const res = await fetch(`${apiUrl}/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(() => '');
+        throw new Error(`${res.status} ${t}`);
+      }
+      showAlert(`📨 Solicitação enviada para atualizar documentos do processo ${sei}.`, 'success');
+    } catch (err) {
+      console.warn('Falha no envio pelo backend. Abrindo mailto como fallback.', err);
+      const mailtoBody = encodeURIComponent([
+        'Fluxo: Atualizar documentos de processo SEI','',
+        'Dados do formulário:',
+        `Agendamento: ${new Date().toISOString()}`,
+        `Número do processo SEI: ${sei}`,
+        `Requerente: ${getUserIdentity().name}`,
+        `Email: ${getUserIdentity().email}`,
+      ].join('
+'));
+      const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent(assunto)}&body=${mailtoBody}`;
+      window.location.href = mailto;
+      showAlert('⚠️ Não consegui enviar pelo servidor; abrindo seu cliente de e-mail…', 'warning');
+    }
+  }
 
   // ----------------- USUÁRIOS EXTERNOS -----------------
   async function carregarUsuariosExternos() {
@@ -455,7 +524,7 @@
           <tr>
             <td>${c.numero || ''}</td>
             <td>
-              <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}', '${(c.numero || '').replace(/'/g, "\\'")}')">Remover</button>
+              <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}', '${(c.numero || '').replace(/'/g, "\'")}')">Remover</button>
             </td>
           </tr>`;
       });
