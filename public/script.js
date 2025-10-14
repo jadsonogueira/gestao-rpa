@@ -947,21 +947,31 @@ e.target.querySelectorAll('input[type="file"]').forEach(inp => {
   showLoadingOverlay();
 
   const fluxo = document.getElementById('modalTitle').innerText;
-  const formData = new FormData();
-  formData.append('fluxo', fluxo);
+ // monta o FormData com segurança
+const formData = new FormData();
+formData.append('fluxo', fluxo);
 
-  const inputs = e.target.querySelectorAll('input, textarea, select');
-  inputs.forEach((input) => {
-    if (input.type === 'file' && input.files.length > 0) {
-      for (let i = 0; i < input.files.length; i++) {
-        formData.append(input.name, input.files[i]);
-      }
-    } else if (input.type !== 'file' && input.type !== 'radio') {
-      formData.append(input.name, (input.value || '').trim());
-    } else if (input.type === 'radio' && input.checked) {
-      formData.append(input.name, input.value);
+const inputs = e.target.querySelectorAll('input, textarea, select');
+inputs.forEach((input) => {
+  const name = (input.name || '').trim();   // <- garante nome
+  if (!name) return;                        // <- pula campos sem name
+
+  if (input.type === 'file' && input.files && input.files.length > 0) {
+    for (let i = 0; i < input.files.length; i++) {
+      formData.append(name, input.files[i]);
     }
-  });
+  } else if (input.type === 'radio') {
+    if (input.checked) formData.append(name, input.value);
+  } else if (input.type !== 'file') {
+    formData.append(name, (input.value || '').trim());
+  }
+});
+
+// debug: veja o que realmente está indo
+for (const [k, v] of formData.entries()) {
+  console.log('[FD]', k, v instanceof File ? `File:${v.name}` : v);
+}
+
 
   if (envioSelecionado === 'agendar') {
     const whenEl = e.target.querySelector('#quando');
