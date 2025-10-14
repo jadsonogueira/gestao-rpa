@@ -70,6 +70,7 @@
         <button id="btnClear" class="btn btn-secondary mr-2 mb-2">
           <i class="fas fa-eraser"></i> Limpar
         </button>
+        <!-- Botão para solicitar atualização da lista de processos -->
         <button id="btnSolicitarAtualizacao" class="btn btn-warning mb-2" title="Enviar e-mail solicitando atualização da lista de processos">
           <i class="fas fa-sync-alt"></i> Solicitar atualização
         </button>
@@ -182,9 +183,9 @@
     return true;
   }
 
-  const asText = (v) => (v == null ? '' : String(v));
+  const asText  = (v) => (v == null ? '' : String(v));
   const decodePlus = (s) => asText(s).replace(/\+/g, ' ');
-  const joinTags = (tags) => Array.isArray(tags) ? tags.map(t => String(t||'')).filter(Boolean).join(', ') : '';
+  const joinTags   = (tags) => Array.isArray(tags) ? tags.map(t => String(t||'')).filter(Boolean).join(', ') : '';
 
   // Extrai nome e e-mail do JWT
   function parseJwt(token){
@@ -197,7 +198,7 @@
   function getUserIdentity(){
     const token = LS.getItem('token') || '';
     const p = token ? (parseJwt(token) || {}) : {};
-    const name = p.name || p.nome || p.user?.name || p.user?.nome || p.preferred_username || p.username || 'usuario';
+    const name  = p.name || p.nome || p.user?.name || p.user?.nome || p.preferred_username || p.username || 'usuario';
     const email = p.email || p.user?.email || p.upn || '';
     return { name, email };
   }
@@ -218,15 +219,18 @@
   const limitProc = 20;
 
   function updatePagerButtons() {
-    document.getElementById('prevProc').disabled = pageProc <= 1;
-    document.getElementById('nextProc').disabled = pageProc >= pagesProc;
+    const prev = document.getElementById('prevProc');
+    const next = document.getElementById('nextProc');
+    prev.disabled = pageProc <= 1;
+    next.disabled = pageProc >= pagesProc;
   }
 
   async function carregarProcessos() {
     const params = new URLSearchParams({ page: pageProc, limit: limitProc });
-    const s = document.getElementById('fSearch').value.trim();
-    const u = document.getElementById('fUnit').value.trim();
-    const c = document.getElementById('fContract').value.trim();
+
+    const s  = document.getElementById('fSearch').value.trim();
+    const u  = document.getElementById('fUnit').value.trim();
+    const c  = document.getElementById('fContract').value.trim();
 
     if (s) params.set('search', s);
     if (u) params.set('unit', u);
@@ -240,17 +244,39 @@
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         cache: 'no-store'
       });
-      const json = await res.json();
 
-      let items = json.items || json.data || json.results || json.docs || [];
-      if (!Array.isArray(items)) items = [];
-
-      tbody.innerHTML = '';
-      if (!items.length) {
-        tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
+      if (!res.ok) {
+        const msg = await res.text().catch(()=> '');
+        tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (${res.status}) ${msg ? ' - ' + msg : ''}</td></tr>`;
+        document.getElementById('pageInfoProc').textContent = '';
+        pagesProc = 1; updatePagerButtons();
         return;
       }
 
+      const json = await res.json();
+      let items = [];
+      let page = 1, pages = 1, total = 0;
+
+      if (Array.isArray(json)) {
+        items = json;
+        total = json.length;
+      } else {
+        items = json.items || json.data || json.results || json.docs || [];
+        page  = json.page || json.currentPage || json.pageNumber || 1;
+        pages = json.totalPages || 1;
+        total = json.total || json.count || json.totalDocs || items.length;
+      }
+
+      pagesProc = Math.max(1, pages);
+      updatePagerButtons();
+
+      if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
+        document.getElementById('pageInfoProc').textContent = `Página ${page} de ${pagesProc} — ${total} itens`;
+        return;
+      }
+
+      tbody.innerHTML = '';
       items.forEach(p => {
         const m = mapProcess(p);
         const tr = document.createElement('tr');
@@ -276,27 +302,35 @@
         `;
         tbody.appendChild(tr);
       });
-    } catch (err) {
-      console.error(err);
-      tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar processos.</td></tr>`;
+
+      document.getElementById('pageInfoProc').textContent = `Página ${page} de ${pagesProc} — ${total} itens`;
+    } catch (e) {
+      console.error(e);
+      tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (console)</td></tr>`;
+      document.getElementById('pageInfoProc').textContent = '';
+      pagesProc = 1; updatePagerButtons();
     }
   }
 
-  // Utilitário: recupera o SEI do botão ou da primeira célula da linha (fallback)
+  // Utilitário: fallback para obter o SEI da linha
   function getSeiFromButton(btn){
     const direct = btn?.dataset?.sei;
     if (direct) return direct;
     const tr = btn.closest('tr');
-    const firstCell = tr ? tr.querySelector('td') : null;
-    return (firstCell?.textContent || '').trim();
+    return (tr?.querySelector('td')?.textContent || '').trim();
   }
 
-  document.getElementById('processosTable').addEventListener('click', e => {
+  // Delegação dos botões da tabela
+  document.getElementById('processosTable').addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
     const action = btn.dataset.action;
-    if (action === 'docs') {
-      const sei = getSeiFromButton(btn);
+    const sei = getSeiFromButton(btn);
+    if (action === 'whatsapp') {
+      alert(`(placeholder) Gerar mensagem WhatsApp para o processo ${sei}`);
+    } else if (action === 'trello') {
+      alert(`(placeholder) Enviar/atualizar cartão Trello para o processo ${sei}`);
+    } else if (action === 'docs') {
       solicitarAtualizacaoDocs(sei);
     }
   });
@@ -306,32 +340,67 @@
     document.getElementById('fSearch').value = '';
     document.getElementById('fUnit').value = '';
     document.getElementById('fContract').value = '';
-    pageProc = 1;
-    carregarProcessos();
+    pageProc = 1; carregarProcessos();
+  });
+  document.getElementById('prevProc').addEventListener('click', () => {
+    if (pageProc > 1) { pageProc--; carregarProcessos(); }
+  });
+  document.getElementById('nextProc').addEventListener('click', () => {
+    if (pageProc < pagesProc) { pageProc++; carregarProcessos(); }
   });
 
-  // === Enviar e-mail: Atualizar lista de documentos (por linha) ===
+  // === E-mail: Atualizar lista de processos (botão laranja do topo) ===
+  async function solicitarAtualizacaoProcessos() {
+    const payload = {
+      fluxo: 'Solicitar atualização de processos',
+      to: 'jadson.pena@dnit.gov.br',
+      subject: 'Atualizar lista de processos',
+      text: `Favor atualizar a lista de processos do AppDNIT.
+
+Solicitado em ${new Date().toLocaleString('pt-BR')} via admin.html.`
+    };
+    try {
+      const res = await fetch(`${apiUrl}/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text().catch(()=> ''));
+      showAlert('📨 Pedido de atualização enviado por e-mail.', 'success');
+    } catch (err) {
+      const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent('Atualizar lista de processos')}&body=${encodeURIComponent('Favor atualizar a lista de processos do AppDNIT.')}`;
+      window.location.href = mailto;
+      showAlert('⚠️ Não consegui enviar pelo servidor; abrindo seu cliente de e-mail…', 'warning');
+    }
+  }
+  document.getElementById('btnSolicitarAtualizacao').addEventListener('click', solicitarAtualizacaoProcessos);
+
+  // === E-mail por linha: Atualizar lista de documentos ===
   async function solicitarAtualizacaoDocs(sei){
     const { name, email } = getUserIdentity();
-    const subject = 'Atualizar lista de documentos'; // solicitado
-    const body = [
-      'Fluxo: Atualizar lista de documentos', // solicitado
-      '',
-      'Dados do formulário:',
-      `Agendamento: ${new Date().toISOString()}`,
-      `Número do processo SEI: ${sei}`,
-      `Requerente: ${name}`,
-      `Email: ${email}`,
-    ].join('
-');
+    const subject = 'Atualizar lista de documentos';
+    const body = `Fluxo: Atualizar lista de documentos
 
-    const payload = { fluxo:'Atualizar lista de documentos', to:'jadson.pena@dnit.gov.br', subject, text: body };
+Dados do formulário:
+Agendamento: ${new Date().toISOString()}
+Número do processo SEI: ${sei}
+Requerente: ${name}
+Email: ${email}`;
+
+    const payload = {
+      fluxo: 'Atualizar lista de documentos',
+      to: 'jadson.pena@dnit.gov.br',
+      subject,
+      text: body
+    };
 
     try {
       const res = await fetch(`${apiUrl}/send-email`, {
-        method:'POST', headers:{ 'Content-Type':'application/json', ...authHeaders() }, body:JSON.stringify(payload)
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) throw new Error(await res.text().catch(()=> ''));
       showAlert(`📨 Solicitação enviada para atualizar documentos do processo ${sei}.`, 'success');
     } catch (err) {
       const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
