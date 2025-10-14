@@ -923,6 +923,11 @@ async function abrirFormulario(fluxo) {
 function enviarFormularioAxios(e) {
   e.preventDefault();
 
+   console.log('[DEBUG] listando inputs do form antes de enviar:');
+e.target.querySelectorAll('input[type="file"]').forEach(inp => {
+  console.log(' ->', inp.id, 'name=', inp.name);
+});
+  
   const envioSelecionado = (e.target.querySelector('input[name="envio"]:checked') || {}).value || 'imediato';
   if (envioSelecionado === 'agendar') {
     const quandoEl = e.target.querySelector('#quando');
@@ -936,6 +941,7 @@ function enviarFormularioAxios(e) {
       showAlert('Escolha um horário de agendamento no futuro (mínimo alguns minutos à frente).', 'warning');
       return;
     }
+
   }
 
   showLoadingOverlay();
