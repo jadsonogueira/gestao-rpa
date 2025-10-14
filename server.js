@@ -879,33 +879,89 @@ app.use((req, res, next) => {
 });
 
 app.post('/send-email', upload.any(), async (req, res) => {
-    console.log('[DEBUG] chegou no /send-email - método POST');
+  console.log('[DEBUG] chegou no /send-email - método POST');
   try {
     console.log('Dados recebidos no formulário:', req.body);
-    const fluxo = req.body.fluxo;
     const dados = req.body;
-   // if (!dados.email) {
-   //   return res.status(400).send('O campo de e-mail é obrigatório.');
-   // }
+    const fluxo = dados.fluxo;
 
-      const token = req.headers.authorization?.split(" ")[1];
-      if (!token) return res.status(401).send("Token não fornecido.");
+    // --- auth existente ---
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).send("Token não fornecido.");
 
-      let userId;
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        userId = decoded.id;
-      } catch (err) {
-        return res.status(401).send("Token inválido.");
-      }
-
-      const usuario = await Usuario.findById(userId);
-
-    if (!usuario) {
-      return res.status(404).send("Usuário não encontrado.");
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.id;
+    } catch (err) {
+      return res.status(401).send("Token inválido.");
     }
 
-    let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
+    const usuario = await Usuario.findById(userId);
+    if (!usuario) return res.status(404).send("Usuário não encontrado.");
+
+    // =======================
+    // Compat: usa subject/text se vierem; senão, mantém montagem antiga
+    // =======================
+    const to = dados.to || dados.destinatario || dados.destinatarios || process.env.MAIL_FALLBACK_TO;
+    const subject =
+      dados.subject || dados.assunto || `Fluxo: ${fluxo || 'Mensagem do AppDNIT'}`;
+
+    // Se o front mandou texto pronto, usamos exatamente como veio.
+    let mailContent = typeof dados.text === 'string' && dados.text.trim().length
+      ? dados.text
+      : (typeof dados.mensagem === 'string' && dados.mensagem.trim().length
+          ? dados.mensagem
+          : (() => {
+              // Montagem "antiga" (compatível) se não veio text/mensagem
+              let msg = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
+
+              // Campos comuns que podem chegar com nomes variados
+              const agendamento = dados.agendamento || dados.Agendamento;
+              const numeroSei = dados.sei || dados.numeroSei || dados.numero_sei || dados['Número do processo SEI'];
+              const requerente = dados.requerente || dados.Requerente || usuario?.nome || usuario?.name;
+              const emailReq   = dados.email || dados.Email || usuario?.email;
+
+              if (agendamento) msg += `Agendamento: ${agendamento}\n`;
+              if (numeroSei)   msg += `Número do processo SEI: ${numeroSei}\n`;
+              if (requerente)  msg += `Requerente: ${requerente}\n`;
+              if (emailReq)    msg += `Email: ${emailReq}\n`;
+
+              // Como último recurso, inclui outros pares chave→valor (sem sobrescrever os acima)
+              const ignorar = new Set(['to','destinatario','destinatarios','subject','assunto','text','mensagem','fluxo']);
+              Object.entries(dados).forEach(([k,v]) => {
+                if (v == null || v === '' || ignorar.has(k)) return;
+                if (['agendamento','Agendamento','sei','numeroSei','numero_sei','Número do processo SEI','requerente','Requerente','email','Email'].includes(k)) return;
+                msg += `${k}: ${v}\n`;
+              });
+
+              return msg;
+            })()
+        );
+
+    // Log para confirmar que o SEI está chegando do front até o servidor
+    console.log('[SEND-EMAIL] to=%s subject=%s\nTEXT:\n%s', to, subject, mailContent);
+
+    // Envio (text + html opcional para preservar quebras)
+    await transporter.sendMail({
+      from: process.env.MAIL_FROM,
+      to,
+      subject,
+      text: mailContent,
+      html: `<pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(mailContent)}</pre>`
+    });
+
+    res.sendStatus(200);
+  } catch (e) {
+    console.error('send-email error', e);
+    res.status(500).send(String(e?.message || e));
+  }
+});
+
+// helper simples para o html opcional
+function escapeHtml(s='') {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 
     
 // === Agendamento para o Power Automate (sempre envia "Agendamento:") ===
