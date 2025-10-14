@@ -871,6 +871,14 @@ app.get('/contratos', async (req, res) => {
 });
 
 
+app.use((req, res, next) => {
+  if (req.path === '/send-email') {
+    console.log('[DEBUG] chegou em /send-email - método', req.method);
+  }
+  next();
+});
+
+
 
 app.post('/send-email', upload.any(), async (req, res) => {
   console.log('Dados recebidos no formulário:', req.body);
