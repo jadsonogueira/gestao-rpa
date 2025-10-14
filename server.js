@@ -1223,12 +1223,14 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error('Erro ao enviar o e-mail:', error);
-      return res.status(500).send('Erro ao enviar o e-mail');
-    }
-    return res.send('E-mail enviado com sucesso');
-  });
+  if (error) {
+    const msg = (error && (error.response || error.message)) || String(error);
+    console.error('[EMAIL] falha:', msg);
+    return res.status(500).send(`Erro ao enviar o e-mail: ${msg}`);
+  }
+  return res.send('E-mail enviado com sucesso');
+});
+
 }
 
 } catch (err) {
