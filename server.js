@@ -907,6 +907,34 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
 
+
+// Captura o número SEI vindo em alguma chave ou, se não vier,
+// tenta extrair de subject/text com REGEX (ex.: 50612.002776/2025-09)
+function getSeiFromDados(d) {
+  const direto =
+    d.processoSei ||
+    d.seiTrim ||
+    d.sei ||
+    d.numeroSei ||
+    d.numero_sei ||
+    d['Número do processo SEI'];
+
+  if (direto && String(direto).trim()) return String(direto).trim();
+
+  const tryFields = [d.subject, d.assunto, d.text, d.mensagem];
+  const reSei = /(\d{5}\.\d{6}\/\d{4}-\d{2})/; // padrão SEI
+
+  for (const f of tryFields) {
+    if (!f) continue;
+    const m = String(f).match(reSei);
+    if (m && m[1]) return m[1];
+  }
+  return '';
+}
+
+const numeroSei = getSeiFromDados(dados);
+
+    
     
 // === Agendamento para o Power Automate (sempre envia "Agendamento:") ===
 const { envio, quando, quandoUtc } = req.body;
@@ -1024,22 +1052,11 @@ if (agIso) {
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
 
-    else if (fluxo === 'Atualizar lista de documentos') {
-  // pega o número do SEI em qualquer nome que o admin possa mandar
-  const sei =
-    dados.processoSei ||
-    dados.seiTrim ||        // <- acrescentado
-    dados.sei ||
-    dados.numeroSei ||
-    dados.numero_sei ||
-    dados['Número do processo SEI'] ||
-    '';
-
-  if (sei) {
-    mailContent += `Número do Processo SEI: ${sei}\n`;
+   else if (fluxo === 'Atualizar lista de documentos') {
+  if (numeroSei) {
+    mailContent += `Número do Processo SEI: ${numeroSei}\n`;
   }
 }
-
 
 
     
