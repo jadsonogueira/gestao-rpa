@@ -354,6 +354,7 @@ async function abrirFormulario(fluxo) {
     } else if (fluxo === 'Liberar assinatura externa') {
       const usuarios = await carregarUsuariosExternos().catch(() => []);
       campos = [
+        { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
         { id: 'assinante', placeholder: 'Assinante', type: 'select', options: usuarios },
         { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
       ];
@@ -381,18 +382,21 @@ async function abrirFormulario(fluxo) {
 
     } else if (fluxo === 'Inserir anexo em doc SEI') {
       campos = [
+        { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
         { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
         { id: 'arquivo', placeholder: 'Selecione o arquivo', type: 'file' },
       ];
 
     } else if (fluxo === 'Inserir imagem em doc SEI') {
       campos = [
+        { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
         { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
         { id: 'metodoUpload', placeholder: 'Método de Upload', type: 'radio', options: ['Imagens Individuais', 'Arquivo ZIP', 'PDF para JPG'] },
       ];
 
     } else if (fluxo === 'Assinatura em doc SEI') {
       campos = [
+        { id: 'processo_sei', placeholder: 'Número do Processo SEI', type: 'text' },
         { id: 'numeroDocSei', placeholder: 'Número do DOC_SEI', type: 'text' },
         { id: 'user', placeholder: 'Usuário', type: 'text' },
         { id: 'key', placeholder: 'Senha', type: 'text' },
