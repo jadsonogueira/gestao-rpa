@@ -1024,6 +1024,14 @@ if (agIso) {
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
 
+      } else if (fluxo === 'Atualizar lista de documentos') {
+      // --- bloco específico para este fluxo ---
+      mailContent += `Número do Processo SEI: ${dados.processoSei || dados.sei || dados.numeroSei || dados.numero_sei || ''}\n`;
+      mailContent += `Agendamento: ${dados.agendamento || dados.Agendamento || new Date().toISOString()}\n`;
+      mailContent += `Requerente: ${usuario?.username || usuario?.nome || 'Desconhecido'}\n`;
+      mailContent += `Email: ${usuario?.email || 'Não informado'}\n`;
+    }
+
 
     
     // Configura o transporte de e-mail
