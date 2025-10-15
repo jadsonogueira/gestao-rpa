@@ -1024,7 +1024,7 @@ if (agIso) {
       mailContent += `Nome na Árvore: ${dados.nomeArvore || ''}\n`;
     }
 
-      } else if (fluxo === 'Atualizar lista de documentos') {
+     else if (fluxo === 'Atualizar lista de documentos') {
       // --- bloco específico para este fluxo ---
       mailContent += `Número do Processo SEI: ${dados.processoSei || dados.sei || dados.numeroSei || dados.numero_sei || ''}\n`;
       mailContent += `Agendamento: ${dados.agendamento || dados.Agendamento || new Date().toISOString()}\n`;
