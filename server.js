@@ -907,27 +907,6 @@ app.post('/send-email', upload.any(), async (req, res) => {
 
     let mailContent = `Fluxo: ${fluxo}\n\nDados do formulário:\n`;
 
-// pega o número do SEI de qualquer uma das chaves que o front pode enviar
-const numeroSei =
-  dados.sei ||
-  dados.seiTrim ||
-  dados.numeroSei ||
-  dados.numero_sei ||
-  dados['Número do processo SEI'] ||
-  '';
-
-// (opcional) usa o que veio do front; se não vier, preenche com agora
-const agendamento = dados.agendamento || dados.Agendamento || new Date().toISOString();
-
-// Só afeta este fluxo específico, não mexe nos demais
-if (fluxo === 'Atualizar lista de documentos') {
-  mailContent += `Agendamento: ${agendamento}\n`;
-  if (numeroSei) {
-    mailContent += `Número do processo SEI: ${numeroSei}\n`;
-  }
-}
-
-
     
 // === Agendamento para o Power Automate (sempre envia "Agendamento:") ===
 const { envio, quando, quandoUtc } = req.body;
