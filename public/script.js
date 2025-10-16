@@ -607,61 +607,144 @@ async function abrirFormulario(fluxo) {
     let pagina = 1;
     const limite = 10;
 
-    async function executarBusca(page = 1) {
-      const term = inp.value.trim();
-      if (term.length < 2) {
-        resWrap.innerHTML = '<div class="text-muted p-2">Digite pelo menos 2 caracteres.</div>';
-        return;
+////
+   async function executarBusca(page = 1) {
+  const term = inp.value.trim();
+  if (term.length < 2) {
+    resWrap.innerHTML = '<div class="text-muted p-2">Digite pelo menos 2 caracteres.</div>';
+    return;
+  }
+  resWrap.innerHTML = '<div class="text-muted p-2">Buscando…</div>';
+  const { items, page: p, pages, total } = await buscarProcessosGlobais(term, page, limite);
+  if (!items.length) {
+    resWrap.innerHTML = '<div class="text-muted p-2">Nenhum processo encontrado.</div>';
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'table table-sm table-hover table-bordered mb-0';
+  table.style.tableLayout = 'fixed';
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th></th> <!-- coluna para o botão expandir -->
+        <th class="th-numero">Número</th>
+        <th class="th-title">Título/Especificação</th>
+        <th class="th-atrib">Atribuição</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+  const tbody = table.querySelector('tbody');
+
+  items.forEach(proc => {
+    const m = mapProcRow(proc);
+
+    // Linha principal do processo
+    const tr = document.createElement('tr');
+
+    // Botão expandir
+    const expandTd = document.createElement('td');
+    const btnExpand = document.createElement('button');
+    btnExpand.textContent = '+';
+    btnExpand.style.cursor = 'pointer';
+    btnExpand.title = 'Mostrar documentos relacionados';
+    expandTd.appendChild(btnExpand);
+
+    // Colunas existentes
+    const numeroTd = document.createElement('td');
+    numeroTd.className = 'col-numero';
+    numeroTd.title = m.numero;
+    numeroTd.textContent = m.numero;
+
+    const titleTd = document.createElement('td');
+    titleTd.className = 'col-title';
+    titleTd.title = m.titulo;
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'title-scroll';
+    titleDiv.textContent = m.titulo;
+    titleTd.appendChild(titleDiv);
+
+    const atribTd = document.createElement('td');
+    atribTd.className = 'col-atrib';
+    atribTd.title = m.atrib;
+    atribTd.textContent = m.atrib;
+
+    tr.appendChild(expandTd);
+    tr.appendChild(numeroTd);
+    tr.appendChild(titleTd);
+    tr.appendChild(atribTd);
+
+    tbody.appendChild(tr);
+
+    // Linha para documentos relacionados (inicialmente oculta)
+    const docsTr = document.createElement('tr');
+    const docsTd = document.createElement('td');
+    docsTd.colSpan = 4;
+    docsTd.style.display = 'none';
+    docsTd.style.padding = '8px 16px';
+    docsTd.style.backgroundColor = '#f9fafb';
+    docsTr.appendChild(docsTd);
+    tbody.appendChild(docsTr);
+
+    btnExpand.addEventListener('click', async (e) => {
+      e.stopPropagation(); // evita disparar o clique da linha principal
+
+      if (docsTd.style.display === 'none') {
+        btnExpand.textContent = '-';
+        docsTd.style.display = 'table-cell';
+        docsTd.textContent = 'Carregando documentos...';
+
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch(`${apiUrl}/api/processes/by-sei/${proc.seiNumberNorm}/documents`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+
+          if (data.items.length === 0) {
+            docsTd.textContent = 'Nenhum documento relacionado encontrado.';
+          } else {
+            const ul = document.createElement('ul');
+            data.items.forEach(doc => {
+              const li = document.createElement('li');
+              li.textContent = `${doc.docNumber} - ${doc.docTitle}`;
+              ul.appendChild(li);
+            });
+            docsTd.textContent = '';
+            docsTd.appendChild(ul);
+          }
+        } catch (err) {
+          docsTd.textContent = 'Erro ao carregar documentos.';
+          console.error(err);
+        }
+      } else {
+        btnExpand.textContent = '+';
+        docsTd.style.display = 'none';
+        docsTd.textContent = '';
       }
-      resWrap.innerHTML = '<div class="text-muted p-2">Buscando…</div>';
-      const { items, page: p, pages, total } = await buscarProcessosGlobais(term, page, limite);
-      if (!items.length) {
-        resWrap.innerHTML = '<div class="text-muted p-2">Nenhum processo encontrado.</div>';
-        return;
-      }
+    });
 
-      const table = document.createElement('table');
-      table.className = 'table table-sm table-hover table-bordered mb-0';
-      table.style.tableLayout = 'fixed';
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th class="th-numero">Número</th>
-            <th class="th-title">Título/Especificação</th>
-            <th class="th-atrib">Atribuição</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      `;
-      const tbody = table.querySelector('tbody');
-      items.forEach(proc => {
-        const m = mapProcRow(proc);
-        const tr = document.createElement('tr');
-        // Título com rolagem horizontal interna
-        const titleCell = `
-          <td class="col-title" title="${m.titulo}">
-            <div class="title-scroll">${m.titulo}</div>
-          </td>
-        `;
-        tr.innerHTML = `
-          <td class="col-numero" title="${m.numero}">${m.numero}</td>
-          ${titleCell}
-          <td class="col-atrib"  title="${m.atrib}">${m.atrib}</td>
-        `;
+    // Clique na linha para selecionar processo (mantendo seu comportamento)
+    tr.addEventListener('click', () => {
+      if (!m.numero) return;
+      campoNumeroProc.value = m.numero;
+      showAlert(`Processo selecionado: ${m.numero}`, 'success');
+      campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      campoNumeroProc.classList.add('is-valid');
+      setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
+    });
+  });
 
-        // Seleção por clique na linha inteira
-        tr.addEventListener('click', () => {
-          if (!m.numero) return;
-          campoNumeroProc.value = m.numero;
-          showAlert(`Processo selecionado: ${m.numero}`, 'success');
-          campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          campoNumeroProc.classList.add('is-valid');
-          setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
-        });
+  // Limpa e insere a tabela no container
+  resWrap.innerHTML = '';
+  resWrap.style.overflow = 'visible';
+  resWrap.appendChild(table);
 
-        tbody.appendChild(tr);
-      });
-
+  // Paginação (mantém seu código original para paginação)
+  // ... (se quiser posso ajudar a integrar a paginação aqui também)
+}
       // wrapper com rolagem vertical da lista
       const scrollWrap = document.createElement('div');
       scrollWrap.className = 'results-scroll';
