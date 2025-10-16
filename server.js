@@ -552,6 +552,44 @@ app.get('/api/processes', async (req, res) => {
     return res.status(500).json({ error: 'internal_error' });
   }
 });
+/////
+
+
+
+// Lista documentos relacionados a um processo pelo _id
+app.get('/api/processes/:id/documents', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validação de ObjectId usando o driver nativo do mongoose
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'ID inválido' });
+    }
+
+    // Busca o processo apenas para obter o seiNumberNorm
+    const process = await Process.findById(id, { seiNumberNorm: 1 }).lean();
+    if (!process) {
+      return res.status(404).json({ error: 'Processo não encontrado' });
+    }
+
+    // A coleção de documentos não tem Mongoose Model no seu arquivo, então usamos o driver nativo do mongoose
+    const items = await mongoose.connection
+      .collection('processDocuments')
+      .find(
+        { seiNumberNorm: process.seiNumberNorm },
+        { projection: { _id: 0, docNumber: 1, docTitle: 1 } }
+      )
+      .sort({ docNumber: 1 }) // remova se não precisar ordenar
+      .toArray();
+
+    return res.json({ count: items.length, items });
+  } catch (err) {
+    console.error('GET /api/processes/:id/documents error', err);
+    return res.status(500).json({ error: 'internal_error' });
+  }
+});
+
+
 
 
 // ...
