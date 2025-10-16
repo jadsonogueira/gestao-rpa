@@ -555,6 +555,27 @@ app.get('/api/processes', async (req, res) => {
 /////
 
 
+// Rota para buscar documentos pelo seiNumberNorm direto
+app.get('/api/processes/by-sei/:seiNumberNorm/documents', async (req, res) => {
+  try {
+    const { seiNumberNorm } = req.params;
+
+    const items = await mongoose.connection
+      .collection('processDocuments')
+      .find(
+        { seiNumberNorm },
+        { projection: { _id: 0, docNumber: 1, docTitle: 1 } }
+      )
+      .sort({ docNumber: 1 })
+      .toArray();
+
+    return res.json({ count: items.length, items });
+  } catch (err) {
+    console.error('GET /api/processes/by-sei/:seiNumberNorm/documents error', err);
+    return res.status(500).json({ error: 'internal_error' });
+  }
+});
+
 
 // Lista documentos relacionados a um processo pelo _id
 app.get('/api/processes/:id/documents', async (req, res) => {
