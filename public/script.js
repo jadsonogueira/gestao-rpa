@@ -610,7 +610,7 @@ async function abrirFormulario(fluxo) {
 
     ////
     
-    async function executarBusca(page = 1) {
+async function executarBusca(page = 1) {
   const term = inp.value.trim();
   if (term.length < 2) {
     resWrap.innerHTML = '<div class="text-muted p-2">Digite pelo menos 2 caracteres.</div>';
