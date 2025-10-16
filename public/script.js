@@ -1110,5 +1110,5 @@ for (const [k, v] of formData.entries()) {
 
 // Expor no escopo global
 window.abrirFormulario = abrirFormulario;
-
+}
 // ==================== fim script.js ====================
