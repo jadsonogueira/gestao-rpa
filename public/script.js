@@ -634,34 +634,85 @@ async function abrirFormulario(fluxo) {
         <tbody></tbody>
       `;
       const tbody = table.querySelector('tbody');
-      items.forEach(proc => {
-        const m = mapProcRow(proc);
-        const tr = document.createElement('tr');
-        // Título com rolagem horizontal interna
-        const titleCell = `
-          <td class="col-title" title="${m.titulo}">
-            <div class="title-scroll">${m.titulo}</div>
-          </td>
-        `;
-        tr.innerHTML = `
-          <td class="col-numero" title="${m.numero}">${m.numero}</td>
-          ${titleCell}
-          <td class="col-atrib"  title="${m.atrib}">${m.atrib}</td>
-        `;
+items.forEach(proc => {
+  const m = mapProcRow(proc);
 
-        // Seleção por clique na linha inteira
-        tr.addEventListener('click', () => {
-          if (!m.numero) return;
-          campoNumeroProc.value = m.numero;
-          showAlert(`Processo selecionado: ${m.numero}`, 'success');
-          campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          campoNumeroProc.classList.add('is-valid');
-          setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
+  // Linha principal do processo
+  const tr = document.createElement('tr');
+  const titleCell = `
+    <td class="col-title" title="${m.titulo}">
+      <div class="title-scroll">${m.titulo}</div>
+    </td>
+  `;
+  tr.innerHTML = `
+    <td class="col-numero" title="${m.numero}">${m.numero}</td>
+    ${titleCell}
+    <td class="col-atrib" title="${m.atrib}">${m.atrib}</td>
+    <td>
+      <button class="btn btn-sm btn-link btn-expand-docs" title="Mostrar documentos">📄</button>
+    </td>
+  `;
+
+  // Linha extra para documentos, inicialmente oculta
+  const trDocs = document.createElement('tr');
+  trDocs.style.display = 'none';
+  const tdDocs = document.createElement('td');
+  tdDocs.colSpan = 4; // ocupa todas as colunas
+  tdDocs.innerHTML = '<div class="docs-container">Carregando documentos...</div>';
+  trDocs.appendChild(tdDocs);
+
+  // Evento para expandir/contrair documentos
+  const btnExpand = tr.querySelector('.btn-expand-docs');
+  btnExpand.addEventListener('click', async (e) => {
+    e.stopPropagation(); // evita disparar o clique da linha principal
+
+    if (trDocs.style.display === 'none') {
+      trDocs.style.display = '';
+      const container = tdDocs.querySelector('.docs-container');
+      container.innerHTML = 'Carregando documentos...';
+
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiUrl}/api/process-documents?seiNumberNorm=${encodeURIComponent(m.numero)}`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
+        if (!res.ok) throw new Error(`Erro ${res.status}`);
+        const docs = await res.json();
 
-        tbody.appendChild(tr);
-      });
+        if (!docs.length) {
+          container.innerHTML = '<em>Nenhum documento encontrado.</em>';
+        } else {
+          const list = document.createElement('ul');
+          docs.forEach(doc => {
+            const li = document.createElement('li');
+            li.textContent = `${doc.title || doc.name || 'Documento sem título'}${doc.date ? ' - ' + doc.date : ''}`;
+            list.appendChild(li);
+          });
+          container.innerHTML = '';
+          container.appendChild(list);
+        }
+      } catch (err) {
+        container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
+      }
+    } else {
+      trDocs.style.display = 'none';
+    }
+  });
 
+  // Clique na linha principal seleciona o processo (sem expandir docs)
+  tr.addEventListener('click', () => {
+    if (!m.numero) return;
+    campoNumeroProc.value = m.numero;
+    showAlert(`Processo selecionado: ${m.numero}`, 'success');
+    campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    campoNumeroProc.classList.add('is-valid');
+    setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
+  });
+
+  tbody.appendChild(tr);
+  tbody.appendChild(trDocs);
+});
+      
       // wrapper com rolagem vertical da lista
       const scrollWrap = document.createElement('div');
       scrollWrap.className = 'results-scroll';
