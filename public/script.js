@@ -756,7 +756,7 @@ tbody.appendChild(trDocs);
       pagWrap.appendChild(next);
       pager.appendChild(pagWrap);
       resWrap.appendChild(pager);
-    
+}
 
     btn.addEventListener('click', () => { pagina = 1; executarBusca(pagina); });
     inp.addEventListener('keydown', (ev) => {
@@ -766,7 +766,7 @@ tbody.appendChild(trDocs);
         executarBusca(pagina);
       }
     });
-  }
+  
 
   // ----- Containers extras -----
   const imagensContainer = document.createElement('div');
