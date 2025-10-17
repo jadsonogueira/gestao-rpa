@@ -148,7 +148,7 @@ console.log('[script.js] carregado');
 #fluxoForm #procResults .text-muted {
   border: 1px dashed #e5e7eb;
 }
-    
+  
   `;
   const styleEl = document.createElement('style');
   styleEl.type = 'text/css';
@@ -455,9 +455,6 @@ async function abrirFormulario(fluxo) {
     showAlert('Falha ao carregar dados para o formulário.', 'danger');
     return;
   }
-}
-
-
 
   // Renderiza campos
   campos.forEach((campo) => {
@@ -656,12 +653,6 @@ items.forEach(proc => {
     </td>
   `;
 
-// Aqui você adicionaria o tr ao tbody, eventos, etc.
-  tbody.appendChild(tr);
-}); // <-- fechamento do forEach
-
-} // <-- fechamento da função executarBusca
-  
   // Linha extra para documentos, inicialmente oculta
   const trDocs = document.createElement('tr');
   trDocs.style.display = 'none';
@@ -670,63 +661,58 @@ items.forEach(proc => {
   tdDocs.innerHTML = '<div class="docs-container">Carregando documentos...</div>';
   trDocs.appendChild(tdDocs);
 
-// Função para normalizar o número SEI (remove pontos, barras, hífens e espaços)
-function normalizeSeiNumber(seiNumber) {
-  return seiNumber.replace(/[.\-\/\s]/g, '');
-}
+  // Evento para expandir/contrair documentos
+  const btnExpand = tr.querySelector('.btn-expand-docs');
+  btnExpand.addEventListener('click', async (e) => {
+    e.stopPropagation(); // evita disparar o clique da linha principal
 
-// Evento para expandir/contrair documentos
-const btnExpand = tr.querySelector('.btn-expand-docs');
-btnExpand.addEventListener('click', async (e) => {
-  e.stopPropagation(); // evita disparar o clique da linha principal
+    if (trDocs.style.display === 'none') {
+      trDocs.style.display = '';
+      const container = tdDocs.querySelector('.docs-container');
+      container.innerHTML = 'Carregando documentos...';
 
-  if (trDocs.style.display === 'none') {
-    trDocs.style.display = '';
-    const container = tdDocs.querySelector('.docs-container');
-    container.innerHTML = 'Carregando documentos...';
-
-    try {
-      const token = localStorage.getItem('token');
-      const normalizedNumber = normalizeSeiNumber(m.numero);
-      const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error(`Erro ${res.status}`);
-      const docs = await res.json();
-
-      if (!docs.length) {
-        container.innerHTML = '<em>Nenhum documento encontrado.</em>';
-      } else {
-        const list = document.createElement('ul');
-        docs.forEach(doc => {
-          const li = document.createElement('li');
-          li.textContent = `${doc.docTitle || doc.title || doc.name || 'Documento sem título'}${doc.date ? ' - ' + doc.date : ''}`;
-          list.appendChild(li);
+      try {
+        const token = localStorage.getItem('token');
+       const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(m.numero)}/documents`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        container.innerHTML = '';
-        container.appendChild(list);
+        if (!res.ok) throw new Error(`Erro ${res.status}`);
+        const docs = await res.json();
+
+        if (!docs.length) {
+          container.innerHTML = '<em>Nenhum documento encontrado.</em>';
+        } else {
+          const list = document.createElement('ul');
+          docs.forEach(doc => {
+            const li = document.createElement('li');
+            li.textContent = `${doc.title || doc.name || 'Documento sem título'}${doc.date ? ' - ' + doc.date : ''}`;
+            list.appendChild(li);
+          });
+          container.innerHTML = '';
+          container.appendChild(list);
+        }
+      } catch (err) {
+        container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
       }
-    } catch (err) {
-      container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
+    } else {
+      trDocs.style.display = 'none';
     }
-  } else {
-    trDocs.style.display = 'none';
-  }
-});
+  });
 
-// Clique na linha principal seleciona o processo (sem expandir docs)
-tr.addEventListener('click', () => {
-  if (!m.numero) return;
-  campoNumeroProc.value = m.numero;
-  showAlert(`Processo selecionado: ${m.numero}`, 'success');
-  campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  campoNumeroProc.classList.add('is-valid');
-  setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
-});
+  // Clique na linha principal seleciona o processo (sem expandir docs)
+  tr.addEventListener('click', () => {
+    if (!m.numero) return;
+    campoNumeroProc.value = m.numero;
+    showAlert(`Processo selecionado: ${m.numero}`, 'success');
+    campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    campoNumeroProc.classList.add('is-valid');
+    setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
+  });
 
-tbody.appendChild(tr);
-tbody.appendChild(trDocs);
-      
+  tbody.appendChild(tr);
+  tbody.appendChild(trDocs);
+});
+    
       // wrapper com rolagem vertical da lista
       const scrollWrap = document.createElement('div');
       scrollWrap.className = 'results-scroll';
@@ -765,7 +751,7 @@ tbody.appendChild(trDocs);
       pagWrap.appendChild(next);
       pager.appendChild(pagWrap);
       resWrap.appendChild(pager);
-
+    }
 
     btn.addEventListener('click', () => { pagina = 1; executarBusca(pagina); });
     inp.addEventListener('keydown', (ev) => {
@@ -775,7 +761,7 @@ tbody.appendChild(trDocs);
         executarBusca(pagina);
       }
     });
-  
+  }
 
   // ----- Containers extras -----
   const imagensContainer = document.createElement('div');
@@ -996,7 +982,7 @@ function enviarFormularioAxios(e) {
 e.target.querySelectorAll('input[type="file"]').forEach(inp => {
   console.log(' ->', inp.id, 'name=', inp.name);
 });
-  
+
   const envioSelecionado = (e.target.querySelector('input[name="envio"]:checked') || {}).value || 'imediato';
   if (envioSelecionado === 'agendar') {
     const quandoEl = e.target.querySelector('#quando');
@@ -1140,4 +1126,5 @@ for (const [k, v] of formData.entries()) {
 
 // Expor no escopo global
 window.abrirFormulario = abrirFormulario;
+
 // ==================== fim script.js ====================
