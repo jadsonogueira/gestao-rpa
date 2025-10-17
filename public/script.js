@@ -455,7 +455,7 @@ async function abrirFormulario(fluxo) {
     showAlert('Falha ao carregar dados para o formulário.', 'danger');
     return;
   }
-
+}
   // Renderiza campos
   campos.forEach((campo) => {
     const formGroup = document.createElement('div');
