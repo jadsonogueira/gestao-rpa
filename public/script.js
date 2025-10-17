@@ -456,6 +456,9 @@ async function abrirFormulario(fluxo) {
     return;
   }
 }
+
+
+
   // Renderiza campos
   campos.forEach((campo) => {
     const formGroup = document.createElement('div');
@@ -653,6 +656,12 @@ items.forEach(proc => {
     </td>
   `;
 
+// Aqui você adicionaria o tr ao tbody, eventos, etc.
+  tbody.appendChild(tr);
+}); // <-- fechamento do forEach
+
+} // <-- fechamento da função executarBusca
+  
   // Linha extra para documentos, inicialmente oculta
   const trDocs = document.createElement('tr');
   trDocs.style.display = 'none';
