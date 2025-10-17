@@ -671,7 +671,7 @@ items.forEach(proc => {
   // Evento para expandir/contrair documentos
 const btnExpand = tr.querySelector('.btn-expand-docs');
 btnExpand.addEventListener('click', async (e) => {
-  e.stopPropagation(); // evita disparar o clique da linha principal
+  e.stopPropagation();
 
   const normalizedNumber = normalizeSeiNumber(m.numero);
   console.log('Número do processo para documentos:', m.numero);
@@ -687,28 +687,40 @@ btnExpand.addEventListener('click', async (e) => {
       const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error(`Erro ${res.status}`);
-      const docs = await res.json();
 
-      if (!docs.length) {
+      if (!res.ok) throw new Error(`Erro ${res.status}`);
+
+      const payload = await res.json();
+      console.log('Payload de documentos:', payload);
+
+      // normaliza diferentes formatos de resposta
+      const docs = Array.isArray(payload)
+        ? payload
+        : (payload.items || payload.data || payload.results || []);
+
+      if (!docs || docs.length === 0) {
         container.innerHTML = '<em>Nenhum documento encontrado.</em>';
       } else {
         const list = document.createElement('ul');
         docs.forEach(doc => {
           const li = document.createElement('li');
-          li.textContent = `${doc.title || doc.name || 'Documento sem título'}${doc.date ? ' - ' + doc.date : ''}`;
+          // usa textContent para evitar injeção de HTML; se quiser renderizar HTML, use innerHTML com cuidado
+          li.textContent = `${doc.title || doc.docTitle || doc.name || 'Documento sem título'}${doc.docNumber || doc.date ? ' - ' + (doc.docNumber || doc.date) : ''}`;
           list.appendChild(li);
         });
         container.innerHTML = '';
         container.appendChild(list);
       }
     } catch (err) {
+      console.error(err);
       container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
     }
   } else {
     trDocs.style.display = 'none';
   }
 });
+
+  
   // Clique na linha principal seleciona o processo (sem expandir docs)
   tr.addEventListener('click', () => {
     if (!m.numero) return;
