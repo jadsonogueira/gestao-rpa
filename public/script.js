@@ -977,7 +977,7 @@ tbody.appendChild(trDocs);
   } catch (err) {
     console.error('Falha ao abrir modal:', err);
   }
-}
+
 
 // ---------- Submit ----------
 function enviarFormularioAxios(e) {
