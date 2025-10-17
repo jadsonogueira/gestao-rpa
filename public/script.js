@@ -673,7 +673,8 @@ items.forEach(proc => {
 
       try {
         const token = localStorage.getItem('token');
-       const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(m.numero)}/documents`, {
+      const normalizedNumber = normalizeSeiNumber(m.numero);
+const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) throw new Error(`Erro ${res.status}`);
