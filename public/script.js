@@ -669,44 +669,46 @@ items.forEach(proc => {
   trDocs.appendChild(tdDocs);
 
   // Evento para expandir/contrair documentos
-  const btnExpand = tr.querySelector('.btn-expand-docs');
-  btnExpand.addEventListener('click', async (e) => {
-    e.stopPropagation(); // evita disparar o clique da linha principal
+const btnExpand = tr.querySelector('.btn-expand-docs');
+btnExpand.addEventListener('click', async (e) => {
+  e.stopPropagation(); // evita disparar o clique da linha principal
 
-    if (trDocs.style.display === 'none') {
-      trDocs.style.display = '';
-      const container = tdDocs.querySelector('.docs-container');
-      container.innerHTML = 'Carregando documentos...';
+  const normalizedNumber = normalizeSeiNumber(m.numero);
+  console.log('Número do processo para documentos:', m.numero);
+  console.log('Número normalizado:', normalizedNumber);
 
-      try {
-        const token = localStorage.getItem('token');
-      const normalizedNumber = normalizeSeiNumber(m.numero);
-const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
-          headers: { Authorization: `Bearer ${token}` }
+  if (trDocs.style.display === 'none') {
+    trDocs.style.display = '';
+    const container = tdDocs.querySelector('.docs-container');
+    container.innerHTML = 'Carregando documentos...';
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error(`Erro ${res.status}`);
+      const docs = await res.json();
+
+      if (!docs.length) {
+        container.innerHTML = '<em>Nenhum documento encontrado.</em>';
+      } else {
+        const list = document.createElement('ul');
+        docs.forEach(doc => {
+          const li = document.createElement('li');
+          li.textContent = `${doc.title || doc.name || 'Documento sem título'}${doc.date ? ' - ' + doc.date : ''}`;
+          list.appendChild(li);
         });
-        if (!res.ok) throw new Error(`Erro ${res.status}`);
-        const docs = await res.json();
-
-        if (!docs.length) {
-          container.innerHTML = '<em>Nenhum documento encontrado.</em>';
-        } else {
-          const list = document.createElement('ul');
-          docs.forEach(doc => {
-            const li = document.createElement('li');
-            li.textContent = `${doc.title || doc.name || 'Documento sem título'}${doc.date ? ' - ' + doc.date : ''}`;
-            list.appendChild(li);
-          });
-          container.innerHTML = '';
-          container.appendChild(list);
-        }
-      } catch (err) {
-        container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
+        container.innerHTML = '';
+        container.appendChild(list);
       }
-    } else {
-      trDocs.style.display = 'none';
+    } catch (err) {
+      container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
     }
-  });
-
+  } else {
+    trDocs.style.display = 'none';
+  }
+});
   // Clique na linha principal seleciona o processo (sem expandir docs)
   tr.addEventListener('click', () => {
     if (!m.numero) return;
