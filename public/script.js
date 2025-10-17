@@ -281,7 +281,8 @@ async function buscarProcessosGlobais(term, page = 1, limit = 10) {
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
-
+    console.log('Resposta da API:', json);
+    
     let items = [];
     let currentPage = 1, totalPages = 1, total = 0;
 
