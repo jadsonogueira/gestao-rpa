@@ -661,57 +661,62 @@ items.forEach(proc => {
   tdDocs.innerHTML = '<div class="docs-container">Carregando documentos...</div>';
   trDocs.appendChild(tdDocs);
 
-  // Evento para expandir/contrair documentos
-  const btnExpand = tr.querySelector('.btn-expand-docs');
-  btnExpand.addEventListener('click', async (e) => {
-    e.stopPropagation(); // evita disparar o clique da linha principal
+// Função para normalizar o número SEI (remove pontos, barras, hífens e espaços)
+function normalizeSeiNumber(seiNumber) {
+  return seiNumber.replace(/[.\-\/\s]/g, '');
+}
 
-    if (trDocs.style.display === 'none') {
-      trDocs.style.display = '';
-      const container = tdDocs.querySelector('.docs-container');
-      container.innerHTML = 'Carregando documentos...';
+// Evento para expandir/contrair documentos
+const btnExpand = tr.querySelector('.btn-expand-docs');
+btnExpand.addEventListener('click', async (e) => {
+  e.stopPropagation(); // evita disparar o clique da linha principal
 
-      try {
-        const token = localStorage.getItem('token');
-       const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(m.numero)}/documents`, {
-          headers: { Authorization: `Bearer ${token}` }
+  if (trDocs.style.display === 'none') {
+    trDocs.style.display = '';
+    const container = tdDocs.querySelector('.docs-container');
+    container.innerHTML = 'Carregando documentos...';
+
+    try {
+      const token = localStorage.getItem('token');
+      const normalizedNumber = normalizeSeiNumber(m.numero);
+      const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error(`Erro ${res.status}`);
+      const docs = await res.json();
+
+      if (!docs.length) {
+        container.innerHTML = '<em>Nenhum documento encontrado.</em>';
+      } else {
+        const list = document.createElement('ul');
+        docs.forEach(doc => {
+          const li = document.createElement('li');
+          li.textContent = `${doc.docTitle || doc.title || doc.name || 'Documento sem título'}${doc.date ? ' - ' + doc.date : ''}`;
+          list.appendChild(li);
         });
-        if (!res.ok) throw new Error(`Erro ${res.status}`);
-        const docs = await res.json();
-
-        if (!docs.length) {
-          container.innerHTML = '<em>Nenhum documento encontrado.</em>';
-        } else {
-          const list = document.createElement('ul');
-          docs.forEach(doc => {
-            const li = document.createElement('li');
-            li.textContent = `${doc.title || doc.name || 'Documento sem título'}${doc.date ? ' - ' + doc.date : ''}`;
-            list.appendChild(li);
-          });
-          container.innerHTML = '';
-          container.appendChild(list);
-        }
-      } catch (err) {
-        container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
+        container.innerHTML = '';
+        container.appendChild(list);
       }
-    } else {
-      trDocs.style.display = 'none';
+    } catch (err) {
+      container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
     }
-  });
-
-  // Clique na linha principal seleciona o processo (sem expandir docs)
-  tr.addEventListener('click', () => {
-    if (!m.numero) return;
-    campoNumeroProc.value = m.numero;
-    showAlert(`Processo selecionado: ${m.numero}`, 'success');
-    campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    campoNumeroProc.classList.add('is-valid');
-    setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
-  });
-
-  tbody.appendChild(tr);
-  tbody.appendChild(trDocs);
+  } else {
+    trDocs.style.display = 'none';
+  }
 });
+
+// Clique na linha principal seleciona o processo (sem expandir docs)
+tr.addEventListener('click', () => {
+  if (!m.numero) return;
+  campoNumeroProc.value = m.numero;
+  showAlert(`Processo selecionado: ${m.numero}`, 'success');
+  campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  campoNumeroProc.classList.add('is-valid');
+  setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
+});
+
+tbody.appendChild(tr);
+tbody.appendChild(trDocs);
       
       // wrapper com rolagem vertical da lista
       const scrollWrap = document.createElement('div');
