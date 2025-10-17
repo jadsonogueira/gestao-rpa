@@ -157,6 +157,12 @@ console.log('[script.js] carregado');
   document.head.appendChild(styleEl);
 })();
 
+///
+
+function normalizeSeiNumber(seiNumber) {
+  return seiNumber.replace(/[.\-\/\s]/g, '');
+}
+
 
 // ---------- UI helpers ----------
 function showAlert(message, type = 'success') {
