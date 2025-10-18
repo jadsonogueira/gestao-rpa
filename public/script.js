@@ -6,235 +6,46 @@ const apiUrl = window.location.origin;
 console.log('[script.js] carregado');
 
 // Injeta CSS do buscador de processos no <head> sem precisar editar o HTML
-(function injectProcessSearchCSS() {
+(function injectProcessSearchCSS_point1() {
   const css = `
-    /* Bloco de busca dentro do modal (tema claro) */
-    #fluxoForm .proc-search-group {
-      margin-bottom: 12px;
-      padding: 10px;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      background: #ffffff;
-    }
-
-    /* Linha com input e botão */
-    #fluxoForm .proc-search-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-    }
-
-    /* Container dos resultados com rolagem e cabeçalho fixo */
-    #fluxoForm #procResults {
-      margin-top: 10px;
-      border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      overflow: visible;
-      background: #ffffff;
-    }
-    #fluxoForm #procResults .results-scroll {
-      max-height: 240px;
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
-      background: #ffffff;
-    }
-
-    /* Tabela compacta e legível */
-    #fluxoForm #procResults table.table {
-      margin-bottom: 0;
-      font-size: 0.8rem; /* reduzido ~2 pontos */
-      color: #111827;
-      background-color: transparent;
-      table-layout: fixed;
-    }
-
-    /* Cabeçalho fixo e claro */
-    #fluxoForm #procResults thead th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      color: #111827;
-      background: #f3f4f6;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    /* Linhas e células */
-    #fluxoForm #procResults tbody tr {
-      color: #111827;
-      background-color: #ffffff;
-      cursor: pointer;
-    }
-    #fluxoForm #procResults tbody tr:hover {
-      background: #f9fafb;
-    }
-    #fluxoForm #procResults td,
-    #fluxoForm #procResults th {
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      border-color: #e5e7eb;
-      vertical-align: middle;
-    }
-
-    /* =========== Coluna de ação '+' (primeira coluna) =========== */
-    #fluxoForm #procResults td.col-action,
-    #fluxoForm #procResults th.th-action {
-      width: 28px !important;
-      min-width: 28px !important;
-      max-width: 28px !important;
-      text-align: center;
-      padding: 2px 4px !important;
-    }
-
-    /* esconder texto do th de ação (evita desalinhamento do header) */
-    #fluxoForm #procResults thead th.th-action {
-      text-indent: -9999px;
-      padding: 0;
-      background: transparent;
-      border: none;
-    }
-
-    /* botão +: tamanho reduzido e sem margem */
-    #fluxoForm #procResults .btn-expand-docs {
-      padding: 0 !important;
-      margin: 0 !important;
-      width: 20px !important;
-      height: 20px !important;
-      line-height: 20px !important;
-      font-size: 14px !important;
-      border-radius: 3px !important;
-      border: 0 !important;
-      background: transparent !important;
-      color: #374151 !important;
-      cursor: pointer;
-    }
-
-    /* =========== Colunas principais =========== */
-    /* Número do processo mais proeminente */
-    #fluxoForm #procResults td.col-numero,
-    #fluxoForm #procResults th.th-numero {
-      min-width: 300px;
-      max-width: 420px;
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-
-    /* Título/especificação maior e com scroll interno */
-    #fluxoForm #procResults td.col-title,
-    #fluxoForm #procResults th.th-title {
-      min-width: 420px;
-      font-size: 0.95rem;
-      padding: 0;
-    }
-    #fluxoForm #procResults .title-scroll {
-      overflow-x: auto;
-      overflow-y: hidden;
-      white-space: nowrap;
-      padding: 6px 8px;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    /* Atribuição menor: reduzir largura e fonte */
-    #fluxoForm #procResults td.col-atrib,
-    #fluxoForm #procResults th.th-atrib {
-      max-width: 120px;
-      min-width: 80px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-size: 0.78rem;
-      color: #4b5563;
-    }
-
-    /* Última coluna (direita) maior para textos longos — usa last-child para segurança */
-    #fluxoForm #procResults table.table th:last-child,
-    #fluxoForm #procResults table.table td:last-child {
-      min-width: 300px;
-      max-width: 600px;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      font-size: 0.95rem;
-    }
-
-    /* Paginação */
-    #fluxoForm #procResults .pager,
-    #fluxoForm #procResults .d-flex.align-items-center.mt-2 {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 8px;
-      padding: 8px;
-      background: #fafafa;
-      color: #374151;
-      border-top: 1px solid #e5e7eb;
-    }
-
-    /* Mensagens / estados */
-    #fluxoForm #procResults .text-muted,
-    #fluxoForm #procResults .empty-state,
-    #fluxoForm #procResults .no-results,
-    #fluxoForm #procResults .loading-state {
-      color: #374151 !important;
-      background: #ffffff;
-      padding: 8px 10px;
-      border-radius: 4px;
-    }
-
-    /* =========== Lista de DOCUMENTOS dentro do trDocs =========== */
-    #fluxoForm .docs-container {
-      padding: 6px;
-      background: #fff;
-    }
-
-    #fluxoForm .docs-container table {
-      font-size: 0.70rem; /* ainda menor */
-      table-layout: fixed;
-    }
-
-    #fluxoForm .docs-container thead th {
-      background: #ffffff;
-      color: #111827;
-      border-bottom: 1px solid #e5e7eb;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    /* coluna do número do doc: fundo diferenciado e mais fina */
+    /* === Forçar cor de fundo para a coluna Número da lista de documentos === */
+    #fluxoForm .docs-container table.table td.col-doc-number,
+    #fluxoForm .docs-container table.table th.col-doc-number,
     #fluxoForm .docs-container td.col-doc-number,
     #fluxoForm .docs-container th.col-doc-number {
-      background-color: #dfe9f5 !important; /* tom levemente mais escuro/azulado */
+      background-color: #dfe9f5 !important; /* tom levemente azulado */
       color: #0f172a !important;
-      width: 80px !important;    /* mais fino */
-      min-width: 70px !important;
-      max-width: 110px !important;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-weight: 600;
-      font-size: 0.70rem !important;
+    }
+
+    /* reduzir ainda mais a largura da coluna número do doc */
+    #fluxoForm .docs-container table.table td.col-doc-number,
+    #fluxoForm .docs-container table.table th.col-doc-number {
+      width: 60px !important;
+      min-width: 60px !important;
+      max-width: 80px !important;
       padding: 6px 8px !important;
+      font-size: 0.68rem !important;
+      text-align: left;
     }
 
-    /* título do doc comporta wrap para múltiplas linhas */
-    #fluxoForm .docs-container td.col-doc-title,
-    #fluxoForm .docs-container th.col-doc-title {
-      font-size: 0.74rem;
-      padding-left: 6px;
-      white-space: normal;
+    /* garantir que a tabela de docs use full-width e que o estilo apareça */
+    #fluxoForm .docs-container table.table {
+      width: 100% !important;
+      table-layout: fixed !important;
     }
 
-    /* responsive tweaks */
-    @media (max-width: 480px) {
-      #fluxoForm #procResults table.table { font-size: 0.75rem; }
-      #fluxoForm #procResults td.col-numero { min-width: 240px; }
-      #fluxoForm .docs-container td.col-doc-number { width: 70px !important; font-size: 0.64rem !important; }
+    /* Caso precise forçar overflow e evitar que o conteúdo empurre a largura */
+    #fluxoForm .docs-container td,
+    #fluxoForm .docs-container th {
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
     }
   `;
 
   const styleEl = document.createElement('style');
   styleEl.type = 'text/css';
-  styleEl.setAttribute('data-injected', 'proc-search-css');
+  styleEl.setAttribute('data-injected', 'proc-search-css-point1');
   styleEl.appendChild(document.createTextNode(css));
   document.head.appendChild(styleEl);
 })();
@@ -674,11 +485,28 @@ async function abrirFormulario(fluxo) {
     inp.className = 'form-control';
     inp.id = 'buscaProcGlobal';
     inp.placeholder = 'Digite parte do número, título, atribuição...';
+///
+    // criação do botão (substituir o trecho <button>+</button>)
+const btn = document.createElement('button');
+btn.className = 'btn btn-sm btn-link btn-expand-docs';
+btn.type = 'button';
+btn.title = 'Mostrar documentos';
+btn.setAttribute('aria-expanded', 'false');
 
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn btn-secondary';
-    btn.textContent = 'Buscar';
+// pequeno SVG chevron (direita)
+btn.innerHTML = `<span class="chev" aria-hidden="true">
+  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="6 9 12 15 18 9"></polyline>
+  </svg>
+</span>`;
+
+// inserir como primeira célula
+const tdAction = document.createElement('td');
+tdAction.className = 'col-action';
+tdAction.title = 'Abrir documentos';
+tdAction.appendChild(btn);
+tr.insertBefore(tdAction, tr.firstChild); // insere como primeira coluna
+    ////
 
     row.appendChild(inp);
     row.appendChild(btn);
@@ -999,15 +827,43 @@ function escapeHtml(s) {
       resWrap.appendChild(pager);
     }
 
-    btn.addEventListener('click', () => { pagina = 1; executarBusca(pagina); });
-    inp.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') {
-        ev.preventDefault();
-        pagina = 1;
-        executarBusca(pagina);
-      }
-    });
+   btn.addEventListener('click', async (e) => {
+  e.stopPropagation();
+
+  // alterna estado visual/aria
+  const expanded = btn.classList.toggle('expanded');
+  btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+
+  // encontre trDocs/tdDocs e comportamentos de mostrar/ocultar
+  if (!expanded) {
+    // se agora fechado -> ocultar linha de docs
+    trDocs.style.display = 'none';
+    return;
   }
+
+  // se abriu -> mostrar e carregar
+  trDocs.style.display = '';
+  const container = tdDocs.querySelector('.docs-container');
+  container.textContent = 'Carregando documentos...';
+
+  try {
+    // .. seu fetch existente .. (use normalizedNumber etc)
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const payload = await res.json();
+    const docs = Array.isArray(payload) ? payload : (payload.items || payload.data || payload.results || []);
+    // montar a tabela de docs como antes
+    // ...
+  } catch (err) {
+    container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
+    // fechar visual se preferir
+    btn.classList.remove('expanded');
+    btn.setAttribute('aria-expanded', 'false');
+    trDocs.style.display = 'none';
+  }
+});
 
   // ----- Containers extras -----
   const imagensContainer = document.createElement('div');
