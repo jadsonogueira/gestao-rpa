@@ -682,6 +682,7 @@ btnExpand.addEventListener('click', async (e) => {
     const container = tdDocs.querySelector('.docs-container');
     container.innerHTML = 'Carregando documentos...';
 
+    
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
@@ -719,6 +720,131 @@ btnExpand.addEventListener('click', async (e) => {
     trDocs.style.display = 'none';
   }
 });
+
+//
+
+  // helper para remover tags HTML (exibir só o texto)
+function stripHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html || '';
+  return tmp.textContent || tmp.innerText || '';
+}
+
+const btnExpand = tr.querySelector('.btn-expand-docs');
+btnExpand.addEventListener('click', async (e) => {
+  e.stopPropagation();
+
+  const normalizedNumber = normalizeSeiNumber(m.numero);
+  console.log('Número do processo para documentos:', m.numero);
+  console.log('Número normalizado:', normalizedNumber);
+
+  if (trDocs.style.display === 'none') {
+    trDocs.style.display = '';
+    const container = tdDocs.querySelector('.docs-container');
+    container.innerHTML = 'Carregando documentos...';
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) throw new Error(`Erro ${res.status}`);
+
+      const payload = await res.json();
+      console.log('Payload de documentos:', payload);
+
+      // normaliza diferentes formatos de resposta
+      const docs = Array.isArray(payload)
+        ? payload
+        : (payload.items || payload.data || payload.results || []);
+
+      if (!docs || docs.length === 0) {
+        container.innerHTML = '<em>Nenhum documento encontrado.</em>';
+      } else {
+        // monta uma pequena tabela com Número e Título (mesmo padrão das linhas de processo)
+        const table = document.createElement('table');
+        table.className = 'table table-sm mb-0';
+        table.style.width = '100%';
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+          <tr>
+            <th style="width:30%;">Número</th>
+            <th>Título</th>
+          </tr>
+        `;
+        table.appendChild(thead);
+
+        const tbodyDocs = document.createElement('tbody');
+
+        docs.forEach(doc => {
+          const row = document.createElement('tr');
+          row.style.cursor = 'pointer';
+
+          // preferências para exibição do número e título
+          const numeroExib = doc.seiNumber || doc.docNumber || doc.docNumberText || '';
+          const tituloExib = stripHtml(doc.docTitle || doc.title || doc.name || '');
+
+          row.innerHTML = `
+            <td class="col-numero" title="${numeroExib}">${numeroExib}</td>
+            <td class="col-title" title="${tituloExib}">
+              <div class="title-scroll" style="white-space:normal;">${tituloExib}</div>
+            </td>
+          `;
+
+          // clique na linha do documento: preenche o campo do número do documento SEI (se existir)
+          row.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+
+            // Ajuste aqui para o id do seu campo de número do documento (substituir se souber o id exato)
+            const possibleIds = ['numeroDocSEI', 'campoNumeroDoc', 'numeroDocumento', 'campoNumeroProcDoc'];
+            let inputDoc = null;
+            for (const id of possibleIds) {
+              const el = document.getElementById(id);
+              if (el) { inputDoc = el; break; }
+            }
+
+            // Se não achar por id, tenta variáveis existentes no seu script
+            if (!inputDoc && typeof campoNumeroProc !== 'undefined') {
+              // se quiser preencher campo do processo quando não há um campo de documento separado
+              inputDoc = campoNumeroProc;
+            }
+
+            // fallback: busca por inputs com name comum
+            if (!inputDoc) {
+              inputDoc = document.querySelector('input[name="numeroDoc"]') || document.querySelector('input[name="numero"]') || null;
+            }
+
+            const valueToSet = doc.seiNumber || doc.docNumber || '';
+
+            if (inputDoc) {
+              inputDoc.value = valueToSet;
+              if (typeof showAlert === 'function') showAlert(`Documento selecionado: ${valueToSet}`, 'success');
+              inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              inputDoc.classList.add('is-valid');
+              setTimeout(() => inputDoc.classList.remove('is-valid'), 1500);
+            } else {
+              console.warn('Campo para número do documento não encontrado. Valor:', valueToSet);
+              if (typeof showAlert === 'function') showAlert(`Documento: ${valueToSet} (campo não encontrado)`, 'info');
+            }
+          });
+
+          tbodyDocs.appendChild(row);
+        });
+
+        table.appendChild(tbodyDocs);
+        container.innerHTML = '';
+        container.appendChild(table);
+      }
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
+    }
+  } else {
+    trDocs.style.display = 'none';
+  }
+});
+
 
   
   // Clique na linha principal seleciona o processo (sem expandir docs)
