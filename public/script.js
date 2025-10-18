@@ -479,47 +479,35 @@ async function abrirFormulario(fluxo) {
 
     const row = document.createElement('div');
     row.className = 'proc-search-row';
-
+////
+    
+   // trecho seguro para inserir dentro de abrirFormulario(), na criação do grupo de busca
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.className = 'form-control';
     inp.id = 'buscaProcGlobal';
     inp.placeholder = 'Digite parte do número, título, atribuição...';
-///
-    // criação do botão (substituir o trecho <button>+</button>)
-const btn = document.createElement('button');
-btn.className = 'btn btn-sm btn-link btn-expand-docs';
-btn.type = 'button';
-btn.title = 'Mostrar documentos';
-btn.setAttribute('aria-expanded', 'false');
-
-// pequeno SVG chevron (direita)
-btn.innerHTML = `<span class="chev" aria-hidden="true">
-  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="6 9 12 15 18 9"></polyline>
-  </svg>
-</span>`;
-
-// inserir como primeira célula
-const tdAction = document.createElement('td');
-tdAction.className = 'col-action';
-tdAction.title = 'Abrir documentos';
-tdAction.appendChild(btn);
-tr.insertBefore(tdAction, tr.firstChild); // insere como primeira coluna
-    ////
-
+    
+    // botão de busca (renomeado para evitar conflito com outros 'btn')
+    const searchBtn = document.createElement('button');
+    searchBtn.type = 'button';
+    searchBtn.className = 'btn btn-secondary';
+    searchBtn.textContent = 'Buscar';
+    
     row.appendChild(inp);
-    row.appendChild(btn);
+    row.appendChild(searchBtn);
     grp.appendChild(lbl);
     grp.appendChild(row);
-
+    
     const resWrap = document.createElement('div');
     resWrap.id = 'procResults';
     resWrap.className = 'mt-2';
     grp.appendChild(resWrap);
-
+    
     // Coloca a busca no topo do form
     fluxoForm.insertBefore(grp, fluxoForm.firstChild);
+
+    ////
 
     // Pequeno espaçador
     const spacer = document.createElement('div');
@@ -561,21 +549,51 @@ items.forEach(proc => {
   const m = mapProcRow(proc);
 
   // Linha principal do processo
-  const tr = document.createElement('tr');
-  const titleCell = `
-    <td class="col-title" title="${m.titulo}">
-      <div class="title-scroll">${m.titulo}</div>
-    </td>
-  `;
-tr.innerHTML = `
-  <td class="col-action" title="Abrir documentos">
-    <button class="btn btn-sm btn-link btn-expand-docs" title="Mostrar documentos">+</button>
-  </td>
-  <td class="col-numero" title="${m.numero}">${m.numero}</td>
-  ${titleCell}
-  <td class="col-atrib" title="${m.atrib}">${m.atrib}</td>
-`;
+// dentro do items.forEach(proc => { ... })
+    const tr = document.createElement('tr');
+    
+    // action (chevron) como primeira célula
+    const tdAction = document.createElement('td');
+    tdAction.className = 'col-action';
+    tdAction.title = 'Abrir documentos';
+    
+    const chevronBtn = document.createElement('button');
+    chevronBtn.className = 'btn btn-sm btn-link btn-expand-docs';
+    chevronBtn.type = 'button';
+    chevronBtn.title = 'Mostrar documentos';
+    chevronBtn.setAttribute('aria-expanded', 'false');
+    chevronBtn.innerHTML = `<span class="chev" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </span>`;
+    
+    tdAction.appendChild(chevronBtn);
+    tr.appendChild(tdAction);
+    
+    // número do processo
+    const tdNumero = document.createElement('td');
+    tdNumero.className = 'col-numero';
+    tdNumero.title = m.numero;
+    tdNumero.textContent = m.numero;
+    tr.appendChild(tdNumero);
+    
+    // título (você já monta titleCell antes; se não, use este)
+    const tdTitle = document.createElement('td');
+    tdTitle.className = 'col-title';
+    tdTitle.title = m.titulo;
+    tdTitle.innerHTML = `<div class="title-scroll">${m.titulo}</div>`;
+    tr.appendChild(tdTitle);
+    
+    // atribuição
+    const tdAtrib = document.createElement('td');
+    tdAtrib.className = 'col-atrib';
+    tdAtrib.title = m.atrib || '';
+    tdAtrib.textContent = m.atrib || '';
+    tr.appendChild(tdAtrib);
 
+
+  
   // Linha extra para documentos, inicialmente oculta
   const trDocs = document.createElement('tr');
   trDocs.style.display = 'none';
@@ -584,6 +602,39 @@ tr.innerHTML = `
   tdDocs.innerHTML = '<div class="docs-container">Carregando documentos...</div>';
   trDocs.appendChild(tdDocs);
 
+
+chevronBtn.addEventListener('click', async (e) => {
+  e.stopPropagation();
+  const isExpanded = chevronBtn.classList.toggle('expanded');
+  chevronBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+
+  if (!isExpanded) {
+    trDocs.style.display = 'none';
+    return;
+  }
+
+  trDocs.style.display = '';
+  const container = tdDocs.querySelector('.docs-container');
+  if (container) container.textContent = 'Carregando documentos...';
+
+  try {
+    const normalizedNumber = normalizeSeiNumber(m.numero);
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const payload = await res.json();
+    const docs = Array.isArray(payload) ? payload : (payload.items || payload.data || payload.results || []);
+    // montar a tabela de docs aqui (como você já faz)
+  } catch (err) {
+    console.error('Erro ao carregar documentos:', err);
+    if (container) container.innerHTML = `<span class="text-danger">Erro: ${err.message}</span>`;
+    chevronBtn.classList.remove('expanded');
+    chevronBtn.setAttribute('aria-expanded', 'false');
+    trDocs.style.display = 'none';
+  }
+});
 
   
   // Evento para expandir/contrair documentos
