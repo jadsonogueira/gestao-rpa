@@ -36,13 +36,13 @@ console.log('[script.js] carregado');
       max-height: 240px;
       overflow: auto;
       -webkit-overflow-scrolling: touch;
-      background: #ffffff; /* fundo do corpo da lista */
+      background: #ffffff;
     }
 
-    /* Tabela compacta e legível (tema claro) */
+    /* Tabela compacta e legível */
     #fluxoForm #procResults table.table {
       margin-bottom: 0;
-      font-size: 0.8rem; /* reduzido ~2 pontos conforme solicitado */
+      font-size: 0.8rem; /* reduzido ~2 pontos */
       color: #111827;
       background-color: transparent;
       table-layout: fixed;
@@ -58,11 +58,11 @@ console.log('[script.js] carregado');
       border-bottom: 1px solid #e5e7eb;
     }
 
-    /* Linhas e células (tema claro) */
+    /* Linhas e células */
     #fluxoForm #procResults tbody tr {
       color: #111827;
       background-color: #ffffff;
-      cursor: pointer; /* linha clicável */
+      cursor: pointer;
     }
     #fluxoForm #procResults tbody tr:hover {
       background: #f9fafb;
@@ -76,62 +76,87 @@ console.log('[script.js] carregado');
       vertical-align: middle;
     }
 
-    /* ======= Nova coluna de ação (botão '+') como primeira coluna ======= */
+    /* =========== Coluna de ação '+' (primeira coluna) =========== */
     #fluxoForm #procResults td.col-action,
     #fluxoForm #procResults th.th-action {
-      width: 28px;            /* tamanho pequeno: só o + */
-      min-width: 28px;
-      max-width: 28px;
+      width: 28px !important;
+      min-width: 28px !important;
+      max-width: 28px !important;
       text-align: center;
-      padding: 2px 4px;
+      padding: 2px 4px !important;
     }
 
     /* esconder texto do th de ação (evita desalinhamento do header) */
-    #fluxoForm #procResults thead th.th-action { 
+    #fluxoForm #procResults thead th.th-action {
       text-indent: -9999px;
       padding: 0;
-      border: none;
       background: transparent;
+      border: none;
     }
 
     /* botão +: tamanho reduzido e sem margem */
     #fluxoForm #procResults .btn-expand-docs {
-      padding: 0;
-      margin: 0;
-      width: 20px;
-      height: 20px;
-      line-height: 20px;
-      font-size: 14px;
-      border-radius: 3px;
-      border: 0;
-      background: transparent;
-      color: #374151;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 20px !important;
+      height: 20px !important;
+      line-height: 20px !important;
+      font-size: 14px !important;
+      border-radius: 3px !important;
+      border: 0 !important;
+      background: transparent !important;
+      color: #374151 !important;
       cursor: pointer;
     }
 
-    /* Larguras das colunas (ordem: Action, Número, Título/Especificação, Atribuição) */
-    /* Número do processo maior e mais proeminente */
-    #fluxoForm #procResults td.col-numero { min-width: 340px; font-weight: 600; font-size: 0.95rem; }
-    #fluxoForm #procResults th.th-numero { min-width: 340px; font-weight: 600; font-size: 0.95rem; }
+    /* =========== Colunas principais =========== */
+    /* Número do processo mais proeminente */
+    #fluxoForm #procResults td.col-numero,
+    #fluxoForm #procResults th.th-numero {
+      min-width: 300px;
+      max-width: 420px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
 
-    /* Título/especificação maior */
-    #fluxoForm #procResults td.col-title { min-width: 420px; padding: 0; font-size: 0.95rem; }
-    #fluxoForm #procResults th.th-title  { min-width: 420px; font-size: 0.95rem; }
-
-    /* Atribuição menor e mais discreta */
-    #fluxoForm #procResults td.col-atrib { max-width: 150px; font-size: 0.78rem; color: #4b5563; }
-    #fluxoForm #procResults th.th-atrib  { min-width: 130px; font-size: 0.78rem; color: #4b5563; }
-
-    /* Conteúdo rolável horizontal APENAS dentro da célula de especificação */
+    /* Título/especificação maior e com scroll interno */
+    #fluxoForm #procResults td.col-title,
+    #fluxoForm #procResults th.th-title {
+      min-width: 420px;
+      font-size: 0.95rem;
+      padding: 0;
+    }
     #fluxoForm #procResults .title-scroll {
       overflow-x: auto;
       overflow-y: hidden;
       white-space: nowrap;
-      padding: 6px 8px;           /* repõe o padding removido da td */
+      padding: 6px 8px;
       -webkit-overflow-scrolling: touch;
     }
 
-    /* Paginação clara e discreta, alinhada à direita */
+    /* Atribuição menor: reduzir largura e fonte */
+    #fluxoForm #procResults td.col-atrib,
+    #fluxoForm #procResults th.th-atrib {
+      max-width: 120px;
+      min-width: 80px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.78rem;
+      color: #4b5563;
+    }
+
+    /* Última coluna (direita) maior para textos longos — usa last-child para segurança */
+    #fluxoForm #procResults table.table th:last-child,
+    #fluxoForm #procResults table.table td:last-child {
+      min-width: 300px;
+      max-width: 600px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      font-size: 0.95rem;
+    }
+
+    /* Paginação */
     #fluxoForm #procResults .pager,
     #fluxoForm #procResults .d-flex.align-items-center.mt-2 {
       display: flex;
@@ -143,51 +168,26 @@ console.log('[script.js] carregado');
       color: #374151;
       border-top: 1px solid #e5e7eb;
     }
-    #fluxoForm #procResults .pager .btn.btn-light.btn-sm,
-    #fluxoForm #procResults .d-flex.align-items-center.mt-2 .btn.btn-light.btn-sm {
-      color: #111827;
-      background-color: #f3f4f6;
-      border-color: #e5e7eb;
-    }
 
-    /* Espaço entre o bloco de busca e o resto do formulário */
-    #fluxoForm .after-search-spacer { height: 8px; }
-
-    /* Opcional: zebra striping leve para leitura */
-    #fluxoForm #procResults tbody tr:nth-child(odd) {
-      background: #ffffff;
-    }
-    #fluxoForm #procResults tbody tr:nth-child(even) {
-      background: #fcfcfd;
-    }
-
-    /* Em telas largas, ajustar espaços */
-    @media (min-width: 1200px) {
-      #fluxoForm #procResults th.th-numero { min-width: 380px; }
-      #fluxoForm #procResults td.col-numero { max-width: 420px; }
-      #fluxoForm #procResults th.th-title { min-width: 460px; }
-      #fluxoForm #procResults td.col-title { max-width: 560px; }
-    }
-
-    /* Mensagens vazias/estado no container de resultados - tema claro */
+    /* Mensagens / estados */
     #fluxoForm #procResults .text-muted,
     #fluxoForm #procResults .empty-state,
     #fluxoForm #procResults .no-results,
     #fluxoForm #procResults .loading-state {
-      color: #374151 !important;      /* texto cinza-escuro legível */
-      background: #ffffff;            /* fundo branco */
+      color: #374151 !important;
+      background: #ffffff;
       padding: 8px 10px;
       border-radius: 4px;
     }
 
-    /* ====== Estilos para a lista de documentos dentro do trDocs ====== */
+    /* =========== Lista de DOCUMENTOS dentro do trDocs =========== */
     #fluxoForm .docs-container {
       padding: 6px;
       background: #fff;
     }
 
     #fluxoForm .docs-container table {
-      font-size: 0.75rem; /* diminuir 2 pontos em relação à lista principal */
+      font-size: 0.70rem; /* ainda menor */
       table-layout: fixed;
     }
 
@@ -200,31 +200,35 @@ console.log('[script.js] carregado');
       z-index: 1;
     }
 
-    /* coluna do número do doc bem estreita e com fundo diferenciado */
+    /* coluna do número do doc: fundo diferenciado e mais fina */
     #fluxoForm .docs-container td.col-doc-number,
     #fluxoForm .docs-container th.col-doc-number {
-      background-color: #e2e8f0; /* tom levemente mais escuro/azulado */
-      color: #0f172a;
-      width: 100px;              /* estreita para caber só o número */
+      background-color: #dfe9f5 !important; /* tom levemente mais escuro/azulado */
+      color: #0f172a !important;
+      width: 80px !important;    /* mais fino */
+      min-width: 70px !important;
+      max-width: 110px !important;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       font-weight: 600;
-      font-size: 0.72rem;
+      font-size: 0.70rem !important;
+      padding: 6px 8px !important;
     }
 
+    /* título do doc comporta wrap para múltiplas linhas */
     #fluxoForm .docs-container td.col-doc-title,
     #fluxoForm .docs-container th.col-doc-title {
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       padding-left: 6px;
       white-space: normal;
     }
 
-    /* pequenas melhorias de responsividade para o docs container */
+    /* responsive tweaks */
     @media (max-width: 480px) {
       #fluxoForm #procResults table.table { font-size: 0.75rem; }
-      #fluxoForm #procResults td.col-numero { min-width: 260px; }
-      #fluxoForm .docs-container td.col-doc-number { width: 90px; font-size: 0.68rem; }
+      #fluxoForm #procResults td.col-numero { min-width: 240px; }
+      #fluxoForm .docs-container td.col-doc-number { width: 70px !important; font-size: 0.64rem !important; }
     }
   `;
 
