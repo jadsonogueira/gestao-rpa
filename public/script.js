@@ -1,4 +1,4 @@
-// ==================== script.js (com agendamento em todos os serviços + busca global de processos) ====================
+// ==================== script.js (corrigido) ====================
 'use strict';
 
 // Base da API
@@ -41,6 +41,15 @@ console.log('[script.js] carregado');
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
     }
+
+    /* chevron rotate quando expandido */
+    .btn-expand-docs .chev {
+      display: inline-block;
+      transition: transform 0.18s ease;
+    }
+    .btn-expand-docs.expanded .chev {
+      transform: rotate(180deg);
+    }
   `;
 
   const styleEl = document.createElement('style');
@@ -49,11 +58,10 @@ console.log('[script.js] carregado');
   styleEl.appendChild(document.createTextNode(css));
   document.head.appendChild(styleEl);
 })();
- 
-///
 
 function normalizeSeiNumber(seiNumber) {
-  return seiNumber.replace(/[.\-\/\s]/g, '');
+  if (!seiNumber) return '';
+  return String(seiNumber).replace(/[.\-\/\s]/g, '');
 }
 
 function stripHtml(html) {
@@ -75,7 +83,8 @@ function showAlert(message, type = 'success') {
       </div>
     `;
   } else {
-    alert(message);
+    // fallback simples
+    console[type === 'danger' ? 'error' : 'log']('[alert]', type, message);
   }
 }
 
@@ -156,8 +165,6 @@ function agoraParaDatetimeLocalMin() {
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
 }
 
-// ---------- Normalização de texto ----------
-// Tenta decodificar URL-encoding e também converte '+' em espaço quando apropriado.
 function decodePossiblyEncoded(str) {
   if (!str) return '';
   const s = String(str);
@@ -180,7 +187,7 @@ async function buscarProcessosGlobais(term, page = 1, limit = 10) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     console.log('Resposta da API:', json);
-    
+
     let items = [];
     let currentPage = 1, totalPages = 1, total = 0;
 
@@ -200,7 +207,6 @@ async function buscarProcessosGlobais(term, page = 1, limit = 10) {
   }
 }
 
-// Mapeia processo com normalização do título/especificação
 function mapProcRow(p) {
   const numero = p.seiNumber || p.seiNumberNorm || p.processNumber || p.numero || p.sei || '';
   const atrib  = p.unit || p.assignedTo || p.unidade || p.atribuicao || '';
@@ -209,7 +215,6 @@ function mapProcRow(p) {
   return { numero, atrib, titulo };
 }
 
-// ---------- UI builders ----------
 function buildSelectOptions(selectEl, options) {
   const opt0 = document.createElement('option');
   opt0.value = '';
@@ -226,6 +231,11 @@ function buildSelectOptions(selectEl, options) {
     if (o.idExterno) opt.dataset.idexterno = o.idExterno;
     selectEl.appendChild(opt);
   });
+}
+
+// helper escape HTML (para debug)
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ---------- Form modal ----------
@@ -252,6 +262,7 @@ async function abrirFormulario(fluxo) {
   let campos = [];
 
   try {
+    // (mesma lógica de seleção de campos que você já tinha)
     if (fluxo === 'Consultar empenho') {
       const contratos = await carregarContratos().catch(() => []);
       campos = [{ id: 'contratoSei', placeholder: 'Contrato SEI', type: 'select', options: contratos }];
@@ -421,25 +432,25 @@ async function abrirFormulario(fluxo) {
         const pdfInput = document.getElementById('arquivoPdf');
 
         if (metodo === 'Imagens Individuais') {
-          imagensContainer.style.display = 'block';
-          zipContainer.style.display = 'none';
-          pdfContainer.style.display = 'none';
+          if (imagensContainer) imagensContainer.style.display = 'block';
+          if (zipContainer) zipContainer.style.display = 'none';
+          if (pdfContainer) pdfContainer.style.display = 'none';
           if (zipInput) { zipInput.required = false; zipInput.value = ''; }
           if (numeroImagensSelect) numeroImagensSelect.required = true;
           if (pdfInput) { pdfInput.required = false; pdfInput.value = ''; }
           document.querySelectorAll('#arquivosContainer input[type="file"]').forEach(inp => inp.required = true);
         } else if (metodo === 'Arquivo ZIP') {
-          imagensContainer.style.display = 'none';
-          zipContainer.style.display = 'block';
-          pdfContainer.style.display = 'none';
+          if (imagensContainer) imagensContainer.style.display = 'none';
+          if (zipContainer) zipContainer.style.display = 'block';
+          if (pdfContainer) pdfContainer.style.display = 'none';
           if (zipInput) zipInput.required = true;
           if (numeroImagensSelect) { numeroImagensSelect.required = false; numeroImagensSelect.value = ''; }
           if (pdfInput) { pdfInput.required = false; pdfInput.value = ''; }
           document.querySelectorAll('#arquivosContainer input[type="file"]').forEach(inp => { inp.required = false; inp.value = ''; });
         } else if (metodo === 'PDF para JPG') {
-          imagensContainer.style.display = 'none';
-          zipContainer.style.display = 'none';
-          pdfContainer.style.display = 'block';
+          if (imagensContainer) imagensContainer.style.display = 'none';
+          if (zipContainer) zipContainer.style.display = 'none';
+          if (pdfContainer) pdfContainer.style.display = 'block';
           if (zipInput) { zipInput.required = false; zipInput.value = ''; }
           if (numeroImagensSelect) { numeroImagensSelect.required = false; numeroImagensSelect.value = ''; }
           document.querySelectorAll('#arquivosContainer input[type="file"]').forEach(inp => { inp.required = false; inp.value = ''; });
@@ -479,35 +490,30 @@ async function abrirFormulario(fluxo) {
 
     const row = document.createElement('div');
     row.className = 'proc-search-row';
-////
-    
-   // trecho seguro para inserir dentro de abrirFormulario(), na criação do grupo de busca
+
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.className = 'form-control';
     inp.id = 'buscaProcGlobal';
     inp.placeholder = 'Digite parte do número, título, atribuição...';
-    
-    // botão de busca (renomeado para evitar conflito com outros 'btn')
+
     const searchBtn = document.createElement('button');
     searchBtn.type = 'button';
-    searchBtn.className = 'btn btn-secondary';
+    searchBtn.className = 'btn btn-secondary ml-2';
     searchBtn.textContent = 'Buscar';
-    
+
     row.appendChild(inp);
     row.appendChild(searchBtn);
     grp.appendChild(lbl);
     grp.appendChild(row);
-    
+
     const resWrap = document.createElement('div');
     resWrap.id = 'procResults';
     resWrap.className = 'mt-2';
     grp.appendChild(resWrap);
-    
+
     // Coloca a busca no topo do form
     fluxoForm.insertBefore(grp, fluxoForm.firstChild);
-
-    ////
 
     // Pequeno espaçador
     const spacer = document.createElement('div');
@@ -516,6 +522,10 @@ async function abrirFormulario(fluxo) {
 
     let pagina = 1;
     const limite = 10;
+
+    // Executa busca quando clicar no botão ou pressionar Enter
+    searchBtn.addEventListener('click', () => { pagina = 1; executarBusca(pagina); });
+    inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); pagina = 1; executarBusca(pagina); } });
 
     async function executarBusca(page = 1) {
       const term = inp.value.trim();
@@ -533,311 +543,192 @@ async function abrirFormulario(fluxo) {
       const table = document.createElement('table');
       table.className = 'table table-sm table-hover table-bordered mb-0';
       table.style.tableLayout = 'fixed';
-     table.innerHTML = `
-      <thead>
-        <tr>
-          <th class="th-action" aria-label="Ações"></th>
-          <th class="th-numero">Número</th>
-          <th class="th-title">Título/Especificação</th>
-          <th class="th-atrib">Atribuição</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-      const tbody = table.querySelector('tbody');
-items.forEach(proc => {
-  const m = mapProcRow(proc);
-
-  // Linha principal do processo
-// dentro do items.forEach(proc => { ... })
-    const tr = document.createElement('tr');
-    
-    // action (chevron) como primeira célula
-    const tdAction = document.createElement('td');
-    tdAction.className = 'col-action';
-    tdAction.title = 'Abrir documentos';
-    
-    const chevronBtn = document.createElement('button');
-    chevronBtn.className = 'btn btn-sm btn-link btn-expand-docs';
-    chevronBtn.type = 'button';
-    chevronBtn.title = 'Mostrar documentos';
-    chevronBtn.setAttribute('aria-expanded', 'false');
-    chevronBtn.innerHTML = `<span class="chev" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"></polyline>
-      </svg>
-    </span>`;
-    
-    tdAction.appendChild(chevronBtn);
-    tr.appendChild(tdAction);
-    
-    // número do processo
-    const tdNumero = document.createElement('td');
-    tdNumero.className = 'col-numero';
-    tdNumero.title = m.numero;
-    tdNumero.textContent = m.numero;
-    tr.appendChild(tdNumero);
-    
-    // título (você já monta titleCell antes; se não, use este)
-    const tdTitle = document.createElement('td');
-    tdTitle.className = 'col-title';
-    tdTitle.title = m.titulo;
-    tdTitle.innerHTML = `<div class="title-scroll">${m.titulo}</div>`;
-    tr.appendChild(tdTitle);
-    
-    // atribuição
-    const tdAtrib = document.createElement('td');
-    tdAtrib.className = 'col-atrib';
-    tdAtrib.title = m.atrib || '';
-    tdAtrib.textContent = m.atrib || '';
-    tr.appendChild(tdAtrib);
-
-
-  
-  // Linha extra para documentos, inicialmente oculta
-  const trDocs = document.createElement('tr');
-  trDocs.style.display = 'none';
-  const tdDocs = document.createElement('td');
-  tdDocs.colSpan = 4; // ocupa todas as colunas
-  tdDocs.innerHTML = '<div class="docs-container">Carregando documentos...</div>';
-  trDocs.appendChild(tdDocs);
-
-
-chevronBtn.addEventListener('click', async (e) => {
-  e.stopPropagation();
-  const isExpanded = chevronBtn.classList.toggle('expanded');
-  chevronBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
-
-  if (!isExpanded) {
-    trDocs.style.display = 'none';
-    return;
-  }
-
-  trDocs.style.display = '';
-  const container = tdDocs.querySelector('.docs-container');
-  if (container) container.textContent = 'Carregando documentos...';
-
-  try {
-    const normalizedNumber = normalizeSeiNumber(m.numero);
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const payload = await res.json();
-    const docs = Array.isArray(payload) ? payload : (payload.items || payload.data || payload.results || []);
-    // montar a tabela de docs aqui (como você já faz)
-  } catch (err) {
-    console.error('Erro ao carregar documentos:', err);
-    if (container) container.innerHTML = `<span class="text-danger">Erro: ${err.message}</span>`;
-    chevronBtn.classList.remove('expanded');
-    chevronBtn.setAttribute('aria-expanded', 'false');
-    trDocs.style.display = 'none';
-  }
-});
-
-  
-  // Evento para expandir/contrair documentos
-  
-// em vez de declarar uma const, anexa o listener direto:
-tr.querySelector('.btn-expand-docs').addEventListener('click', async (e) => {
-  e.stopPropagation();
-
-  const normalizedNumber = normalizeSeiNumber(m.numero);
-  console.log('Número do processo para documentos:', m.numero);
-  console.log('Número normalizado:', normalizedNumber);
-
-  if (trDocs.style.display === 'none') {
-    trDocs.style.display = '';
-    const container = tdDocs.querySelector('.docs-container');
-    container.innerHTML = 'Carregando documentos...';
-
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (!res.ok) throw new Error(`Erro ${res.status}`);
-
-      const payload = await res.json();
-      console.log('Payload de documentos:', payload);
-
-      const docs = Array.isArray(payload) ? payload : (payload.items || payload.data || payload.results || []);
-
-      if (!docs || docs.length === 0) {
-        container.innerHTML = '<em>Nenhum documento encontrado.</em>';
-      } else {
-        const list = document.createElement('ul');
-        docs.forEach(doc => {
-          const li = document.createElement('li');
-          li.textContent = `${doc.title || doc.docTitle || doc.name || 'Documento sem título'}${(doc.docNumber || doc.date) ? ' - ' + (doc.docNumber || doc.date) : ''}`;
-          list.appendChild(li);
-        });
-        container.innerHTML = '';
-        container.appendChild(list);
-      }
-    } catch (err) {
-      console.error(err);
-      container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
-    }
-  } else {
-    trDocs.style.display = 'none';
-  }
-});
-//
-
-// --- dentro do items.forEach, após criar tr, trDocs e tdDocs ---
-// Substitua ambos os listeners por este bloco (dentro do items.forEach, após criar tr, trDocs, tdDocs)
-const btn = tr.querySelector('.btn-expand-docs');
-if (!btn) {
-  console.warn('botão .btn-expand-docs NÃO encontrado para o processo:', m.numero);
-} else {
-  btn.onclick = async (e) => {
-    e.stopPropagation();
-    console.log('📄 clique documento para processo', m.numero);
-
-    const normalizedNumber = normalizeSeiNumber(m.numero);
-    console.log('Número normalizado:', normalizedNumber);
-
-    const container = tdDocs.querySelector('.docs-container');
-    if (!container) {
-      console.error('Container de documentos não encontrado para', m.numero);
-      return;
-    }
-
-    // Toggle: se oculto, abre; se aberto, fecha
-    const isClosed = trDocs.style.display === 'none' || !trDocs.style.display;
-    if (!isClosed && trDocs.style.display !== 'none') {
-      trDocs.style.display = 'none';
-      return;
-    }
-    trDocs.style.display = ''; // mostra
-    container.innerHTML = 'Carregando documentos...';
-
-    try {
-      const token = localStorage.getItem('token');
-      console.log('fetch documentos para', normalizedNumber);
-      const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      console.log('HTTP status documentos:', res.status, res.statusText);
-
-      let payload;
-      try {
-        payload = await res.json();
-      } catch (jsonErr) {
-        const txt = await res.text().catch(() => '(erro lendo texto)');
-        console.warn('Resposta não-JSON do servidor:', txt.slice(0,500));
-        container.innerText = 'Resposta inesperada do servidor (não JSON). Veja Console.';
-        console.log('RAW RESPONSE:', txt);
-        return;
-      }
-      console.log('Payload de documentos:', payload);
-
-      const docs = Array.isArray(payload) ? payload
-                 : Array.isArray(payload.items) ? payload.items
-                 : Array.isArray(payload.data) ? payload.data
-                 : Array.isArray(payload.results) ? payload.results
-                 : Array.isArray(payload.docs) ? payload.docs
-                 : null;
-
-      if (!docs || docs.length === 0) {
-        console.warn('Nenhum documento extraído pelo parser. Mostrando payload cru no container para inspeção.');
-        container.innerHTML = `<pre style="white-space:pre-wrap;max-height:300px;overflow:auto;">${escapeHtml(JSON.stringify(payload, null, 2)).slice(0,20000)}</pre>`;
-        return;
-      }
-
-      // monta tabela: Número | Título
-      const table = document.createElement('table');
-      table.className = 'table table-sm mb-0';
-      table.style.width = '100%';
-
-      const thead = document.createElement('thead');
-      thead.innerHTML = `
-        <tr>
-          <th class="col-doc-number">Número</th>
-          <th class="col-doc-title">Título</th>
-        </tr>
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th class="th-action" aria-label="Ações"></th>
+            <th class="th-numero">Número</th>
+            <th class="th-title">Título/Especificação</th>
+            <th class="th-atrib">Atribuição</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
       `;
+      const tbody = table.querySelector('tbody');
 
-      const tbodyDocs = document.createElement('tbody');
+      items.forEach(proc => {
+        const m = mapProcRow(proc);
 
-      docs.forEach(doc => {
-        const row = document.createElement('tr');
-        row.style.cursor = 'pointer';
+        // Linha principal do processo
+        const tr = document.createElement('tr');
 
-        const numeroExib = doc.seiNumber || doc.docNumber || doc.docNumberText || doc.number || '';
-        const tituloExib = stripHtml(doc.docTitle || doc.title || doc.name || doc.description || '');
+        // action (chevron)
+        const tdAction = document.createElement('td');
+        tdAction.className = 'col-action';
+        tdAction.title = 'Abrir documentos';
 
-        const tdNum = document.createElement('td');
-        tdNum.className = 'col-numero';
-        tdNum.textContent = numeroExib;
-        tdNum.title = numeroExib;
+        const chevronBtn = document.createElement('button');
+        chevronBtn.className = 'btn btn-sm btn-link btn-expand-docs';
+        chevronBtn.type = 'button';
+        chevronBtn.title = 'Mostrar documentos';
+        chevronBtn.setAttribute('aria-expanded', 'false');
+        chevronBtn.innerHTML = `<span class="chev" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </span>`;
 
+        tdAction.appendChild(chevronBtn);
+        tr.appendChild(tdAction);
+
+        // número do processo
+        const tdNumero = document.createElement('td');
+        tdNumero.className = 'col-numero';
+        tdNumero.title = m.numero;
+        tdNumero.textContent = m.numero;
+        tr.appendChild(tdNumero);
+
+        // título
         const tdTitle = document.createElement('td');
         tdTitle.className = 'col-title';
-        tdTitle.title = tituloExib;
-        const divTitle = document.createElement('div');
-        divTitle.className = 'title-scroll';
-        divTitle.style.whiteSpace = 'normal';
-        divTitle.textContent = tituloExib;
-        tdTitle.appendChild(divTitle);
+        tdTitle.title = m.titulo;
+        tdTitle.innerHTML = `<div class="title-scroll" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.titulo}</div>`;
+        tr.appendChild(tdTitle);
 
-        row.appendChild(tdNum);
-        row.appendChild(tdTitle);
+        // atribuição
+        const tdAtrib = document.createElement('td');
+        tdAtrib.className = 'col-atrib';
+        tdAtrib.title = m.atrib || '';
+        tdAtrib.textContent = m.atrib || '';
+        tr.appendChild(tdAtrib);
 
-        // clique na linha do documento: preenche input id="numeroDocSei" (confirme este id no formulário)
-        row.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          const inputDoc = document.getElementById('numeroDocSei'); // <-- usar este id (camelCase) se for o que você criou
-          const valueToSet = numeroExib || '';
-          if (inputDoc) {
-            inputDoc.value = valueToSet;
-            if (typeof showAlert === 'function') showAlert(`Documento selecionado: ${valueToSet}`, 'success');
-            inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            inputDoc.classList.add('is-valid');
-            setTimeout(() => inputDoc.classList.remove('is-valid'), 1500);
-          } else {
-            console.warn('input id="numeroDocSei" não encontrado. Valor:', valueToSet);
+        // Linha extra para documentos, inicialmente oculta
+        const trDocs = document.createElement('tr');
+        trDocs.style.display = 'none';
+        const tdDocs = document.createElement('td');
+        tdDocs.colSpan = 4; // ocupa todas as colunas
+        tdDocs.innerHTML = '<div class="docs-container">Carregando documentos...</div>';
+        trDocs.appendChild(tdDocs);
+
+        // Listener único do chevron
+        chevronBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const isExpanded = chevronBtn.classList.toggle('expanded');
+          chevronBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+
+          if (!isExpanded) {
+            trDocs.style.display = 'none';
+            return;
+          }
+
+          trDocs.style.display = '';
+          const container = tdDocs.querySelector('.docs-container');
+          if (container) container.textContent = 'Carregando documentos...';
+
+          try {
+            const normalizedNumber = normalizeSeiNumber(m.numero);
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const payload = await res.json();
+
+            const docs = Array.isArray(payload) ? payload
+                        : Array.isArray(payload.items) ? payload.items
+                        : Array.isArray(payload.data) ? payload.data
+                        : Array.isArray(payload.results) ? payload.results
+                        : Array.isArray(payload.docs) ? payload.docs
+                        : null;
+
+            if (!docs || docs.length === 0) {
+              container.innerHTML = '<em>Nenhum documento encontrado.</em>';
+              return;
+            }
+
+            // monta tabela: Número | Título
+            const docsTable = document.createElement('table');
+            docsTable.className = 'table table-sm mb-0';
+            docsTable.style.width = '100%';
+            docsTable.innerHTML = `
+              <thead>
+                <tr>
+                  <th class="col-doc-number">Número</th>
+                  <th class="col-doc-title">Título</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            `;
+            const docsTbody = docsTable.querySelector('tbody');
+
+            docs.forEach(doc => {
+              const row = document.createElement('tr');
+              row.style.cursor = 'pointer';
+
+              const numeroExib = doc.seiNumber || doc.docNumber || doc.docNumberText || doc.number || '';
+              const tituloExib = stripHtml(doc.docTitle || doc.title || doc.name || doc.description || '');
+
+              const tdNum = document.createElement('td');
+              tdNum.className = 'col-doc-number';
+              tdNum.textContent = numeroExib;
+              tdNum.title = numeroExib;
+
+              const tdTitle = document.createElement('td');
+              tdTitle.className = 'col-doc-title';
+              tdTitle.title = tituloExib;
+              const divTitle = document.createElement('div');
+              divTitle.className = 'title-scroll';
+              divTitle.style.whiteSpace = 'normal';
+              divTitle.textContent = tituloExib;
+              tdTitle.appendChild(divTitle);
+
+              row.appendChild(tdNum);
+              row.appendChild(tdTitle);
+
+              row.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                const inputDoc = document.getElementById('numeroDocSei') || document.getElementById('numeroDocSEI');
+                const valueToSet = numeroExib || '';
+                if (inputDoc) {
+                  inputDoc.value = valueToSet;
+                  showAlert(`Documento selecionado: ${valueToSet}`, 'success');
+                  inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  inputDoc.classList.add('is-valid');
+                  setTimeout(() => inputDoc.classList.remove('is-valid'), 1500);
+                } else {
+                  console.warn('input id="numeroDocSei" não encontrado. Valor:', valueToSet);
+                }
+              });
+
+              docsTbody.appendChild(row);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(docsTable);
+
+          } catch (err) {
+            console.error('Erro ao carregar documentos:', err);
+            if (container) container.innerHTML = `<span class="text-danger">Erro: ${err.message}</span>`;
+            chevronBtn.classList.remove('expanded');
+            chevronBtn.setAttribute('aria-expanded', 'false');
+            trDocs.style.display = 'none';
           }
         });
 
-        tbodyDocs.appendChild(row);
+        // Clique na linha principal seleciona o processo (sem expandir docs)
+        tr.addEventListener('click', () => {
+          if (!m.numero) return;
+          campoNumeroProc.value = m.numero;
+          showAlert(`Processo selecionado: ${m.numero}`, 'success');
+          campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          campoNumeroProc.classList.add('is-valid');
+          setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
+        });
+
+        tbody.appendChild(tr);
+        tbody.appendChild(trDocs);
       });
 
-      table.appendChild(tbodyDocs);
-      container.innerHTML = '';
-      container.appendChild(table);
-
-    } catch (err) {
-      console.error('Erro ao carregar documentos:', err);
-      container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
-    }
-  };
-}
-
-// helper escape HTML (para debug)
-function escapeHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-
-  
-  // Clique na linha principal seleciona o processo (sem expandir docs)
-  tr.addEventListener('click', () => {
-    if (!m.numero) return;
-    campoNumeroProc.value = m.numero;
-    showAlert(`Processo selecionado: ${m.numero}`, 'success');
-    campoNumeroProc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    campoNumeroProc.classList.add('is-valid');
-    setTimeout(() => campoNumeroProc.classList.remove('is-valid'), 1500);
-  });
-
-  tbody.appendChild(tr);
-  tbody.appendChild(trDocs);
-});
-    
       // wrapper com rolagem vertical da lista
       const scrollWrap = document.createElement('div');
       scrollWrap.className = 'results-scroll';
@@ -876,47 +767,10 @@ function escapeHtml(s) {
       pagWrap.appendChild(next);
       pager.appendChild(pagWrap);
       resWrap.appendChild(pager);
-    }
+    } // fim executarBusca
+  } // fim if campoNumeroProc
 
-   btn.addEventListener('click', async (e) => {
-  e.stopPropagation();
-
-  // alterna estado visual/aria
-  const expanded = btn.classList.toggle('expanded');
-  btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-
-  // encontre trDocs/tdDocs e comportamentos de mostrar/ocultar
-  if (!expanded) {
-    // se agora fechado -> ocultar linha de docs
-    trDocs.style.display = 'none';
-    return;
-  }
-
-  // se abriu -> mostrar e carregar
-  trDocs.style.display = '';
-  const container = tdDocs.querySelector('.docs-container');
-  container.textContent = 'Carregando documentos...';
-
-  try {
-    // .. seu fetch existente .. (use normalizedNumber etc)
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const payload = await res.json();
-    const docs = Array.isArray(payload) ? payload : (payload.items || payload.data || payload.results || []);
-    // montar a tabela de docs como antes
-    // ...
-  } catch (err) {
-    container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
-    // fechar visual se preferir
-    btn.classList.remove('expanded');
-    btn.setAttribute('aria-expanded', 'false');
-    trDocs.style.display = 'none';
-  }
-});
-
-  // ----- Containers extras -----
+  // ----- Containers extras (imagens/zip/pdf) -----
   const imagensContainer = document.createElement('div');
   imagensContainer.id = 'imagensContainer';
   imagensContainer.style.display = 'none';
@@ -955,6 +809,7 @@ function escapeHtml(s) {
   numeroImagensSelect.addEventListener('change', function() {
     const numImagens = parseInt(this.value);
     const arquivosContainer = document.getElementById('arquivosContainer');
+    if (!arquivosContainer) return;
     arquivosContainer.innerHTML = '';
     for (let i = 1; i <= numImagens; i++) {
       const formGroup = document.createElement('div');
@@ -1114,13 +969,21 @@ function escapeHtml(s) {
 
   fluxoForm.onsubmit = enviarFormularioAxios;
 
-  // Abre modal
+  // Abre modal (suporta jQuery+Bootstrap4 e Bootstrap5 sem jQuery)
   try {
-    if (window.$ && $('#fluxoModal').length) {
-      $('#fluxoModal').modal('show');
+    const modalEl = document.getElementById('fluxoModal');
+    if (window.$ && typeof window.$ === 'function' && window.$('#fluxoModal').length && typeof window.$.fn.modal === 'function') {
+      // jQuery + Bootstrap 4
+      window.$('#fluxoModal').modal('show');
+    } else if (modalEl && typeof bootstrap !== 'undefined' && typeof bootstrap.Modal === 'function') {
+      // Bootstrap 5
+      const bsModal = new bootstrap.Modal(modalEl);
+      bsModal.show();
+    } else if (modalEl) {
+      // fallback simples: mostra o elemento
+      modalEl.style.display = 'block';
     } else {
-      const modal = document.getElementById('fluxoModal');
-      if (modal) modal.style.display = 'block';
+      console.warn('Elemento #fluxoModal não encontrado para abrir modal.');
     }
   } catch (err) {
     console.error('Falha ao abrir modal:', err);
@@ -1131,10 +994,10 @@ function escapeHtml(s) {
 function enviarFormularioAxios(e) {
   e.preventDefault();
 
-   console.log('[DEBUG] listando inputs do form antes de enviar:');
-e.target.querySelectorAll('input[type="file"]').forEach(inp => {
-  console.log(' ->', inp.id, 'name=', inp.name);
-});
+  console.log('[DEBUG] listando inputs do form antes de enviar:');
+  e.target.querySelectorAll('input[type="file"]').forEach(inp => {
+    console.log(' ->', inp.id, 'name=', inp.name);
+  });
 
   const envioSelecionado = (e.target.querySelector('input[name="envio"]:checked') || {}).value || 'imediato';
   if (envioSelecionado === 'agendar') {
@@ -1149,37 +1012,35 @@ e.target.querySelectorAll('input[type="file"]').forEach(inp => {
       showAlert('Escolha um horário de agendamento no futuro (mínimo alguns minutos à frente).', 'warning');
       return;
     }
-
   }
 
   showLoadingOverlay();
 
   const fluxo = document.getElementById('modalTitle').innerText;
- // monta o FormData com segurança
-const formData = new FormData();
-formData.append('fluxo', fluxo);
+  // monta o FormData com segurança
+  const formData = new FormData();
+  formData.append('fluxo', fluxo);
 
-const inputs = e.target.querySelectorAll('input, textarea, select');
-inputs.forEach((input) => {
-  const name = (input.name || '').trim();   // <- garante nome
-  if (!name) return;                        // <- pula campos sem name
+  const inputs = e.target.querySelectorAll('input, textarea, select');
+  inputs.forEach((input) => {
+    const name = (input.name || '').trim();   // <- garante nome
+    if (!name) return;                        // <- pula campos sem name
 
-  if (input.type === 'file' && input.files && input.files.length > 0) {
-    for (let i = 0; i < input.files.length; i++) {
-      formData.append(name, input.files[i]);
+    if (input.type === 'file' && input.files && input.files.length > 0) {
+      for (let i = 0; i < input.files.length; i++) {
+        formData.append(name, input.files[i]);
+      }
+    } else if (input.type === 'radio') {
+      if (input.checked) formData.append(name, input.value);
+    } else if (input.type !== 'file') {
+      formData.append(name, (input.value || '').trim());
     }
-  } else if (input.type === 'radio') {
-    if (input.checked) formData.append(name, input.value);
-  } else if (input.type !== 'file') {
-    formData.append(name, (input.value || '').trim());
+  });
+
+  // debug: veja o que realmente está indo
+  for (const [k, v] of formData.entries()) {
+    console.log('[FD]', k, v instanceof File ? `File:${v.name}` : v);
   }
-});
-
-// debug: veja o que realmente está indo
-for (const [k, v] of formData.entries()) {
-  console.log('[FD]', k, v instanceof File ? `File:${v.name}` : v);
-}
-
 
   if (envioSelecionado === 'agendar') {
     const whenEl = e.target.querySelector('#quando');
@@ -1253,25 +1114,34 @@ for (const [k, v] of formData.entries()) {
 
       showAlert(`✅ Operação concluída com sucesso! Arquivo: ${filename}`, 'success');
 
-      if (window.$ && $('#fluxoModal').length) {
-        $('#fluxoModal').modal('hide');
-      }
+      try {
+        if (window.$ && $('#fluxoModal').length) {
+          $('#fluxoModal').modal('hide');
+        } else if (document.getElementById('fluxoModal') && typeof bootstrap !== 'undefined') {
+          const bsModal = bootstrap.Modal.getInstance(document.getElementById('fluxoModal'));
+          if (bsModal) bsModal.hide();
+        }
+      } catch {}
     } else {
       showAlert('✅ Solicitação enviada com sucesso.', 'success');
 
-      if (window.$ && $('#fluxoModal').length) {
-        $('#fluxoModal').modal('hide');
-      }
+      try {
+        if (window.$ && $('#fluxoModal').length) {
+          $('#fluxoModal').modal('hide');
+        } else if (document.getElementById('fluxoModal') && typeof bootstrap !== 'undefined') {
+          const bsModal = bootstrap.Modal.getInstance(document.getElementById('fluxoModal'));
+          if (bsModal) bsModal.hide();
+        }
+      } catch {}
     }
   })
   .catch(err => {
-  console.error('send-email erro:',
-    err?.response?.status,
-    err?.response?.data || err?.message
-  );
-  showAlert('Falha ao processar sua solicitação.', 'danger');
-})
-
+    console.error('send-email erro:',
+      err?.response?.status,
+      err?.response?.data || err?.message
+    );
+    showAlert('Falha ao processar sua solicitação.', 'danger');
+  })
   .finally(() => {
     hideLoadingOverlay();
   });
