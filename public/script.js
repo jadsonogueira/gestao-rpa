@@ -42,7 +42,7 @@ console.log('[script.js] carregado');
     /* Tabela compacta e legível (tema claro) */
     #fluxoForm #procResults table.table {
       margin-bottom: 0;
-      font-size: 0.9rem;
+      font-size: 0.8rem; /* reduzido ~2 pontos conforme solicitado (antes 0.9rem) */
       color: #111827;
       background-color: transparent;
       table-layout: fixed;
@@ -76,15 +76,38 @@ console.log('[script.js] carregado');
       vertical-align: middle;
     }
 
-    /* Larguras das colunas (ordem: Número, Título/Especificação, Atribuição) */
-    #fluxoForm #procResults td.col-numero { max-width: 300px; }  /* maior para não cortar */
-    #fluxoForm #procResults th.th-numero { min-width: 240px; }
+    /* ======= Nova coluna de ação (botão '+') como primeira coluna ======= */
+    #fluxoForm #procResults td.col-action,
+    #fluxoForm #procResults th.th-action {
+      width: 38px;
+      text-align: center;
+      padding: 4px 6px;
+    }
 
-    #fluxoForm #procResults td.col-title { max-width: 420px; padding: 0; } /* célula com rolagem */
-    #fluxoForm #procResults th.th-title  { min-width: 320px; }
+    /* estilo do botão expand docs: pequeno, só o '+' */
+    #fluxoForm #procResults .btn-expand-docs {
+      padding: 2px 6px;
+      font-weight: 700;
+      font-size: 1rem;
+      line-height: 1;
+      border: none;
+      background: transparent;
+      color: #374151;
+      cursor: pointer;
+    }
 
-    #fluxoForm #procResults td.col-atrib { max-width: 150px; }  /* mais estreita */
-    #fluxoForm #procResults th.th-atrib  { min-width: 130px; }
+    /* Larguras das colunas (ordem: Action, Número, Título/Especificação, Atribuição) */
+    /* Número do processo maior e mais proeminente */
+    #fluxoForm #procResults td.col-numero { min-width: 340px; font-weight: 600; font-size: 0.95rem; }
+    #fluxoForm #procResults th.th-numero { min-width: 340px; font-weight: 600; font-size: 0.95rem; }
+
+    /* Título/especificação maior */
+    #fluxoForm #procResults td.col-title { min-width: 420px; padding: 0; font-size: 0.95rem; }
+    #fluxoForm #procResults th.th-title  { min-width: 420px; font-size: 0.95rem; }
+
+    /* Atribuição menor e mais discreta */
+    #fluxoForm #procResults td.col-atrib { max-width: 150px; font-size: 0.78rem; color: #4b5563; }
+    #fluxoForm #procResults th.th-atrib  { min-width: 130px; font-size: 0.78rem; color: #4b5563; }
 
     /* Conteúdo rolável horizontal APENAS dentro da célula de especificação */
     #fluxoForm #procResults .title-scroll {
@@ -125,38 +148,83 @@ console.log('[script.js] carregado');
       background: #fcfcfd;
     }
 
-    /* Em telas largas, dar ainda mais espaço ao Número */
+    /* Em telas largas, ajustar espaços */
     @media (min-width: 1200px) {
-      #fluxoForm #procResults th.th-numero { min-width: 280px; }
-      #fluxoForm #procResults td.col-numero { max-width: 340px; }
-      #fluxoForm #procResults th.th-title { min-width: 360px; }
-      #fluxoForm #procResults td.col-title { max-width: 480px; }
+      #fluxoForm #procResults th.th-numero { min-width: 380px; }
+      #fluxoForm #procResults td.col-numero { max-width: 420px; }
+      #fluxoForm #procResults th.th-title { min-width: 460px; }
+      #fluxoForm #procResults td.col-title { max-width: 560px; }
     }
 
-  /* Mensagens vazias/estado no container de resultados - tema claro */
-#fluxoForm #procResults .text-muted,
-#fluxoForm #procResults .empty-state,
-#fluxoForm #procResults .no-results,
-#fluxoForm #procResults .loading-state {
-  color: #374151 !important;      /* texto cinza-escuro legível */
-  background: #ffffff;            /* fundo branco */
-  padding: 8px 10px;
-  border-radius: 4px;
-}
+    /* Mensagens vazias/estado no container de resultados - tema claro */
+    #fluxoForm #procResults .text-muted,
+    #fluxoForm #procResults .empty-state,
+    #fluxoForm #procResults .no-results,
+    #fluxoForm #procResults .loading-state {
+      color: #374151 !important;      /* texto cinza-escuro legível */
+      background: #ffffff;            /* fundo branco */
+      padding: 8px 10px;
+      border-radius: 4px;
+    }
 
-/* Opcional: dar uma leve borda para destacar a mensagem */
-#fluxoForm #procResults .text-muted {
-  border: 1px dashed #e5e7eb;
-}
-  
+    /* Opcional: dar uma leve borda para destacar a mensagem */
+    #fluxoForm #procResults .text-muted {
+      border: 1px dashed #e5e7eb;
+    }
+
+    /* ====== Estilos para a lista de documentos dentro do trDocs ====== */
+    #fluxoForm .docs-container {
+      padding: 6px;
+      background: #fff;
+    }
+
+    #fluxoForm .docs-container table {
+      font-size: 0.75rem; /* diminuir 2 pontos em relação à lista principal */
+      table-layout: fixed;
+    }
+
+    #fluxoForm .docs-container thead th {
+      background: #ffffff;
+      color: #111827;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    /* coluna do número do doc bem estreita */
+    #fluxoForm .docs-container td.col-doc-number,
+    #fluxoForm .docs-container th.col-doc-number {
+      width: 120px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 600;
+      font-size: 0.72rem;
+    }
+
+    #fluxoForm .docs-container td.col-doc-title,
+    #fluxoForm .docs-container th.col-doc-title {
+      font-size: 0.75rem;
+      padding-left: 6px;
+      white-space: normal;
+    }
+
+    /* pequenas melhorias de responsividade para o docs container */
+    @media (max-width: 480px) {
+      #fluxoForm #procResults table.table { font-size: 0.75rem; }
+      #fluxoForm #procResults td.col-numero { min-width: 260px; }
+      #fluxoForm .docs-container td.col-doc-number { width: 90px; font-size: 0.68rem; }
+    }
   `;
+
   const styleEl = document.createElement('style');
   styleEl.type = 'text/css';
   styleEl.setAttribute('data-injected', 'proc-search-css');
   styleEl.appendChild(document.createTextNode(css));
   document.head.appendChild(styleEl);
 })();
-
+ 
 ///
 
 function normalizeSeiNumber(seiNumber) {
@@ -656,14 +724,14 @@ items.forEach(proc => {
       <div class="title-scroll">${m.titulo}</div>
     </td>
   `;
-  tr.innerHTML = `
-    <td class="col-numero" title="${m.numero}">${m.numero}</td>
-    ${titleCell}
-    <td class="col-atrib" title="${m.atrib}">${m.atrib}</td>
-    <td>
-      <button class="btn btn-sm btn-link btn-expand-docs" title="Mostrar documentos">📄</button>
-    </td>
-  `;
+ tr.innerHTML = `
+  <td class="col-action" title="Abrir documentos">
+    <button class="btn btn-sm btn-link btn-expand-docs" title="Mostrar documentos">+</button>
+  </td>
+  <td class="col-numero" title="${m.numero}">${m.numero}</td>
+  ${titleCell}
+  <td class="col-atrib" title="${m.atrib}">${m.atrib}</td>
+`;
 
   // Linha extra para documentos, inicialmente oculta
   const trDocs = document.createElement('tr');
