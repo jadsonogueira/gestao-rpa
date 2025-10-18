@@ -13,7 +13,7 @@ console.log('[script.js] carregado');
     #fluxoForm .docs-container table.table th.col-doc-number,
     #fluxoForm .docs-container td.col-doc-number,
     #fluxoForm .docs-container th.col-doc-number {
-      background-color: #dfe9f5 !important; /* tom levemente azulado */
+      background-color: #dfe9f5 !important;
       color: #0f172a !important;
     }
 
@@ -47,10 +47,10 @@ console.log('[script.js] carregado');
 
     /* ==== Tornar o conteúdo do título rolável horizontalmente ==== */
     #fluxoForm .title-scroll {
-      white-space: nowrap !important;           /* manter em uma linha */
-      overflow-x: auto !important;              /* permitir scroll horizontal */
+      white-space: nowrap !important;
+      overflow-x: auto !important;
       overflow-y: hidden !important;
-      -webkit-overflow-scrolling: touch !important; /* rolagem suave em mobile */
+      -webkit-overflow-scrolling: touch !important;
       padding-bottom: 2px !important;
       max-width: 100% !important;
     }
@@ -101,14 +101,14 @@ console.log('[script.js] carregado');
       display: block;
     }
 
-    /* ----- AUMENTAR LEVEMENTE A COLUNA "Número" ----- */
+    /* ----- AUMENTAR A COLUNA "Número" (maior) ----- */
     #fluxoForm .col-numero,
     #fluxoForm .th-numero {
-      width: 110px !important;       /* ajuste principal: 110px */
-      min-width: 95px !important;
-      max-width: 160px !important;
+      width: 140px !important;       /* AUMENTADO: 140px */
+      min-width: 120px !important;
+      max-width: 220px !important;
       padding: 6px 8px !important;
-      font-size: 0.9rem !important;
+      font-size: 0.95rem !important;
       white-space: nowrap !important;
       overflow: hidden !important;
       text-overflow: ellipsis !important;
@@ -129,8 +129,8 @@ console.log('[script.js] carregado');
     /* pequenas melhorias de responsividade */
     @media (max-width: 768px) {
       #fluxoForm .col-numero, #fluxoForm .th-numero {
-        width: 95px !important;
-        font-size: 0.82rem !important;
+        width: 110px !important;
+        font-size: 0.86rem !important;
       }
       .btn-expand-docs { width: 26px !important; height: 26px !important; }
     }
@@ -1079,6 +1079,58 @@ async function abrirFormulario(fluxo) {
     console.error('Falha ao abrir modal:', err);
   }
 }
+//////
+
+// Delegation: ao clicar em uma linha de documento dentro de .docs-container preenche o campo numeroDocSei
+(function enableDocRowClickFill() {
+  document.addEventListener('click', function (ev) {
+    const tr = ev.target.closest('.docs-container table tr');
+    if (!tr) return;
+
+    // ignore header rows (que normalmente têm th)
+    if (tr.querySelectorAll('th').length) return;
+
+    // tenta obter a célula que contém o número do documento
+    let numCell = tr.querySelector('td.col-doc-number');
+    if (!numCell) {
+      // fallback: primeira célula da linha
+      numCell = tr.querySelector('td');
+      if (!numCell) return;
+    }
+
+    const numeroExib = (numCell.textContent || '').trim();
+    if (!numeroExib) return;
+
+    // procura o input de número do DOC SEI por alguns ids/com names comuns
+    const selectors = [
+      '#numeroDocSei', '#numeroDocSEI', 'input[name="numeroDocSei"]', 'input[name="numeroDocSEI"]'
+    ];
+    let inputDoc = null;
+    for (const s of selectors) {
+      const el = document.querySelector(s);
+      if (el) { inputDoc = el; break; }
+    }
+
+    if (!inputDoc) {
+      console.warn('input numeroDocSei não encontrado para preencher com:', numeroExib);
+      return;
+    }
+
+    inputDoc.value = numeroExib;
+
+    // feedback visual leve (usa showAlert se existir)
+    if (typeof showAlert === 'function') {
+      showAlert(`Documento selecionado: ${numeroExib}`, 'success');
+    } else {
+      console.log('Documento selecionado:', numeroExib);
+    }
+
+    inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    inputDoc.classList.add('is-valid');
+    setTimeout(() => inputDoc.classList.remove('is-valid'), 1400);
+  }, false);
+})();
+
 
 // ---------- Submit ----------
 function enviarFormularioAxios(e) {
