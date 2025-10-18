@@ -726,12 +726,11 @@ tr.querySelector('.btn-expand-docs').addEventListener('click', async (e) => {
 //
 
 // --- dentro do items.forEach, após criar tr, trDocs e tdDocs ---
-
+// Substitua ambos os listeners por este bloco (dentro do items.forEach, após criar tr, trDocs, tdDocs)
 const btn = tr.querySelector('.btn-expand-docs');
 if (!btn) {
   console.warn('botão .btn-expand-docs NÃO encontrado para o processo:', m.numero);
 } else {
-  // sobrescreve qualquer handler anterior (evita duplicatas)
   btn.onclick = async (e) => {
     e.stopPropagation();
     console.log('📄 clique documento para processo', m.numero);
@@ -745,105 +744,116 @@ if (!btn) {
       return;
     }
 
-    if (trDocs.style.display === 'none') {
-      trDocs.style.display = '';
-      container.textContent = 'Carregando documentos...';
+    // Toggle: se oculto, abre; se aberto, fecha
+    const isClosed = trDocs.style.display === 'none' || !trDocs.style.display;
+    if (!isClosed && trDocs.style.display !== 'none') {
+      trDocs.style.display = 'none';
+      return;
+    }
+    trDocs.style.display = ''; // mostra
+    container.innerHTML = 'Carregando documentos...';
 
+    try {
+      const token = localStorage.getItem('token');
+      console.log('fetch documentos para', normalizedNumber);
+      const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('HTTP status documentos:', res.status, res.statusText);
+
+      let payload;
       try {
-        const token = localStorage.getItem('token');
-        console.log('fetch documentos para', normalizedNumber);
-        const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        console.log('HTTP status documentos:', res.status);
-        if (!res.ok) throw new Error(`Erro ${res.status}`);
+        payload = await res.json();
+      } catch (jsonErr) {
+        const txt = await res.text().catch(() => '(erro lendo texto)');
+        console.warn('Resposta não-JSON do servidor:', txt.slice(0,500));
+        container.innerText = 'Resposta inesperada do servidor (não JSON). Veja Console.';
+        console.log('RAW RESPONSE:', txt);
+        return;
+      }
+      console.log('Payload de documentos:', payload);
 
-        const payload = await res.json();
-        console.log('Payload de documentos:', payload);
+      const docs = Array.isArray(payload) ? payload
+                 : Array.isArray(payload.items) ? payload.items
+                 : Array.isArray(payload.data) ? payload.data
+                 : Array.isArray(payload.results) ? payload.results
+                 : Array.isArray(payload.docs) ? payload.docs
+                 : null;
 
-        // normaliza o array de documentos (o preview mostra -> payload.items)
-        const docs = Array.isArray(payload) ? payload : (payload.items || payload.data || payload.results || []);
-
-        if (!docs || docs.length === 0) {
-          container.innerHTML = '<em>Nenhum documento encontrado.</em>';
-          return;
-        }
-
-        // monta tabela: Número | Título (mesmo padrão das linhas de processo)
-        const table = document.createElement('table');
-        table.className = 'table table-sm mb-0';
-        table.style.width = '100%';
-
-        const thead = document.createElement('thead');
-        thead.innerHTML = `
-          <tr>
-            <th style="width:30%;">Número</th>
-            <th>Título</th>
-          </tr>
-        `;
-        table.appendChild(thead);
-
-        const tbodyDocs = document.createElement('tbody');
-
-        docs.forEach(doc => {
-          const row = document.createElement('tr');
-          row.style.cursor = 'pointer';
-
-          const numeroExib = doc.seiNumber || doc.docNumber || doc.docNumberText || '';
-          const tituloExib = stripHtml(doc.docTitle || doc.title || doc.name || '');
-
-          // células como elementos para evitar innerHTML inseguro
-          const tdNum = document.createElement('td');
-          tdNum.className = 'col-numero';
-          tdNum.textContent = numeroExib;
-          tdNum.title = numeroExib;
-
-          const tdTitle = document.createElement('td');
-          tdTitle.className = 'col-title';
-          tdTitle.title = tituloExib;
-          const divTitle = document.createElement('div');
-          divTitle.className = 'title-scroll';
-          divTitle.style.whiteSpace = 'normal';
-          divTitle.textContent = tituloExib;
-          tdTitle.appendChild(divTitle);
-
-          row.appendChild(tdNum);
-          row.appendChild(tdTitle);
-
-          // clique na linha do documento: preenche input id="numeroDocSEI"
-          row.addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            const inputDoc = document.getElementById('numeroDocSEI');
-            const valueToSet = numeroExib || '';
-
-            if (inputDoc) {
-              inputDoc.value = valueToSet;
-              if (typeof showAlert === 'function') showAlert(`Documento selecionado: ${valueToSet}`, 'success');
-              inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              inputDoc.classList.add('is-valid');
-              setTimeout(() => inputDoc.classList.remove('is-valid'), 1500);
-            } else {
-              console.warn('input id="numeroDocSEI" não encontrado. Valor:', valueToSet);
-              if (typeof showAlert === 'function') showAlert(`Documento: ${valueToSet} (campo não encontrado)`, 'info');
-            }
-          });
-
-          tbodyDocs.appendChild(row);
-        });
-
-        table.appendChild(tbodyDocs);
-        container.innerHTML = '';
-        container.appendChild(table);
-
-      } catch (err) {
-        console.error('Erro ao carregar documentos:', err);
-        container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
+      if (!docs || docs.length === 0) {
+        console.warn('Nenhum documento extraído pelo parser. Mostrando payload cru no container para inspeção.');
+        container.innerHTML = `<pre style="white-space:pre-wrap;max-height:300px;overflow:auto;">${escapeHtml(JSON.stringify(payload, null, 2)).slice(0,20000)}</pre>`;
+        return;
       }
 
-    } else {
-      trDocs.style.display = 'none';
+      // monta tabela: Número | Título
+      const table = document.createElement('table');
+      table.className = 'table table-sm mb-0';
+      table.style.width = '100%';
+
+      const thead = document.createElement('thead');
+      thead.innerHTML = `<tr><th style="width:30%;">Número</th><th>Título</th></tr>`;
+      table.appendChild(thead);
+
+      const tbodyDocs = document.createElement('tbody');
+
+      docs.forEach(doc => {
+        const row = document.createElement('tr');
+        row.style.cursor = 'pointer';
+
+        const numeroExib = doc.seiNumber || doc.docNumber || doc.docNumberText || doc.number || '';
+        const tituloExib = stripHtml(doc.docTitle || doc.title || doc.name || doc.description || '');
+
+        const tdNum = document.createElement('td');
+        tdNum.className = 'col-numero';
+        tdNum.textContent = numeroExib;
+        tdNum.title = numeroExib;
+
+        const tdTitle = document.createElement('td');
+        tdTitle.className = 'col-title';
+        tdTitle.title = tituloExib;
+        const divTitle = document.createElement('div');
+        divTitle.className = 'title-scroll';
+        divTitle.style.whiteSpace = 'normal';
+        divTitle.textContent = tituloExib;
+        tdTitle.appendChild(divTitle);
+
+        row.appendChild(tdNum);
+        row.appendChild(tdTitle);
+
+        // clique na linha do documento: preenche input id="numeroDocSei" (confirme este id no formulário)
+        row.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const inputDoc = document.getElementById('numeroDocSei'); // <-- usar este id (camelCase) se for o que você criou
+          const valueToSet = numeroExib || '';
+          if (inputDoc) {
+            inputDoc.value = valueToSet;
+            if (typeof showAlert === 'function') showAlert(`Documento selecionado: ${valueToSet}`, 'success');
+            inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            inputDoc.classList.add('is-valid');
+            setTimeout(() => inputDoc.classList.remove('is-valid'), 1500);
+          } else {
+            console.warn('input id="numeroDocSei" não encontrado. Valor:', valueToSet);
+          }
+        });
+
+        tbodyDocs.appendChild(row);
+      });
+
+      table.appendChild(tbodyDocs);
+      container.innerHTML = '';
+      container.appendChild(table);
+
+    } catch (err) {
+      console.error('Erro ao carregar documentos:', err);
+      container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
     }
   };
+}
+
+// helper escape HTML (para debug)
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 
