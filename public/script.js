@@ -720,25 +720,26 @@ tr.querySelector('.btn-expand-docs').addEventListener('click', async (e) => {
 });
 //
 
-  // helper para remover tags HTML (exibir só o texto)
+ // helper (coloque UMA vez fora do loop, no topo do script)
 function stripHtml(html) {
   const tmp = document.createElement('div');
   tmp.innerHTML = html || '';
   return tmp.textContent || tmp.innerText || '';
 }
 
-const btnExpand = tr.querySelector('.btn-expand-docs');
-btnExpand.addEventListener('click', async (e) => {
+// dentro do items.forEach, após criar tr, trDocs e tdDocs:
+tr.querySelector('.btn-expand-docs').addEventListener('click', async (e) => {
   e.stopPropagation();
 
   const normalizedNumber = normalizeSeiNumber(m.numero);
   console.log('Número do processo para documentos:', m.numero);
   console.log('Número normalizado:', normalizedNumber);
 
+  const container = tdDocs.querySelector('.docs-container');
+
   if (trDocs.style.display === 'none') {
     trDocs.style.display = '';
-    const container = tdDocs.querySelector('.docs-container');
-    container.innerHTML = 'Carregando documentos...';
+    container.textContent = 'Carregando documentos...';
 
     try {
       const token = localStorage.getItem('token');
@@ -751,92 +752,84 @@ btnExpand.addEventListener('click', async (e) => {
       const payload = await res.json();
       console.log('Payload de documentos:', payload);
 
-      // normaliza diferentes formatos de resposta
-      const docs = Array.isArray(payload)
-        ? payload
-        : (payload.items || payload.data || payload.results || []);
+      const docs = Array.isArray(payload) ? payload : (payload.items || payload.data || payload.results || []);
 
       if (!docs || docs.length === 0) {
         container.innerHTML = '<em>Nenhum documento encontrado.</em>';
-      } else {
-        // monta uma pequena tabela com Número e Título (mesmo padrão das linhas de processo)
-        const table = document.createElement('table');
-        table.className = 'table table-sm mb-0';
-        table.style.width = '100%';
-        const thead = document.createElement('thead');
-        thead.innerHTML = `
-          <tr>
-            <th style="width:30%;">Número</th>
-            <th>Título</th>
-          </tr>
-        `;
-        table.appendChild(thead);
+        return;
+      }
 
-        const tbodyDocs = document.createElement('tbody');
+      // monta tabela com Número | Título
+      const table = document.createElement('table');
+      table.className = 'table table-sm mb-0';
+      table.style.width = '100%';
 
-        docs.forEach(doc => {
-          const row = document.createElement('tr');
-          row.style.cursor = 'pointer';
+      const thead = document.createElement('thead');
+      thead.innerHTML = `
+        <tr>
+          <th style="width:30%;">Número</th>
+          <th>Título</th>
+        </tr>
+      `;
+      table.appendChild(thead);
 
-          // preferências para exibição do número e título
-          const numeroExib = doc.seiNumber || doc.docNumber || doc.docNumberText || '';
-          const tituloExib = stripHtml(doc.docTitle || doc.title || doc.name || '');
+      const tbodyDocs = document.createElement('tbody');
 
-          row.innerHTML = `
-            <td class="col-numero" title="${numeroExib}">${numeroExib}</td>
-            <td class="col-title" title="${tituloExib}">
-              <div class="title-scroll" style="white-space:normal;">${tituloExib}</div>
-            </td>
-          `;
+      docs.forEach(doc => {
+        const row = document.createElement('tr');
+        row.style.cursor = 'pointer';
 
-          // clique na linha do documento: preenche o campo do número do documento SEI (se existir)
-          row.addEventListener('click', (ev) => {
-            ev.stopPropagation();
+        const numeroExib = doc.seiNumber || doc.docNumber || '';
+        const tituloExib = stripHtml(doc.docTitle || doc.title || doc.name || '');
 
-            // Ajuste aqui para o id do seu campo de número do documento (substituir se souber o id exato)
-            const possibleIds = ['numeroDocSEI', 'campoNumeroDoc', 'numeroDocumento', 'campoNumeroProcDoc'];
-            let inputDoc = null;
-            for (const id of possibleIds) {
-              const el = document.getElementById(id);
-              if (el) { inputDoc = el; break; }
-            }
+        const tdNum = document.createElement('td');
+        tdNum.className = 'col-numero';
+        tdNum.textContent = numeroExib;
+        tdNum.setAttribute('title', numeroExib);
 
-            // Se não achar por id, tenta variáveis existentes no seu script
-            if (!inputDoc && typeof campoNumeroProc !== 'undefined') {
-              // se quiser preencher campo do processo quando não há um campo de documento separado
-              inputDoc = campoNumeroProc;
-            }
+        const tdTitle = document.createElement('td');
+        tdTitle.className = 'col-title';
+        tdTitle.setAttribute('title', tituloExib);
+        const divTitle = document.createElement('div');
+        divTitle.className = 'title-scroll';
+        divTitle.style.whiteSpace = 'normal';
+        divTitle.textContent = tituloExib;
+        tdTitle.appendChild(divTitle);
 
-            // fallback: busca por inputs com name comum
-            if (!inputDoc) {
-              inputDoc = document.querySelector('input[name="numeroDoc"]') || document.querySelector('input[name="numero"]') || null;
-            }
+        row.appendChild(tdNum);
+        row.appendChild(tdTitle);
 
-            const valueToSet = doc.seiNumber || doc.docNumber || '';
+        // clique na linha: preenche input id="numeroDocSEI"
+        row.addEventListener('click', (ev) => {
+          ev.stopPropagation();
 
-            if (inputDoc) {
-              inputDoc.value = valueToSet;
-              if (typeof showAlert === 'function') showAlert(`Documento selecionado: ${valueToSet}`, 'success');
-              inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              inputDoc.classList.add('is-valid');
-              setTimeout(() => inputDoc.classList.remove('is-valid'), 1500);
-            } else {
-              console.warn('Campo para número do documento não encontrado. Valor:', valueToSet);
-              if (typeof showAlert === 'function') showAlert(`Documento: ${valueToSet} (campo não encontrado)`, 'info');
-            }
-          });
+          const inputDoc = document.getElementById('numeroDocSEI') || campoNumeroProc || document.querySelector('input[name="numeroDoc"]') || document.querySelector('input[name="numero"]');
+          const valueToSet = numeroExib || '';
 
-          tbodyDocs.appendChild(row);
+          if (inputDoc) {
+            inputDoc.value = valueToSet;
+            if (typeof showAlert === 'function') showAlert(`Documento selecionado: ${valueToSet}`, 'success');
+            inputDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            inputDoc.classList.add('is-valid');
+            setTimeout(() => inputDoc.classList.remove('is-valid'), 1500);
+          } else {
+            console.warn('Campo para número do documento não encontrado. Valor:', valueToSet);
+            if (typeof showAlert === 'function') showAlert(`Documento: ${valueToSet} (campo não encontrado)`, 'info');
+          }
         });
 
-        table.appendChild(tbodyDocs);
-        container.innerHTML = '';
-        container.appendChild(table);
-      }
+        tbodyDocs.appendChild(row);
+      });
+
+      table.appendChild(tbodyDocs);
+      container.innerHTML = '';
+      container.appendChild(table);
+
     } catch (err) {
       console.error(err);
       container.innerHTML = `<span class="text-danger">Erro ao carregar documentos: ${err.message}</span>`;
     }
+
   } else {
     trDocs.style.display = 'none';
   }
