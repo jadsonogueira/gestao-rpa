@@ -713,16 +713,17 @@ async function abrirFormulario(fluxo) {
       const table = document.createElement('table');
       table.className = 'table table-sm table-hover table-bordered mb-0';
       table.style.tableLayout = 'fixed';
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th class="th-numero">Número</th>
-            <th class="th-title">Título/Especificação</th>
-            <th class="th-atrib">Atribuição</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      `;
+     table.innerHTML = `
+      <thead>
+        <tr>
+          <th class="th-action" aria-label="Ações"></th>
+          <th class="th-numero">Número</th>
+          <th class="th-title">Título/Especificação</th>
+          <th class="th-atrib">Atribuição</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
       const tbody = table.querySelector('tbody');
 items.forEach(proc => {
   const m = mapProcRow(proc);
@@ -870,8 +871,12 @@ if (!btn) {
       table.style.width = '100%';
 
       const thead = document.createElement('thead');
-      thead.innerHTML = `<tr><th style="width:30%;">Número</th><th>Título</th></tr>`;
-      table.appendChild(thead);
+      thead.innerHTML = `
+        <tr>
+          <th class="col-doc-number">Número</th>
+          <th class="col-doc-title">Título</th>
+        </tr>
+      `;
 
       const tbodyDocs = document.createElement('tbody');
 
