@@ -42,7 +42,7 @@ console.log('[script.js] carregado');
     /* Tabela compacta e legível (tema claro) */
     #fluxoForm #procResults table.table {
       margin-bottom: 0;
-      font-size: 0.8rem; /* reduzido ~2 pontos conforme solicitado (antes 0.9rem) */
+      font-size: 0.8rem; /* reduzido ~2 pontos conforme solicitado */
       color: #111827;
       background-color: transparent;
       table-layout: fixed;
@@ -79,18 +79,31 @@ console.log('[script.js] carregado');
     /* ======= Nova coluna de ação (botão '+') como primeira coluna ======= */
     #fluxoForm #procResults td.col-action,
     #fluxoForm #procResults th.th-action {
-      width: 38px;
+      width: 28px;            /* tamanho pequeno: só o + */
+      min-width: 28px;
+      max-width: 28px;
       text-align: center;
-      padding: 4px 6px;
+      padding: 2px 4px;
     }
 
-    /* estilo do botão expand docs: pequeno, só o '+' */
-    #fluxoForm #procResults .btn-expand-docs {
-      padding: 2px 6px;
-      font-weight: 700;
-      font-size: 1rem;
-      line-height: 1;
+    /* esconder texto do th de ação (evita desalinhamento do header) */
+    #fluxoForm #procResults thead th.th-action { 
+      text-indent: -9999px;
+      padding: 0;
       border: none;
+      background: transparent;
+    }
+
+    /* botão +: tamanho reduzido e sem margem */
+    #fluxoForm #procResults .btn-expand-docs {
+      padding: 0;
+      margin: 0;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      font-size: 14px;
+      border-radius: 3px;
+      border: 0;
       background: transparent;
       color: #374151;
       cursor: pointer;
@@ -167,11 +180,6 @@ console.log('[script.js] carregado');
       border-radius: 4px;
     }
 
-    /* Opcional: dar uma leve borda para destacar a mensagem */
-    #fluxoForm #procResults .text-muted {
-      border: 1px dashed #e5e7eb;
-    }
-
     /* ====== Estilos para a lista de documentos dentro do trDocs ====== */
     #fluxoForm .docs-container {
       padding: 6px;
@@ -192,10 +200,12 @@ console.log('[script.js] carregado');
       z-index: 1;
     }
 
-    /* coluna do número do doc bem estreita */
+    /* coluna do número do doc bem estreita e com fundo diferenciado */
     #fluxoForm .docs-container td.col-doc-number,
     #fluxoForm .docs-container th.col-doc-number {
-      width: 120px;
+      background-color: #e2e8f0; /* tom levemente mais escuro/azulado */
+      color: #0f172a;
+      width: 100px;              /* estreita para caber só o número */
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
