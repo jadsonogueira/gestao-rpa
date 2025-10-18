@@ -668,9 +668,12 @@ items.forEach(proc => {
   tdDocs.innerHTML = '<div class="docs-container">Carregando documentos...</div>';
   trDocs.appendChild(tdDocs);
 
+
+  
   // Evento para expandir/contrair documentos
-const btnExpand = tr.querySelector('.btn-expand-docs');
-btnExpand.addEventListener('click', async (e) => {
+  
+// em vez de declarar uma const, anexa o listener direto:
+tr.querySelector('.btn-expand-docs').addEventListener('click', async (e) => {
   e.stopPropagation();
 
   const normalizedNumber = normalizeSeiNumber(m.numero);
@@ -682,7 +685,6 @@ btnExpand.addEventListener('click', async (e) => {
     const container = tdDocs.querySelector('.docs-container');
     container.innerHTML = 'Carregando documentos...';
 
-    
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${apiUrl}/api/processes/by-sei/${encodeURIComponent(normalizedNumber)}/documents`, {
@@ -694,10 +696,7 @@ btnExpand.addEventListener('click', async (e) => {
       const payload = await res.json();
       console.log('Payload de documentos:', payload);
 
-      // normaliza diferentes formatos de resposta
-      const docs = Array.isArray(payload)
-        ? payload
-        : (payload.items || payload.data || payload.results || []);
+      const docs = Array.isArray(payload) ? payload : (payload.items || payload.data || payload.results || []);
 
       if (!docs || docs.length === 0) {
         container.innerHTML = '<em>Nenhum documento encontrado.</em>';
@@ -705,8 +704,7 @@ btnExpand.addEventListener('click', async (e) => {
         const list = document.createElement('ul');
         docs.forEach(doc => {
           const li = document.createElement('li');
-          // usa textContent para evitar injeção de HTML; se quiser renderizar HTML, use innerHTML com cuidado
-          li.textContent = `${doc.title || doc.docTitle || doc.name || 'Documento sem título'}${doc.docNumber || doc.date ? ' - ' + (doc.docNumber || doc.date) : ''}`;
+          li.textContent = `${doc.title || doc.docTitle || doc.name || 'Documento sem título'}${(doc.docNumber || doc.date) ? ' - ' + (doc.docNumber || doc.date) : ''}`;
           list.appendChild(li);
         });
         container.innerHTML = '';
@@ -720,7 +718,6 @@ btnExpand.addEventListener('click', async (e) => {
     trDocs.style.display = 'none';
   }
 });
-
 //
 
   // helper para remover tags HTML (exibir só o texto)
