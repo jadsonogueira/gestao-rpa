@@ -8,7 +8,7 @@ console.log('[script.js] carregado');
 // Injeta CSS do buscador de processos no <head> sem precisar editar o HTML
 (function injectProcessSearchCSS_point1() {
   const css = `
-    /* === Forçar cor de fundo para a coluna Número da lista de documentos === */
+    /* === Cor de fundo para a coluna Número da lista de documentos === */
     #fluxoForm .docs-container table.table td.col-doc-number,
     #fluxoForm .docs-container table.table th.col-doc-number,
     #fluxoForm .docs-container td.col-doc-number,
@@ -17,7 +17,7 @@ console.log('[script.js] carregado');
       color: #0f172a !important;
     }
 
-    /* reduzir ainda mais a largura da coluna número do doc */
+    /* reduzir a largura da coluna número do doc */
     #fluxoForm .docs-container table.table td.col-doc-number,
     #fluxoForm .docs-container table.table th.col-doc-number {
       width: 60px !important;
@@ -28,18 +28,40 @@ console.log('[script.js] carregado');
       text-align: left;
     }
 
-    /* garantir que a tabela de docs use full-width e que o estilo apareça */
+    /* garantir que a tabela de docs use full-width */
     #fluxoForm .docs-container table.table {
       width: 100% !important;
       table-layout: fixed !important;
     }
 
-    /* Caso precise forçar overflow e evitar que o conteúdo empurre a largura */
-    #fluxoForm .docs-container td,
-    #fluxoForm .docs-container th {
+    /* === Evitar truncamento global somente nas colunas de título ===
+       Aplicar overflow/truncation em todas as células exceto as de título */
+    #fluxoForm .docs-container td:not(.col-title),
+    #fluxoForm .docs-container th:not(.col-title),
+    #fluxoForm table td:not(.col-title),
+    #fluxoForm table th:not(.col-title) {
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
+    }
+
+    /* ==== Tornar o conteúdo do título rolável horizontalmente ==== */
+    #fluxoForm .title-scroll {
+      white-space: nowrap !important;           /* manter em uma linha */
+      overflow-x: auto !important;              /* permitir scroll horizontal */
+      overflow-y: hidden !important;
+      -webkit-overflow-scrolling: touch !important; /* rolagem suave em mobile */
+      padding-bottom: 2px !important;
+      max-width: 100% !important;
+    }
+
+    /* barra de scroll discreta (WebKit) */
+    #fluxoForm .title-scroll::-webkit-scrollbar {
+      height: 8px;
+    }
+    #fluxoForm .title-scroll::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.12);
+      border-radius: 4px;
     }
 
     /* chevron rotate quando expandido */
@@ -51,9 +73,7 @@ console.log('[script.js] carregado');
       transform: rotate(180deg);
     }
 
-    /* ----- NOVOS AJUSTES ----- */
-
-    /* Reduz e centraliza a coluna da ação (chevron) para evitar que fique muito larga */
+    /* ----- AJUSTES PARA A COLUNA DE AÇÃO (CHEVRON) ----- */
     #fluxoForm table th.th-action,
     #fluxoForm table td.col-action {
       width: 40px !important;
@@ -64,7 +84,6 @@ console.log('[script.js] carregado');
       vertical-align: middle !important;
     }
 
-    /* Garante que o botão chevron não expanda a célula e o icon fique pequeno */
     .btn-expand-docs {
       padding: 2px 4px !important;
       line-height: 1 !important;
@@ -82,12 +101,12 @@ console.log('[script.js] carregado');
       display: block;
     }
 
-    /* Aumentar um pouco a coluna Número (ajuste aqui se quiser mais/menos) */
+    /* ----- AUMENTAR LEVEMENTE A COLUNA "Número" ----- */
     #fluxoForm .col-numero,
     #fluxoForm .th-numero {
-      width: 100px !important;       /* valor principal */
-      min-width: 90px !important;    /* não encolher tanto */
-      max-width: 140px !important;   /* evita crescer demais */
+      width: 110px !important;       /* ajuste principal: 110px */
+      min-width: 95px !important;
+      max-width: 160px !important;
       padding: 6px 8px !important;
       font-size: 0.9rem !important;
       white-space: nowrap !important;
@@ -95,18 +114,31 @@ console.log('[script.js] carregado');
       text-overflow: ellipsis !important;
     }
 
-    /* Forçar layout fixo em todas as tabelas do fluxo para evitar empurrões */
+    /* Mantém layout fixo para as tabelas do fluxo para evitar empurrões */
     #fluxoForm table.table {
       table-layout: fixed !important;
       width: 100% !important;
     }
 
-    /* Cabeçalhos menores para evitar wrap que empurra colunas */
+    /* Cabeçalhos com fonte um pouco menor para evitar wrap */
     #fluxoForm table.table th {
       font-size: 0.78rem !important;
       padding: 6px 8px !important;
     }
+
+    /* pequenas melhorias de responsividade */
+    @media (max-width: 768px) {
+      #fluxoForm .col-numero, #fluxoForm .th-numero {
+        width: 95px !important;
+        font-size: 0.82rem !important;
+      }
+      .btn-expand-docs { width: 26px !important; height: 26px !important; }
+    }
   `;
+
+  // remove style injetado anteriormente com mesmo data-injected (se existir)
+  const prev = document.querySelector('style[data-injected="proc-search-css-point1"]');
+  if (prev) prev.remove();
 
   const styleEl = document.createElement('style');
   styleEl.type = 'text/css';
@@ -114,6 +146,8 @@ console.log('[script.js] carregado');
   styleEl.appendChild(document.createTextNode(css));
   document.head.appendChild(styleEl);
 })();
+
+///////
 
 function normalizeSeiNumber(seiNumber) {
   if (!seiNumber) return '';
