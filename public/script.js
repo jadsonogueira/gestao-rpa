@@ -724,7 +724,7 @@ items.forEach(proc => {
       <div class="title-scroll">${m.titulo}</div>
     </td>
   `;
- tr.innerHTML = `
+tr.innerHTML = `
   <td class="col-action" title="Abrir documentos">
     <button class="btn btn-sm btn-link btn-expand-docs" title="Mostrar documentos">+</button>
   </td>
