@@ -50,6 +50,62 @@ console.log('[script.js] carregado');
     .btn-expand-docs.expanded .chev {
       transform: rotate(180deg);
     }
+
+    /* ----- NOVOS AJUSTES ----- */
+
+    /* Reduz e centraliza a coluna da ação (chevron) para evitar que fique muito larga */
+    #fluxoForm table th.th-action,
+    #fluxoForm table td.col-action {
+      width: 40px !important;
+      min-width: 36px !important;
+      max-width: 44px !important;
+      padding: 4px 6px !important;
+      text-align: center !important;
+      vertical-align: middle !important;
+    }
+
+    /* Garante que o botão chevron não expanda a célula e o icon fique pequeno */
+    .btn-expand-docs {
+      padding: 2px 4px !important;
+      line-height: 1 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 28px !important;
+      height: 28px !important;
+      border: none !important;
+      background: transparent !important;
+    }
+    .btn-expand-docs svg {
+      width: 14px !important;
+      height: 14px !important;
+      display: block;
+    }
+
+    /* Aumentar um pouco a coluna Número (ajuste aqui se quiser mais/menos) */
+    #fluxoForm .col-numero,
+    #fluxoForm .th-numero {
+      width: 100px !important;       /* valor principal */
+      min-width: 90px !important;    /* não encolher tanto */
+      max-width: 140px !important;   /* evita crescer demais */
+      padding: 6px 8px !important;
+      font-size: 0.9rem !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+    /* Forçar layout fixo em todas as tabelas do fluxo para evitar empurrões */
+    #fluxoForm table.table {
+      table-layout: fixed !important;
+      width: 100% !important;
+    }
+
+    /* Cabeçalhos menores para evitar wrap que empurra colunas */
+    #fluxoForm table.table th {
+      font-size: 0.78rem !important;
+      padding: 6px 8px !important;
+    }
   `;
 
   const styleEl = document.createElement('style');
