@@ -24,20 +24,20 @@
   <div class="container">
     <a class="navbar-brand" href="/"><i class="fas fa-road"></i> AppDNIT</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
+    <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ml-auto">
-        <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a></li>
-        <li class="nav-item"><a href="/login.html" class="nav-link"><i class="fas fa-sign-in-alt"></i> Login</a></li>
-        <li class="nav-item"><a href="/" class="nav-link"><i class="fas fa-user-plus"></i> Cadastro</a></li>
-        <li class="nav-item"><a href="/admin.html" class="nav-link"><i class="fas fa-tools"></i> Administração</a></li>
-        <li class="nav-item">
-          <button class="btn btn-outline-light ml-lg-3" id="btnLogout">
-            <i class="fas fa-sign-out-alt"></i> Sair
-          </button>
-        </li>
-      </ul>
+    <ul class="navbar-nav ml-auto">
+    <li class="nav-item"><a href="/dashboard.html" class="nav-link"><i class="fas fa-th-large"></i> Serviços</a></li>
+    <li class="nav-item"><a href="/login.html" class="nav-link"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+    <li class="nav-item"><a href="/" class="nav-link"><i class="fas fa-user-plus"></i> Cadastro</a></li>
+    <li class="nav-item"><a href="/admin.html" class="nav-link"><i class="fas fa-tools"></i> Administração</a></li>
+    <li class="nav-item">
+    <button class="btn btn-outline-light ml-lg-3" id="btnLogout">
+    <i class="fas fa-sign-out-alt"></i> Sair
+    </button>
+    </li>
+    </ul>
     </div>
   </div>
 </nav>
@@ -49,47 +49,52 @@
 
   <div class="toolbar mb-3">
     <div class="row">
-      <div class="col-md-6 mb-2">
-        <label class="mb-1" for="fSearch">🔍 Busca Geral</label>
-        <input id="fSearch" class="form-control" placeholder="Buscar em qualquer campo (SEI, especificação, anotação, tipo...)" />
-      </div>
-      <div class="col-md-3 mb-2">
-        <label class="mb-1" for="fContract">📄 Contrato</label>
-        <input id="fContract" class="form-control" placeholder="Ex.: 12 00101/2022" />
-      </div>
-      <div class="col-md-3 mb-2">
-        <label class="mb-1" for="fUnit">👤 Atribuição</label>
-        <input id="fUnit" class="form-control" placeholder="Ex.: fernando.pinto" />
-      </div>
+    <div class="col-md-6 mb-2">
+    <label class="mb-1" for="fSearch">🔍 Busca Geral</label>
+    <input id="fSearch" class="form-control" placeholder="Buscar em qualquer campo (SEI, especificação, tipo...)" />
     </div>
-    <div class="row">
-      <div class="col-12">
-        <button id="btnFilter" class="btn btn-primary mr-2">
-          <i class="fas fa-search"></i> Filtrar
-        </button>
-        <button id="btnClear" class="btn btn-secondary">
-          <i class="fas fa-eraser"></i> Limpar
-        </button>
-      </div>
+    <div class="col-md-3 mb-2">
+    <label class="mb-1" for="fContract">📄 Contrato</label>
+    <input id="fContract" class="form-control" placeholder="Ex.: 12 00101/2022" />
+    </div>
+    <div class="col-md-3 mb-2">
+    <label class="mb-1" for="fUnit">👤 Atribuição</label>
+    <input id="fUnit" class="form-control" placeholder="Ex.: fernando.pinto" />
+    </div>
+    </div>
+    <div class="row align-items-center">
+    <div class="col-12 d-flex flex-wrap">
+    <button id="btnFilter" class="btn btn-primary mr-2 mb-2">
+    <i class="fas fa-search"></i> Filtrar
+    </button>
+    <button id="btnClear" class="btn btn-secondary mr-2 mb-2">
+    <i class="fas fa-eraser"></i> Limpar
+    </button>
+    <!-- Botão para solicitar atualização da lista de processos -->
+    <button id="btnSolicitarAtualizacao" class="btn btn-warning mb-2" title="Enviar e-mail solicitando atualização da lista de processos">
+    <i class="fas fa-sync-alt"></i> Solicitar atualização
+    </button>
+    </div>
     </div>
   </div>
 
   <div class="table-wrap">
     <table class="table table-bordered table-hover" id="processosTable">
-      <thead class="thead-light">
-        <tr>
-          <th style="min-width:160px;">SEI</th>
-          <th style="min-width:160px;">Atribuição</th>
-          <th style="min-width:160px;">Tipo/Tags</th>
-          <th style="min-width:220px;">Especificação</th>
-          <th style="min-width:220px;">Anotação</th>
-          <th style="min-width:160px;">Atualizado</th>
-          <th style="min-width:140px;">Ações</th>
-        </tr>
-      </thead>
-      <tbody id="tbodyProc"></tbody>
+    <thead class="thead-light">
+    <tr>
+    <th style="min-width:160px;">SEI</th>
+    <th style="min-width:160px;">Atribuição</th>
+    <th style="min-width:160px;">Tipo/Tags</th>
+    <th style="min-width:220px;">Especificação</th>
+    <th style="min-width:160px;">Atualizado</th>
+    <th style="min-width:140px;">Ações</th>
+    <th style="min-width:180px;">Docs</th>
+    </tr>
+    </thead>
+    <tbody id="tbodyProc"></tbody>
     </table>
   </div>
+
   <div class="d-flex align-items-center mb-4">
     <button id="prevProc" class="btn btn-light mr-2" title="Página anterior">◀</button>
     <span id="pageInfoProc" class="mr-2 muted"></span>
@@ -99,16 +104,16 @@
   <h2 class="section-title">Cadastro de Usuário Externo</h2>
   <form id="formUsuarioExterno" class="mb-3">
     <div class="form-group">
-      <label for="idExterno">ID</label>
-      <input type="text" id="idExterno" class="form-control" placeholder="Ex: USR010" required>
+    <label for="idExterno">ID</label>
+    <input type="text" id="idExterno" class="form-control" placeholder="Ex: USR010" required>
     </div>
     <div class="form-group">
-      <label for="nome">Nome Completo</label>
-      <input type="text" id="nome" class="form-control" required>
+    <label for="nome">Nome Completo</label>
+    <input type="text" id="nome" class="form-control" required>
     </div>
     <div class="form-group">
-      <label for="empresa">Empresa</label>
-      <input type="text" id="empresa" class="form-control" required>
+    <label for="empresa">Empresa</label>
+    <input type="text" id="empresa" class="form-control" required>
     </div>
     <button type="submit" class="btn btn-primary">Cadastrar</button>
   </form>
@@ -116,11 +121,11 @@
   <h4 class="section-title">Usuários Externos Cadastrados</h4>
   <table class="table table-bordered" id="usuariosTable">
     <thead class="thead-light">
-      <tr>
-        <th>Nome</th>
-        <th>Empresa</th>
-        <th style="width: 100px;">Ações</th>
-      </tr>
+    <tr>
+    <th>Nome</th>
+    <th>Empresa</th>
+    <th style="width: 100px;">Ações</th>
+    </tr>
     </thead>
     <tbody></tbody>
   </table>
@@ -128,18 +133,18 @@
   <h4 class="section-title">Contratos SEI Cadastrados</h4>
   <form id="formContrato" class="mb-3">
     <div class="form-group">
-      <label for="numeroContrato">Número do Contrato SEI</label>
-      <input type="text" id="numeroContrato" class="form-control" placeholder="Ex: 12 00121/2022" required>
+    <label for="numeroContrato">Número do Contrato SEI</label>
+    <input type="text" id="numeroContrato" class="form-control" placeholder="Ex: 12 00121/2022" required>
     </div>
     <button type="submit" class="btn btn-success">Cadastrar Contrato</button>
   </form>
 
   <table class="table table-bordered" id="contratosTable">
     <thead class="thead-light">
-      <tr>
-        <th>Número</th>
-        <th style="width: 100px;">Ações</th>
-      </tr>
+    <tr>
+    <th>Número</th>
+    <th style="width: 100px;">Ações</th>
+    </tr>
     </thead>
     <tbody></tbody>
   </table>
@@ -152,10 +157,10 @@
   const showAlert = (message, type = 'success') => {
     const safe = String(message ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     document.getElementById('alertPlaceholder').innerHTML = `
-      <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
-        ${safe}
-        <button type="button" class="close" data-dismiss="alert">×</button>
-      </div>`;
+    <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
+    ${safe}
+    <button type="button" class="close" data-dismiss="alert">×</button>
+    </div>`;
   };
 
   document.getElementById('btnLogout').addEventListener('click', () => {
@@ -171,30 +176,44 @@
   async function ensureAdmin() {
     const token = LS.getItem("token");
     if (!token) {
-      showAlert("⛔ Acesso restrito. Faça login primeiro.", "danger");
-      setTimeout(() => window.location.href = "/login.html", 1500);
-      throw new Error('sem token');
+    showAlert("⛔ Acesso restrito. Faça login primeiro.", "danger");
+    setTimeout(() => window.location.href = "/login.html", 1500);
+    throw new Error('sem token');
     }
-    console.warn('verify-token desativado temporariamente (modo permissivo total).');
     return true;
   }
 
-  const asText     = (v) => (v == null ? '' : String(v));
+  const asText  = (v) => (v == null ? '' : String(v));
   const decodePlus = (s) => asText(s).replace(/\+/g, ' ');
   const joinTags   = (tags) => Array.isArray(tags) ? tags.map(t => String(t||'')).filter(Boolean).join(', ') : '';
+
+  // Extrai nome e e-mail do JWT
+  function parseJwt(token){
+    try {
+    const base = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    const json = decodeURIComponent(atob(base).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(json);
+    } catch { return null; }
+  }
+  function getUserIdentity(){
+    const token = LS.getItem('token') || '';
+    const p = token ? (parseJwt(token) || {}) : {};
+    const name  = p.name || p.nome || p.user?.name || p.user?.nome || p.preferred_username || p.username || 'usuario';
+    const email = p.email || p.user?.email || p.upn || '';
+    return { name, email };
+  }
 
   function mapProcess(p) {
     const sei = p.seiNumber || p.seiNumberNorm || p.processNumber || p.numero || p.sei || '';
     const assigned = p.unit || p.assignedTo || p.unidade || p.atribuicao || '';
     const type = Array.isArray(p.tags) && p.tags.length ? (p.tags[0] || '') : (p.type || p.tipo || joinTags(p.tags));
     const spec = p.title || p.spec || p.description || p.descricao || p.especificacao || '';
-    const note = p.subject || p.note || p.anotacao || p.obs || p.observacao || '';
     const updatedISO = p.updatedAtSEI || p.updatedAt || p.lastSyncedAt || p.modifiedAt || p.createdAt;
     const updated = updatedISO ? new Date(updatedISO).toLocaleString('pt-BR') : '-';
-    return { sei, assigned, type, spec, note, updated };
+    return { sei, assigned, type, spec, updated };
   }
 
-  // ----------------- PROCESSOS -----------------
+  // === PROCESSOS ===
   let pageProc = 1;
   let pagesProc = 1;
   const limitProc = 20;
@@ -204,119 +223,119 @@
     const next = document.getElementById('nextProc');
     prev.disabled = pageProc <= 1;
     next.disabled = pageProc >= pagesProc;
-    prev.title = prev.disabled ? 'Primeira página' : 'Página anterior';
-    next.title = next.disabled ? 'Última página' : 'Próxima página';
   }
 
   async function carregarProcessos() {
     const params = new URLSearchParams({ page: pageProc, limit: limitProc });
 
-    const s  = document.getElementById('fSearch').value.trim();   // busca geral
-    const u  = document.getElementById('fUnit').value.trim();     // atribuição
-    const c  = document.getElementById('fContract').value.trim(); // contrato
+    const s  = document.getElementById('fSearch').value.trim();
+    const u  = document.getElementById('fUnit').value.trim();
+    const c  = document.getElementById('fContract').value.trim();
 
-    if (s)  params.set('search', s);
-    if (u)  params.set('unit', u);
-    
-    // Envia o contrato em várias chaves para compatibilizar com o backend
-    if (c) {
-      params.set('contract', c);
-      params.set('contrato', c);
-      params.set('contractNumber', c);
-      params.set('numeroContrato', c);
-    }
-
-    // LOG TEMPORÁRIO PARA DEBUG
-    console.log('🔍 Filtros aplicados:', { search: s, unit: u, contract: c });
-    console.log('📡 URL completa:', `${apiUrl}/api/processes?${params.toString()}`);
+    if (s) params.set('search', s);
+    if (u) params.set('unit', u);
+    if (c) { params.set('contract', c); params.set('contrato', c); params.set('contractNumber', c); params.set('numeroContrato', c); }
 
     const tbody = document.getElementById('tbodyProc');
     tbody.innerHTML = `<tr><td colspan="7">Carregando…</td></tr>`;
 
     try {
-      const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`, {
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        cache: 'no-store' // força a buscar no servidor, evita 304
-      });
+    const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`, {
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    cache: 'no-store'
+    });
 
-      if (!res.ok) {
-        let msg = '';
-        try { const t = await res.text(); msg = t?.slice(0, 200); } catch {}
-        tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (${res.status}) ${msg ? ' - ' + msg : ''}</td></tr>`;
-        document.getElementById('pageInfoProc').textContent = '';
-        pagesProc = 1; updatePagerButtons();
-        return;
-      }
+    if (!res.ok) {
+    const msg = await res.text().catch(()=> '');
+    tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (${res.status}) ${msg ? ' - ' + msg : ''}</td></tr>`;
+    document.getElementById('pageInfoProc').textContent = '';
+    pagesProc = 1; updatePagerButtons();
+    return;
+    }
 
-      const json = await res.json();
-      console.log('📦 Response JSON:', json); // LOG para debug
-      
-      let items = [];
-      let page = 1, pages = 1, total = 0;
+    const json = await res.json();
+    let items = [];
+    let page = 1, pages = 1, total = 0;
 
-      if (Array.isArray(json)) {
-        items = json;
-        total = json.length;
-      } else {
-        items = json.items || json.data || json.results || json.docs || [];
-        page  = json.page || json.currentPage || json.pageNumber || 1;
-        pages = json.totalPages || 1;
-        total = json.total || json.count || json.totalDocs || items.length;
-      }
-      pagesProc = Math.max(1, pages);
-      updatePagerButtons();
+    if (Array.isArray(json)) {
+    items = json;
+    total = json.length;
+    } else {
+    items = json.items || json.data || json.results || json.docs || [];
+    page  = json.page || json.currentPage || json.pageNumber || 1;
+    pages = json.totalPages || 1;
+    total = json.total || json.count || json.totalDocs || items.length;
+    }
 
-      if (!items.length) {
-        tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
-        document.getElementById('pageInfoProc').textContent =
-          `Página ${page} de ${pagesProc} — ${total} itens`;
-        console.warn('Processos vazios. JSON:', json);
-        return;
-      }
+    pagesProc = Math.max(1, pages);
+    updatePagerButtons();
 
-      tbody.innerHTML = '';
-      items.forEach(p => {
-        const m = mapProcess(p);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${m.sei}</td>
-          <td>${decodePlus(m.assigned)}</td>
-          <td>${decodePlus(m.type)}</td>
-          <td class="wrap">${decodePlus(m.spec)}</td>
-          <td class="wrap">${decodePlus(m.note)}</td>
-          <td>${m.updated}</td>
-          <td>
-            <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${m.sei}">
-              <i class="fab fa-whatsapp"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-secondary" data-action="trello" data-sei="${m.sei}">
-              <i class="fab fa-trello"></i>
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+    if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
+    document.getElementById('pageInfoProc').textContent = `Página ${page} de ${pagesProc} — ${total} itens`;
+    return;
+    }
 
-      document.getElementById('pageInfoProc').textContent =
-        `Página ${page} de ${pagesProc} — ${total} itens`;
+    tbody.innerHTML = '';
+    items.forEach(p => {
+    const m = mapProcess(p);
+    const tr = document.createElement('tr');
+    tr.dataset.sei = m.sei;    // guarda o SEI na linha (robustez)
+    tr.innerHTML = `
+    <td>${m.sei}</td>
+    <td>${decodePlus(m.assigned)}</td>
+    <td>${decodePlus(m.type)}</td>
+    <td class="wrap">${decodePlus(m.spec)}</td>
+    <td>${m.updated}</td>
+    <td>
+    <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${m.sei}">
+    <i class="fab fa-whatsapp"></i>
+    </button>
+    <button class="btn btn-sm btn-outline-secondary" data-action="trello" data-sei="${m.sei}">
+    <i class="fab fa-trello"></i>
+    </button>
+    </td>
+    <td>
+    <button class="btn btn-sm btn-info" data-action="docs" data-sei="${m.sei}">
+    <i class="fas fa-file-upload"></i> Atualizar docs
+    </button>
+    </td>
+    `;
+    tbody.appendChild(tr);
+    });
 
+    document.getElementById('pageInfoProc').textContent = `Página ${page} de ${pagesProc} — ${total} itens`;
     } catch (e) {
-      console.error(e);
-      tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (console)</td></tr>`;
-      document.getElementById('pageInfoProc').textContent = '';
-      pagesProc = 1; updatePagerButtons();
+    console.error(e);
+    tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (console)</td></tr>`;
+    document.getElementById('pageInfoProc').textContent = '';
+    pagesProc = 1; updatePagerButtons();
     }
   }
 
+  // Recupera SEI de forma robusta
+  function getSeiFromButton(btn){
+    const fromBtn = btn?.dataset?.sei;
+    if (fromBtn) return fromBtn;
+    const tr = btn?.closest('tr');
+    const fromRow = tr?.dataset?.sei;
+    if (fromRow) return fromRow;
+    const firstCell = tr?.querySelector('td');
+    return (firstCell?.textContent || '').trim();
+  }
+
+  // Delegação dos botões da tabela
   document.getElementById('processosTable').addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
     const action = btn.dataset.action;
-    const sei = btn.dataset.sei;
+    const sei = getSeiFromButton(btn);
     if (action === 'whatsapp') {
-      alert(`(placeholder) Gerar mensagem WhatsApp para o processo ${sei}`);
+    alert(`(placeholder) Gerar mensagem WhatsApp para o processo ${sei}`);
     } else if (action === 'trello') {
-      alert(`(placeholder) Enviar/atualizar cartão Trello para o processo ${sei}`);
+    alert(`(placeholder) Enviar/atualizar cartão Trello para o processo ${sei}`);
+    } else if (action === 'docs') {
+    solicitarAtualizacaoDocs(sei);
     }
   });
 
@@ -334,12 +353,85 @@
     if (pageProc < pagesProc) { pageProc++; carregarProcessos(); }
   });
 
-  // ----------------- USUÁRIOS EXTERNOS -----------------
+  // === E-mail: Atualizar lista de processos (botão laranja do topo) ===
+  async function solicitarAtualizacaoProcessos() {
+    const payload = {
+    fluxo: 'Solicitar atualização de processos',
+    to: 'jadson.pena@dnit.gov.br',
+    subject: 'Atualizar lista de processos',
+    text: `Favor atualizar a lista de processos do AppDNIT.
+
+Solicitado em ${new Date().toLocaleString('pt-BR')} via admin.html.`
+    };
+    try {
+    const res = await fetch(`${apiUrl}/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(await res.text().catch(()=> ''));
+    showAlert('📨 Pedido de atualização enviado por e-mail.', 'success');
+    } catch (err) {
+    const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent('Atualizar lista de processos')}&body=${encodeURIComponent('Favor atualizar a lista de processos do AppDNIT.')}`;
+    window.location.href = mailto;
+    showAlert('⚠️ Não consegui enviar pelo servidor; abrindo seu cliente de e-mail…', 'warning');
+    }
+  }
+  document.getElementById('btnSolicitarAtualizacao').addEventListener('click', solicitarAtualizacaoProcessos);
+
+  // === E-mail por linha: Atualizar lista de documentos ===
+  async function solicitarAtualizacaoDocs(sei){
+    const seiTrim = (sei || '').trim();
+    if (!seiTrim) {
+    showAlert('❌ Não consegui identificar o número do processo desta linha.', 'danger');
+    return;
+    }
+    const { name, email } = getUserIdentity();
+    const subject = `Atualizar lista de documentos — SEI ${seiTrim}`;
+    const body = `Fluxo: Atualizar lista de documentos
+
+Dados do formulário:
+Agendamento: ${new Date().toISOString()}
+Número do processo SEI: ${seiTrim}
+Requerente: ${name}
+Email: ${email}`;
+
+    const payload = {
+    fluxo: 'Atualizar lista de documentos',
+    to: 'jadson.pena@dnit.gov.br',
+    subject,
+    text: body
+    };
+
+    console.log('[EMAIL DOCS] SEI=', seiTrim, payload);
+
+    try {
+    const res = await fetch(`${apiUrl}/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(await res.text().catch(()=> ''));
+    showAlert(`📨 Solicitação enviada (SEI ${seiTrim}).`, 'success');
+    } catch (err) {
+    const mailto = `mailto:jadson.pena@dnit.gov.br?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+    showAlert('⚠️ Não consegui enviar pelo servidor; abrindo seu cliente de e-mail…','warning');
+    }
+  }
+
+  // ---- USUÁRIOS EXTERNOS ----
   async function carregarUsuariosExternos() {
     try {
       const res = await fetch(`${apiUrl}/usuarios-externos`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
+      if (!res.ok) {
+        console.warn('carregarUsuariosExternos: resposta não OK', res.status);
+        const tbody = document.querySelector('#usuariosTable tbody');
+        tbody.innerHTML = `<tr><td colspan="3" class="text-muted">Erro ao carregar usuários externos (status ${res.status}).</td></tr>`;
+        return;
+      }
       const lista = await res.json();
       const tbody = document.querySelector('#usuariosTable tbody');
       tbody.innerHTML = '';
@@ -349,20 +441,23 @@
       }
       lista.forEach(usuario => {
         tbody.innerHTML += `
-          <tr>
-            <td>${usuario.nome || ''}</td>
-            <td>${usuario.empresa || ''}</td>
-            <td>
-              <button class="btn btn-danger btn-sm" onclick="removerUsuarioExterno('${usuario._id}')">Remover</button>
-            </td>
-          </tr>`;
+        <tr>
+          <td>${usuario.nome || ''}</td>
+          <td>${usuario.empresa || ''}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="removerUsuarioExterno('${usuario._id || usuario.id || ''}')">Remover</button>
+          </td>
+        </tr>`;
       });
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
+      const tbody = document.querySelector('#usuariosTable tbody');
+      if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="text-muted">Erro ao carregar usuários externos.</td></tr>`;
     }
   }
 
   async function removerUsuarioExterno(id) {
+    if (!id) { showAlert('ID inválido para remoção.', 'danger'); return; }
     if (!confirm('Tem certeza que deseja remover este usuário?')) return;
     try {
       const res = await fetch(`${apiUrl}/usuarios-externos/${id}`, { method: 'DELETE', headers: { ...authHeaders() } });
@@ -370,7 +465,8 @@
         showAlert('✅ Usuário removido com sucesso!', 'success');
         carregarUsuariosExternos();
       } else {
-        showAlert('❌ Erro ao remover usuário.', 'danger');
+        const msg = await res.text().catch(()=> '');
+        showAlert('❌ Erro ao remover usuário.' + (msg ? ' ' + msg : ''), 'danger');
       }
     } catch (err) {
       showAlert('❌ Erro ao remover usuário.', 'danger');
@@ -395,20 +491,27 @@
         document.getElementById('formUsuarioExterno').reset();
         carregarUsuariosExternos();
       } else {
-        const msg = await res.text();
+        const msg = await res.text().catch(()=> '');
         showAlert('❌ Erro ao cadastrar usuário externo: ' + msg, 'danger');
       }
     } catch (err) {
+      console.error('Erro ao cadastrar usuário externo:', err);
       showAlert('❌ Erro ao cadastrar usuário externo.', 'danger');
     }
   });
 
-  // ----------------- CONTRATOS -----------------
+  // ---- CONTRATOS ----
   async function carregarContratos() {
     try {
       const res = await fetch(`${apiUrl}/contratos`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() }
       });
+      if (!res.ok) {
+        console.warn('carregarContratos: resposta não OK', res.status);
+        const tbody = document.querySelector('#contratosTable tbody');
+        tbody.innerHTML = `<tr><td colspan="2" class="text-muted">Erro ao carregar contratos (status ${res.status}).</td></tr>`;
+        return;
+      }
       const contratos = await res.json();
       const tbody = document.querySelector('#contratosTable tbody');
       tbody.innerHTML = '';
@@ -418,19 +521,22 @@
       }
       contratos.forEach(c => {
         tbody.innerHTML += `
-          <tr>
-            <td>${c.numero || ''}</td>
-            <td>
-              <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id}', '${(c.numero || '').replace(/'/g, "\\'")}')">Remover</button>
-            </td>
-          </tr>`;
+        <tr>
+          <td>${c.numero || c.number || ''}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="removerContrato('${c._id || c.id || ''}', '${(c.numero || c.number || '').replace(/'/g, "\\'")}')">Remover</button>
+          </td>
+        </tr>`;
       });
     } catch (err) {
       console.error('Erro ao carregar contratos:', err);
+      const tbody = document.querySelector('#contratosTable tbody');
+      if (tbody) tbody.innerHTML = `<tr><td colspan="2" class="text-muted">Erro ao carregar contratos.</td></tr>`;
     }
   }
 
   async function removerContrato(id, numero) {
+    if (!id) { showAlert('ID inválido para remoção.', 'danger'); return; }
     if (!confirm(`Tem certeza que deseja remover o contrato ${numero || id}?`)) return;
     try {
       const res = await fetch(`${apiUrl}/contratos/${id}`, { 
@@ -441,7 +547,7 @@
         showAlert('✅ Contrato removido com sucesso!', 'success');
         carregarContratos();
       } else {
-        const msg = await res.text();
+        const msg = await res.text().catch(()=> '');
         showAlert('❌ Erro ao remover contrato: ' + msg, 'danger');
       }
     } catch (err) {
@@ -466,15 +572,16 @@
         document.getElementById('formContrato').reset();
         carregarContratos();
       } else {
-        const msg = await res.text();
+        const msg = await res.text().catch(()=> '');
         showAlert('❌ Erro ao cadastrar contrato: ' + msg, 'danger');
       }
     } catch (err) {
+      console.error('Erro ao cadastrar contrato:', err);
       showAlert('❌ Erro ao cadastrar contrato.', 'danger');
     }
   });
 
-  // ----------------- BOOTSTRAP -----------------
+  // ---- BOOTSTRAP / INICIALIZAÇÃO ----
   (async () => {
     try {
       await ensureAdmin();
