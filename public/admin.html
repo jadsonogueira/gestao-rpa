@@ -217,6 +217,7 @@
   let pageProc = 1;
   let pagesProc = 1;
   const limitProc = 20;
+  let allProcessos = []; // todos os itens carregados
 
   function updatePagerButtons() {
     const prev = document.getElementById('prevProc');
@@ -226,20 +227,25 @@
   }
 
   async function carregarProcessos() {
-    const params = new URLSearchParams({ page: pageProc, limit: limitProc });
-
-    const s  = document.getElementById('fSearch').value.trim();
-    const u  = document.getElementById('fUnit').value.trim();
-    const c  = document.getElementById('fContract').value.trim();
-
-    if (s) params.set('search', s);
-    if (u) params.set('unit', u);
-    if (c) { params.set('contract', c); params.set('contrato', c); params.set('contractNumber', c); params.set('numeroContrato', c); }
-
     const tbody = document.getElementById('tbodyProc');
     tbody.innerHTML = `<tr><td colspan="7">Carregando…</td></tr>`;
 
     try {
+      // Busca SEM paginação (ou com, mas vamos ignorar e paginar no front)
+      const params = new URLSearchParams();
+      const s  = document.getElementById('fSearch').value.trim();
+      const u  = document.getElementById('fUnit').value.trim();
+      const c  = document.getElementById('fContract').value.trim();
+
+      if (s) params.set('search', s);
+      if (u) params.set('unit', u);
+      if (c) { 
+        params.set('contract', c); 
+        params.set('contrato', c); 
+        params.set('contractNumber', c); 
+        params.set('numeroContrato', c); 
+      }
+
       const res = await fetch(`${apiUrl}/api/processes?${params.toString()}`, {
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         cache: 'no-store'
@@ -249,68 +255,86 @@
         const msg = await res.text().catch(()=> '');
         tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (${res.status}) ${msg ? ' - ' + msg : ''}</td></tr>`;
         document.getElementById('pageInfoProc').textContent = '';
-        pagesProc = 1; updatePagerButtons();
+        pagesProc = 1; 
+        updatePagerButtons();
         return;
       }
 
       const json = await res.json();
-      let items = [];
-      let page = 1, pages = 1, total = 0;
 
+      // Normaliza como array
+      let items = [];
       if (Array.isArray(json)) {
         items = json;
-        total = json.length;
       } else {
         items = json.items || json.data || json.results || json.docs || [];
-        page  = json.page || json.currentPage || json.pageNumber || 1;
-        pages = json.totalPages || 1;
-        total = json.total || json.count || json.totalDocs || items.length;
       }
 
-      pagesProc = Math.max(1, pages);
-      updatePagerButtons();
+      allProcessos = items; // guarda tudo
 
-      if (!items.length) {
+      if (!allProcessos.length) {
         tbody.innerHTML = `<tr><td colspan="7">Sem resultados.</td></tr>`;
-        document.getElementById('pageInfoProc').textContent = `Página ${page} de ${pagesProc} — ${total} itens`;
+        document.getElementById('pageInfoProc').textContent = `Página 1 de 1 — 0 itens`;
+        pagesProc = 1;
+        updatePagerButtons();
         return;
       }
 
-      tbody.innerHTML = '';
-      items.forEach(p => {
-        const m = mapProcess(p);
-        const tr = document.createElement('tr');
-        tr.dataset.sei = m.sei;        // guarda o SEI na linha (robustez)
-        tr.innerHTML = `
-          <td>${m.sei}</td>
-          <td>${decodePlus(m.assigned)}</td>
-          <td>${decodePlus(m.type)}</td>
-          <td class="wrap">${decodePlus(m.spec)}</td>
-          <td>${m.updated}</td>
-          <td>
-            <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${m.sei}">
-              <i class="fab fa-whatsapp"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-secondary" data-action="trello" data-sei="${m.sei}">
-              <i class="fab fa-trello"></i>
-            </button>
-          </td>
-          <td>
-            <button class="btn btn-sm btn-info" data-action="docs" data-sei="${m.sei}">
-              <i class="fas fa-file-upload"></i> Atualizar docs
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+      // Calcula total de páginas
+      pagesProc = Math.max(1, Math.ceil(allProcessos.length / limitProc));
+      if (pageProc > pagesProc) pageProc = pagesProc;
 
-      document.getElementById('pageInfoProc').textContent = `Página ${page} de ${pagesProc} — ${total} itens`;
+      renderPaginaProcessos(); // desenha a página atual
+
     } catch (e) {
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="7">Erro ao carregar (console)</td></tr>`;
       document.getElementById('pageInfoProc').textContent = '';
-      pagesProc = 1; updatePagerButtons();
+      pagesProc = 1; 
+      updatePagerButtons();
     }
+  }
+
+  function renderPaginaProcessos() {
+    const tbody = document.getElementById('tbodyProc');
+    tbody.innerHTML = '';
+
+    const total = allProcessos.length;
+    const start = (pageProc - 1) * limitProc;
+    const end   = start + limitProc;
+    const pageItems = allProcessos.slice(start, end);
+
+    pageItems.forEach(p => {
+      const m = mapProcess(p);
+      const tr = document.createElement('tr');
+      tr.dataset.sei = m.sei;
+      tr.innerHTML = `
+        <td>${m.sei}</td>
+        <td>${decodePlus(m.assigned)}</td>
+        <td>${decodePlus(m.type)}</td>
+        <td class="wrap">${decodePlus(m.spec)}</td>
+        <td>${m.updated}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary mr-2" data-action="whatsapp" data-sei="${m.sei}">
+            <i class="fab fa-whatsapp"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" data-action="trello" data-sei="${m.sei}">
+            <i class="fab fa-trello"></i>
+          </button>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-info" data-action="docs" data-sei="${m.sei}">
+            <i class="fas fa-file-upload"></i> Atualizar docs
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('pageInfoProc').textContent =
+      `Página ${pageProc} de ${pagesProc} — ${total} itens`;
+
+    updatePagerButtons();
   }
 
   // Recupera SEI de forma robusta
@@ -339,18 +363,31 @@
     }
   });
 
-  document.getElementById('btnFilter').addEventListener('click', () => { pageProc = 1; carregarProcessos(); });
+  document.getElementById('btnFilter').addEventListener('click', () => { 
+    pageProc = 1; 
+    carregarProcessos(); 
+  });
+  
   document.getElementById('btnClear').addEventListener('click', () => {
     document.getElementById('fSearch').value = '';
     document.getElementById('fUnit').value = '';
     document.getElementById('fContract').value = '';
-    pageProc = 1; carregarProcessos();
+    pageProc = 1; 
+    carregarProcessos();
   });
+  
   document.getElementById('prevProc').addEventListener('click', () => {
-    if (pageProc > 1) { pageProc--; carregarProcessos(); }
+    if (pageProc > 1) { 
+      pageProc--; 
+      renderPaginaProcessos(); 
+    }
   });
+  
   document.getElementById('nextProc').addEventListener('click', () => {
-    if (pageProc < pagesProc) { pageProc++; carregarProcessos(); }
+    if (pageProc < pagesProc) { 
+      pageProc++; 
+      renderPaginaProcessos(); 
+    }
   });
 
   // === E-mail: Atualizar lista de processos (botão laranja do topo) ===
