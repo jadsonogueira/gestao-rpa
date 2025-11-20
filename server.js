@@ -482,7 +482,6 @@ const Contrato = mongoose.model('Contrato', contratoSchema);
 
 
 // =================== Processos SEI ===================
-// =================== Processos SEI ===================
 const processSchema = new mongoose.Schema({
   seiNumber: String,        // "50612.500131/2017-19"
   seiNumberNorm: String,    // "50612500131201719" (se tiver)
@@ -494,6 +493,7 @@ const processSchema = new mongoose.Schema({
   assignedTo: String,
   status: String,
   contracts: [String],      // opcional
+  diasUltimaMovimentacao: Number,  // ← NOVO: quantos dias desde a última movimentação
   updatedAtSEI: Date,
   updatedAt: Date,
   lastSyncedAt: Date,
