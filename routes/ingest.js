@@ -107,6 +107,18 @@ function mapProcessFields(src) {
   }
   if (Array.isArray(tags)) out.tags = tags;
 
+  // ✨ NOVO: diasUltimaMovimentacao (da coluna "Última Mov." do SEI)
+  if (src.diasUltimaMovimentacao !== undefined) {
+    out.diasUltimaMovimentacao = Number(src.diasUltimaMovimentacao);
+  }
+  // aceita também nomes alternativos
+  if (src.ultimaMovimentacao !== undefined) {
+    out.diasUltimaMovimentacao = Number(src.ultimaMovimentacao);
+  }
+  if (src.UltimaMovimentacao !== undefined) {
+    out.diasUltimaMovimentacao = Number(src.UltimaMovimentacao);
+  }
+
   // meta.atribuicao
   const atribuicao = src.Atribuicao ?? src.atribuicao ?? src.assignedTo;
   if (atribuicao) {
