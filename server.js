@@ -482,6 +482,7 @@ const Contrato = mongoose.model('Contrato', contratoSchema);
 
 
 // =================== Processos SEI ===================
+// =================== Processos SEI ===================
 const processSchema = new mongoose.Schema({
   seiNumber: String,        // "50612.500131/2017-19"
   seiNumberNorm: String,    // "50612500131201719" (se tiver)
@@ -497,7 +498,7 @@ const processSchema = new mongoose.Schema({
   updatedAt: Date,
   lastSyncedAt: Date,
   createdAt: { type: Date, default: Date.now }
-}, { collection: 'processes' }); // IMPORTANT: usa a collection appdnit.processes
+}, { collection: 'processes' });
 
 const Process = mongoose.models.Process || mongoose.model('Process', processSchema);
 
