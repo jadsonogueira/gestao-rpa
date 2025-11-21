@@ -11,6 +11,10 @@ const router = express.Router();
 // ========== Auth simples por header ==========
 function requireApiKey(req, res, next) {
   const incoming = req.header('x-app-token');
+
+  console.log('INGEST incoming header:', JSON.stringify(incoming));
+  console.log('INGEST_TOKEN env:', JSON.stringify(process.env.INGEST_TOKEN));
+
   if (!incoming || incoming !== process.env.INGEST_TOKEN) {
     return res.status(401).json({ ok: false, error: 'unauthorized' });
   }
