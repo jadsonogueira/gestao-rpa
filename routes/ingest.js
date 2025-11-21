@@ -37,7 +37,7 @@ function preClean(raw) {
   } catch {}
 
   s = s.replace(/^\uFEFF/, '').replace(/\u200B/g, '');
-  s = s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+  s = s.replace(/[""]/g, '"').replace(/['']/g, "'");
   s = s.replace(/\r\n?/g, '\n');
   // remove caracteres de controle NÃO escapados
   s = s.replace(/(?<!\\)[\u0000-\u001F]/g, ' ');
@@ -100,6 +100,18 @@ function mapProcessFields(src) {
   if (!out.subject && (src.Anotacao || src.anotacao)) out.subject = String(src.Anotacao || src.anotacao);
   if (!out.unit && (src.Atribuicao || src.Atribuicao)) out.unit = String(src.Atribuicao || src.Atribuicao);
 
+  // ✨ subject agora é usado como "dias desde a última movimentação"
+  // Deriva diasUltimaMovimentacao a partir de subject
+  if (out.subject) {
+    const m = String(out.subject).match(/^(\d+)/); // extrai primeiro(s) dígito(s) no início
+    if (m) {
+      const dias = Number(m[1]);
+      if (!Number.isNaN(dias)) {
+        out.diasUltimaMovimentacao = dias;
+      }
+    }
+  }
+
   // tags: aceita string ou array
   let tags = src.tags ?? src.Tipo ?? src.tipo;
   if (typeof tags === 'string') {
@@ -108,6 +120,7 @@ function mapProcessFields(src) {
   if (Array.isArray(tags)) out.tags = tags;
 
   // ✨ NOVO: diasUltimaMovimentacao (da coluna "Última Mov." do SEI)
+  // Aceita também se vier explicitamente com esse nome (sobrescreve o derivado de subject)
   if (src.diasUltimaMovimentacao !== undefined) {
     out.diasUltimaMovimentacao = Number(src.diasUltimaMovimentacao);
   }
@@ -258,7 +271,7 @@ router.post('/upload', requireApiKey, async (req, res) => {
   }
 });
 
-// ========== /upload-flex (texto “solto” OU objeto plano) ==========
+// ========== /upload-flex (texto "solto" OU objeto plano) ==========
 router.post(
   '/upload-flex',
   requireApiKey,
@@ -349,7 +362,5 @@ router.get('/sync-recent-docs', requireApiKey, async (req, res) => {
     return res.status(500).json({ ok: false, error: 'internal_error' });
   }
 });
-
-
 
 module.exports = router;
