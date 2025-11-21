@@ -309,4 +309,47 @@ router.post(
   }
 );
 
+// ========== /sync-recent-docs ==========
+// Retorna os N processos mais recentemente movimentados
+// Usa diasUltimaMovimentacao (derivado de subject = "Última Mov.")
+router.get('/sync-recent-docs', requireApiKey, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 20;
+
+    // Busca apenas processos que têm diasUltimaMovimentacao numérico
+    const processos = await Process.find({
+      diasUltimaMovimentacao: { $exists: true, $ne: null }
+    })
+      .sort({ diasUltimaMovimentacao: 1, updatedAt: -1 }) // menor dias = mais recente
+      .limit(limit)
+      .select('seiNumber title subject unit diasUltimaMovimentacao')
+      .lean();
+
+    if (!processos.length) {
+      return res.json({
+        ok: true,
+        count: 0,
+        processes: []
+      });
+    }
+
+    return res.json({
+      ok: true,
+      count: processos.length,
+      processes: processos.map(p => ({
+        seiNumber: p.seiNumber,
+        title: p.title,
+        subject: p.subject,                         // você usa subject como "Última Mov."
+        diasUltimaMovimentacao: p.diasUltimaMovimentacao,
+        unit: p.unit
+      }))
+    });
+  } catch (err) {
+    console.error('GET /api/ingest/sync-recent-docs error', err);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+});
+
+
+
 module.exports = router;
