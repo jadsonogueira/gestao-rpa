@@ -1318,7 +1318,7 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
 
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 465,
+    port: Number(process.env.SMTP_PORT) || 587,
     secure: true, // SSL/TLS
     auth: {
       user: process.env.EMAIL_USER,
