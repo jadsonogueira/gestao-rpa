@@ -1310,14 +1310,22 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
 
 } else {
   // -------- Envio via SMTP do domínio ablchurch.ca (Nodemailer) --------
+  console.log('[SMTP] Tentando conectar:', {
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    user: process.env.EMAIL_USER,
+  });
+
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,                        // mail.ablchurch.ca
-    port: Number(process.env.SMTP_PORT) || 465,        // 465
-    secure: true,                                      // 465 = SSL/TLS
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 465,
+    secure: true, // SSL/TLS
     auth: {
-      user: process.env.EMAIL_USER,                    // rpa@ablchurch.ca
+      user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    connectionTimeout: 10000,   // 10s timeout de conexão
+    greetingTimeout: 10000,     // 10s timeout de handshake
   });
 
   const mailOptions = {
@@ -1328,15 +1336,17 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
     attachments,
   };
 
+  console.log('[SMTP] Enviando e-mail...');
+
   transporter.sendMail(mailOptions)
     .then(info => {
-      console.log('[SEND] ok messageId=', info && info.messageId);
-      res.send('E-mail enviado com sucesso');
+      console.log('[SEND] ✅ ok messageId=', info && info.messageId);
+      return res.send('E-mail enviado com sucesso');
     })
     .catch(err => {
       const msg = (err && (err.response || err.message)) || String(err);
-      console.error('[SEND][SMTP ERROR]', msg);
-      res.status(500).type('text/plain').send(`Erro ao enviar o e-mail: ${msg}`);
+      console.error('[SEND][SMTP ERROR] ❌', msg);
+      return res.status(500).type('text/plain').send(`Erro ao enviar o e-mail: ${msg}`);
     });
 }
 
