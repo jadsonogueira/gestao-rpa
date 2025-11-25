@@ -1309,32 +1309,36 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
   }
 
 } else {
-  // -------- Envio via Gmail/Nodemailer (COMPORTAMENTO ATUAL) --------
+  // -------- Envio via SMTP do domínio ablchurch.ca (Nodemailer) --------
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    host: process.env.SMTP_HOST,                        // mail.ablchurch.ca
+    port: Number(process.env.SMTP_PORT) || 465,        // 465
+    secure: true,                                      // 465 = SSL/TLS
+    auth: {
+      user: process.env.EMAIL_USER,                    // rpa@ablchurch.ca
+      pass: process.env.EMAIL_PASS,
+    },
   });
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: `"RPA ABL Church" <${process.env.FROM_EMAIL || process.env.EMAIL_USER}>`,
     to: 'jadsonpena@gmail.com',
     subject: `${fluxo}`,
     text: mailContent,
-    attachments // aqui os anexos seguem como Buffer, igual antes
+    attachments,
   };
 
-  // depois de montar transporter e mailOptions:
-transporter.sendMail(mailOptions)
-  .then(info => {
-    console.log('[SEND] ok messageId=', info && info.messageId);
-    res.send('E-mail enviado com sucesso');
-  })
-  .catch(err => {
-    const msg = (err && (err.response || err.message)) || String(err);
-    console.error('[SEND][SMTP ERROR]', msg);
-    // devolve texto simples para aparecer no Network → Response
-    res.status(500).type('text/plain').send(`Erro ao enviar o e-mail: ${msg}`);
-  });
+  transporter.sendMail(mailOptions)
+    .then(info => {
+      console.log('[SEND] ok messageId=', info && info.messageId);
+      res.send('E-mail enviado com sucesso');
+    })
+    .catch(err => {
+      const msg = (err && (err.response || err.message)) || String(err);
+      console.error('[SEND][SMTP ERROR]', msg);
+      res.status(500).type('text/plain').send(`Erro ao enviar o e-mail: ${msg}`);
+    });
+}
 
 
 }
