@@ -1340,9 +1340,6 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
     });
 }
 
-
-}
-
 } catch (err) {
   console.error('Erro ao processar o envio de e-mail:', err);
   return res.status(500).send('Erro no servidor');
