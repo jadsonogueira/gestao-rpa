@@ -1263,12 +1263,41 @@ console.log(`Total estimado com Base64 (~4/3): ${Math.round(totalBytes * 4/3)}`)
 console.log('Attachments nomes:', attachments.map(a => a.filename));
 
 // ===== Escolha do provedor por variável de ambiente =====
-// Default: GMAIL (comportamento atual). Só usa SendGrid se EMAIL_PROVIDER=sendgrid
-const provider = (process.env.EMAIL_PROVIDER || 'gmail').toLowerCase();
+const provider = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
 
-if (provider === 'sendgrid') {
+if (provider === 'resend') {
+  // -------- Envio via Resend (API HTTP) --------
+  const { sendWithResend } = require('./email/resend');
+
+  try {
+    console.log('[EMAIL] provider=resend from=%s to=%s',
+      process.env.FROM_EMAIL,
+      'jadsonpena@gmail.com'
+    );
+
+    // HTML simples legível (escapado e preservando quebras)
+    const safeHtml = `<pre>${mailContent.replace(/[&<>]/g, s => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s]
+    ))}</pre>`;
+
+    const result = await sendWithResend({
+      to: 'jadsonpena@gmail.com',
+      subject: `${fluxo}`,
+      text: mailContent,
+      html: safeHtml,
+      attachments, // já são Buffers; o módulo converte para base64
+    });
+
+    console.log('[EMAIL] Enviado via Resend. id=', result && result.id);
+    return res.send('E-mail enviado com sucesso');
+  } catch (err) {
+    const payloadErr = err?.response?.data || err?.message || err;
+    console.error('Erro ao enviar via Resend:', payloadErr);
+    return res.status(500).type('text/plain').send('Erro ao enviar o e-mail (Resend).');
+  }
+
+} else if (provider === 'sendgrid') {
   // -------- Envio via SendGrid (sem SMTP) --------
-
   const { sendWithSendGrid } = require('./email/sendgrid');
 
   try {
@@ -1284,19 +1313,15 @@ if (provider === 'sendgrid') {
          'application/octet-stream')
     }));
 
-console.log('[EMAIL] provider=%s from=%s to=%s',
-  (process.env.EMAIL_PROVIDER || 'gmail'),
-  process.env.FROM_EMAIL,
-  'jadsonpena@gmail.com' // troque pelo e-mail que você está testando
-);
+    console.log('[EMAIL] provider=sendgrid from=%s to=%s',
+      process.env.FROM_EMAIL,
+      'jadsonpena@gmail.com'
+    );
 
-
-    
     await sendWithSendGrid({
       to: 'jadsonpena@gmail.com',
       subject: `${fluxo}`,
       text: mailContent,
-      // HTML simples legível (escapado e preservando quebras)
       html: `<pre>${mailContent.replace(/[&<>]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]))}</pre>`,
       attachments: sgAttachments
     });
@@ -1305,7 +1330,7 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
     return res.send('E-mail enviado com sucesso');
   } catch (err) {
     console.error('Erro ao enviar via SendGrid:', err?.response?.body || err?.message || err);
-    return res.status(500).send('Erro ao enviar o e-mail (SendGrid).');
+    return res.status(500).type('text/plain').send('Erro ao enviar o e-mail (SendGrid).');
   }
 
 } else {
@@ -1319,7 +1344,7 @@ console.log('[EMAIL] provider=%s from=%s to=%s',
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT) || 587,
-    secure: true, // SSL/TLS
+    secure: false, // false para 587 (STARTTLS)
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
