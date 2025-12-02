@@ -18,6 +18,7 @@ const tryJson = (txt) => {
   try { return JSON.parse(txt); } catch (_) { return null; }
 };
 
+// ========== POST / (gravar documentos) ==========
 router.post(
   '/',
   requireApiKey,
@@ -99,5 +100,48 @@ router.post(
     }
   }
 );
+
+// ========== GET /recent (buscar últimos processos movimentados) ==========
+router.get('/recent', requireApiKey, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 20;
+
+    // Busca documentos com documentsUpdatedAt preenchido, ordenados por data mais recente
+    const recentDocs = await ProcessDocument.find({
+      seiNumber: { $exists: true, $ne: '' },
+      documentsUpdatedAt: { $ne: null }
+    })
+      .sort({ documentsUpdatedAt: -1 })  // mais recentes primeiro
+      .limit(limit * 5)                  // overfetch para garantir processos distintos
+      .select('seiNumber documentsUpdatedAt')
+      .lean();
+
+    // Deduplica por seiNumber
+    const seen = new Set();
+    const processes = [];
+
+    for (const doc of recentDocs) {
+      const seiNumber = doc.seiNumber;
+      if (!seiNumber || seen.has(seiNumber)) continue;
+
+      seen.add(seiNumber);
+      processes.push({
+        seiNumber,
+        lastDocUpdatedAt: doc.documentsUpdatedAt
+      });
+
+      if (processes.length >= limit) break;
+    }
+
+    return res.json({
+      ok: true,
+      count: processes.length,
+      processes
+    });
+  } catch (err) {
+    console.error('GET /api/process-documents/recent erro:', err);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+});
 
 module.exports = router;
