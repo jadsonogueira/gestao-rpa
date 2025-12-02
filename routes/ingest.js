@@ -367,4 +367,44 @@ router.get('/sync-recent-docs', requireApiKey, async (req, res) => {
   }
 });
 
+// ========== GET /recent-processes (últimos processos movimentados) ==========
+router.get('/recent-processes', requireApiKey, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 20;
+
+    // Busca processos onde subject guarda os dias da última movimentação
+    const docs = await Process.find({
+      subject: { $exists: true, $ne: '', $ne: null },
+      seiNumber: { $exists: true, $ne: '' }
+    })
+      .sort({ subject: 1 }) // menor número de dias primeiro (mais recente)
+      .limit(limit)
+      .select('seiNumber subject title unit')
+      .lean();
+
+    const processes = [];
+
+    for (const p of docs) {
+      const dias = parseInt(p.subject, 10);
+      if (Number.isNaN(dias)) continue;
+
+      processes.push({
+        seiNumber: p.seiNumber,
+        diasUltimaMovimentacao: dias,
+        title: p.title || '',
+        unit: p.unit || ''
+      });
+    }
+
+    return res.json({
+      ok: true,
+      count: processes.length,
+      processes
+    });
+  } catch (err) {
+    console.error('GET /api/ingest/recent-processes erro:', err);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+});
+
 module.exports = router;
