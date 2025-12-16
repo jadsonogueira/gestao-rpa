@@ -1128,7 +1128,7 @@ if (agIso) {
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: 'jadsonnogueira@msn.com',
+      to: 'jadson.pena@dnit.gov.br',
       subject: `${fluxo}`,
       text: mailContent,
     };
@@ -1272,7 +1272,7 @@ if (provider === 'resend') {
   try {
     console.log('[EMAIL] provider=resend from=%s to=%s',
       process.env.FROM_EMAIL,
-      'jadsonnogueira@msn.com'
+      'jadson.pena@dnit.gov.br'
     );
 
     // HTML simples legível (escapado e preservando quebras)
@@ -1281,7 +1281,7 @@ if (provider === 'resend') {
     ))}</pre>`;
 
     const result = await sendWithResend({
-      to: 'jadsonnogueira@msn.com',
+      to: 'jadson.pena@dnit.gov.br',
       subject: `${fluxo}`,
       text: mailContent,
       html: safeHtml,
